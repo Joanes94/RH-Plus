@@ -1,0 +1,124 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Contrat;
+use App\Models\Personnel;
+use App\Models\PersonnelHistorique;
+use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
+
+class AutoDesactivationCommand extends Command
+{
+    protected $signature = 'personnel:auto-desactiver {--dry-run : Afficher les actions sans les exécuter}';
+    protected $description = 'Désactive automatiquement les CDD dont le contrat est arrivé à terme et les CDI à l\'âge de la retraite (60 ans).';
+
+    public function handle(): int
+    {
+        $dryRun = $this->option('dry-run');
+        $today = Carbon::today();
+        $count = 0;
+
+        // ── CDD / Prestataire : contrat arrivé à terme ───────────────────────
+        $contratsExpires = Contrat::where('statut', 'actif')
+            ->whereIn('type_contrat', ['CDD', 'Prestataire'])
+            ->whereNotNull('date_fin')
+            ->where('date_fin', '<=', $today)
+            ->with('personnel')
+            ->get();
+
+        foreach ($contratsExpires as $contrat) {
+            $personnel = $contrat->personnel;
+            if (!$personnel || $personnel->est_ancien_travailleur) continue;
+
+            if ($dryRun) {
+                $this->info("[DRY-RUN] Désactivation CDD : {$personnel->nom_complet} — Contrat #{$contrat->id} expiré le {$contrat->date_fin->format('d/m/Y')}");
+            } else {
+                // Archiver le contrat
+                $contrat->update(['statut' => 'termine']);
+
+                // Désactiver le personnel
+                $personnel->update([
+                    'statut'       => 'ancien',
+                    'motif_depart' => 'fin_contrat',
+                    'date_depart'  => $today,
+                ]);
+
+                // Créer l'historique
+                PersonnelHistorique::create([
+                    'personnel_id'     => $personnel->id,
+                    'contrat_id'       => $contrat->id,
+                    'centre_id'        => $personnel->centre_id,
+                    'date_debut'       => $contrat->date_debut,
+                    'date_fin'         => $today,
+                    'type_contrat'     => $contrat->type_contrat,
+                    'categorie_echelon'=> $contrat->categorie_echelon,
+                    'salaire_base'     => $contrat->salaire_base,
+                    'corporation'      => $contrat->fonction ?? $personnel->corporation,
+                    'service'          => $contrat->service ?? $personnel->service,
+                    'centre_nom'       => $contrat->centre ?? $personnel->centre?->nom,
+                    'type_evenement'   => 'fin_contrat',
+                    'commentaire'      => 'Désactivation automatique — contrat CDD/Prestataire arrivé à terme.',
+                ]);
+
+                $this->info("✓ Désactivé : {$personnel->nom_complet} (CDD expiré le {$contrat->date_fin->format('d/m/Y')})");
+            }
+            $count++;
+        }
+
+        // ── CDI : retraite à 60 ans ──────────────────────────────────────────
+        $personnelsRetraite = Personnel::whereHas('contrats', function ($q) {
+                $q->where('statut', 'actif')->where('type_contrat', 'CDI');
+            })
+            ->whereNotIn('statut', ['ancien', 'retraite'])
+            ->whereNotNull('date_naissance')
+            ->where('date_naissance', '<=', $today->copy()->subYears(60))
+            ->with(['contrats' => fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'CDI')])
+            ->get();
+
+        foreach ($personnelsRetraite as $personnel) {
+            $contrat = $personnel->contrats->first();
+
+            if ($dryRun) {
+                $this->info("[DRY-RUN] Retraite CDI : {$personnel->nom_complet} — Né(e) le {$personnel->date_naissance->format('d/m/Y')} (60 ans atteints)");
+            } else {
+                if ($contrat) {
+                    $contrat->update(['statut' => 'termine']);
+                }
+
+                $personnel->update([
+                    'statut'       => 'retraite',
+                    'motif_depart' => 'retraite',
+                    'date_depart'  => $today,
+                ]);
+
+                PersonnelHistorique::create([
+                    'personnel_id'     => $personnel->id,
+                    'contrat_id'       => $contrat?->id,
+                    'centre_id'        => $personnel->centre_id,
+                    'date_debut'       => $contrat?->date_debut,
+                    'date_fin'         => $today,
+                    'type_contrat'     => 'CDI',
+                    'categorie_echelon'=> $contrat?->categorie_echelon ?? $personnel->categorie_echelon,
+                    'salaire_base'     => $contrat?->salaire_base,
+                    'corporation'      => $contrat?->fonction ?? $personnel->corporation,
+                    'service'          => $contrat?->service ?? $personnel->service,
+                    'centre_nom'       => $personnel->centre?->nom,
+                    'type_evenement'   => 'desactivation',
+                    'commentaire'      => 'Départ en retraite automatique — 60 ans atteints.',
+                ]);
+
+                $this->info("✓ Retraité : {$personnel->nom_complet} (60 ans le {$personnel->date_naissance->copy()->addYears(60)->format('d/m/Y')})");
+            }
+            $count++;
+        }
+
+        $this->info("");
+        $this->info($dryRun
+            ? "{$count} personnel(s) serai(en)t désactivé(s)."
+            : "{$count} personnel(s) désactivé(s) automatiquement."
+        );
+
+        return Command::SUCCESS;
+    }
+}

@@ -1,0 +1,222 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Centre;
+use App\Models\Conge;
+use App\Models\Absence;
+use App\Models\Demande;
+use App\Models\Personnel;
+use App\Models\Contrat;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+
+class DashboardController extends Controller
+{
+    public function index(Request $request)
+    {
+        $user = auth()->user();
+
+        // Les rôles globaux voient le dashboard global par défaut
+        if ($user->isGlobal() || $user->isCRH()) {
+            return $this->dashboardGlobal($request);
+        }
+
+        // DRH centre ou Directeur faisant office de DRH
+        if ($user->isDRH() || ($user->isDirecteurCentre() && !$user->centre?->a_drh_dedie)) {
+            return $this->dashboardDrhCentre($request, $user->centre_id);
+        }
+
+        // Directeur en lecture seule (centre avec DRH dédié)
+        if ($user->isDirecteurCentre()) {
+            return $this->dashboardDrhCentre($request, $user->centre_id);
+        }
+
+        // Assistant RH
+        return $this->dashboardAssistant($request, $user->centre_id);
+    }
+
+    /**
+     * Tableau de bord global — CRH, DDIS, DDRH
+     */
+    public function dashboardGlobal(Request $request)
+    {
+        $centres = Centre::actifs()->orderBy('nom')->get();
+
+        $stats = [];
+        foreach ($centres as $centre) {
+            $personnelsCentre = Personnel::where('centre_id', $centre->id)->enPoste();
+
+            $stats[$centre->id] = [
+                'centre'       => $centre,
+                'total'        => (clone $personnelsCentre)->count(),
+                'hommes'       => (clone $personnelsCentre)->where('sexe', 'M')->count(),
+                'femmes'       => (clone $personnelsCentre)->where('sexe', 'F')->count(),
+                'cdd'          => (clone $personnelsCentre)->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'CDD'))->count(),
+                'cdi'          => (clone $personnelsCentre)->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'CDI'))->count(),
+                'prestataires' => (clone $personnelsCentre)->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'Prestataire'))->count(),
+            ];
+        }
+
+        // Totaux globaux
+        $totaux = [
+            'total'        => array_sum(array_column($stats, 'total')),
+            'hommes'       => array_sum(array_column($stats, 'hommes')),
+            'femmes'       => array_sum(array_column($stats, 'femmes')),
+            'cdd'          => array_sum(array_column($stats, 'cdd')),
+            'cdi'          => array_sum(array_column($stats, 'cdi')),
+            'prestataires' => array_sum(array_column($stats, 'prestataires')),
+        ];
+
+        // Alertes globales
+        $contratsExpirantBientot = Contrat::where('statut', 'actif')
+            ->whereIn('type_contrat', ['CDD', 'Prestataire'])
+            ->whereNotNull('date_fin')
+            ->whereBetween('date_fin', [Carbon::today(), Carbon::today()->addDays(30)])
+            ->with('personnel.centre')
+            ->orderBy('date_fin')
+            ->get();
+
+        $retraitesImminentes = Personnel::enPoste()
+            ->whereNotNull('date_naissance')
+            ->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'CDI'))
+            ->get()
+            ->filter(fn($p) => $p->date_naissance && $p->date_naissance->copy()->addYears(60)->between(Carbon::today(), Carbon::today()->addMonths(3)))
+            ->values();
+
+        $nbCongesSoumis   = Conge::where('statut', 'soumis')->count();
+        $nbAbsencesSoumis = Absence::where('statut', 'soumis')->count();
+        $nbDemandesSoumis = Demande::where('statut', 'soumis')->count();
+
+        return view('dashboard.global', compact(
+            'centres', 'stats', 'totaux',
+            'contratsExpirantBientot', 'retraitesImminentes',
+            'nbCongesSoumis', 'nbAbsencesSoumis', 'nbDemandesSoumis'
+        ));
+    }
+
+    /**
+     * Tableau de bord par centre — DRH centre, Directeur, ou rôle global filtrant
+     */
+    public function dashboardParCentre(Request $request)
+    {
+        $user = auth()->user();
+        $centreId = $request->get('centre_id', $user->centre_id);
+
+        // Vérification d'accès
+        if (!$user->canViewCentre($centreId)) {
+            abort(403);
+        }
+
+        return $this->dashboardDrhCentre($request, $centreId);
+    }
+
+    private function dashboardDrhCentre(Request $request, ?int $centreId)
+    {
+        $centre = $centreId ? Centre::find($centreId) : null;
+        $centres = Centre::actifs()->orderBy('nom')->get();
+
+        $query = Personnel::enPoste()->personnelPrincipal();
+        if ($centreId) {
+            $query->where('centre_id', $centreId);
+        }
+
+        $personnels = $query->get();
+        $effectifTotal = $personnels->count();
+        $hommes = $personnels->where('sexe', 'M')->count();
+        $femmes = $personnels->where('sexe', 'F')->count();
+
+        // Anciens travailleurs
+        $anciensQuery = Personnel::anciensTravailleurs()->personnelPrincipal();
+        if ($centreId) {
+            $anciensQuery->where('centre_id', $centreId);
+        }
+        $nbAnciens = $anciensQuery->count();
+
+        // Demandes en attente
+        $congesQuery = Conge::where('statut', 'soumis');
+        $absencesQuery = Absence::where('statut', 'soumis');
+        $demandesQuery = Demande::where('statut', 'soumis');
+
+        if ($centreId) {
+            $congesQuery->whereHas('personnel', fn($q) => $q->where('centre_id', $centreId));
+            $absencesQuery->whereHas('personnel', fn($q) => $q->where('centre_id', $centreId));
+            $demandesQuery->whereHas('personnel', fn($q) => $q->where('centre_id', $centreId));
+        }
+
+        $nbCongesSoumis   = $congesQuery->count();
+        $nbAbsencesSoumis = $absencesQuery->count();
+        $nbDemandesSoumis = $demandesQuery->count();
+
+        // Personnel en congé
+        $enConge = Conge::where('statut', 'approuve')
+            ->where('date_debut', '<=', now())
+            ->where('date_fin', '>=', now())
+            ->when($centreId, fn($q) => $q->whereHas('personnel', fn($q2) => $q2->where('centre_id', $centreId)))
+            ->with('personnel')
+            ->get();
+
+        // Effectifs par service
+        $parService = $personnels->groupBy('service')->map->count()->sortDesc();
+
+        // Contrats expirant bientôt
+        $contratsExpirantBientot = Contrat::where('statut', 'actif')
+            ->whereIn('type_contrat', ['CDD', 'Prestataire'])
+            ->whereNotNull('date_fin')
+            ->whereBetween('date_fin', [now(), now()->addDays(30)])
+            ->when($centreId, fn($q) => $q->whereHas('personnel', fn($q2) => $q2->where('centre_id', $centreId)))
+            ->with('personnel')
+            ->orderBy('date_fin')
+            ->get();
+
+        return view('dashboard.drh', compact(
+            'centre', 'centres', 'effectifTotal', 'hommes', 'femmes', 'nbAnciens',
+            'nbCongesSoumis', 'nbAbsencesSoumis', 'nbDemandesSoumis',
+            'enConge', 'parService', 'contratsExpirantBientot'
+        ));
+    }
+
+    private function dashboardAssistant(Request $request, ?int $centreId)
+    {
+        $centre = $centreId ? Centre::find($centreId) : null;
+
+        $query = Personnel::enPoste()->personnelPrincipal();
+        if ($centreId) {
+            $query->where('centre_id', $centreId);
+        }
+
+        $personnels = $query->get();
+        $effectifTotal = $personnels->count();
+        $hommes = $personnels->where('sexe', 'M')->count();
+        $femmes = $personnels->where('sexe', 'F')->count();
+
+        // Anciens
+        $anciensQuery = Personnel::anciensTravailleurs()->personnelPrincipal();
+        if ($centreId) {
+            $anciensQuery->where('centre_id', $centreId);
+        }
+        $anciens = $anciensQuery->latest()->take(5)->get();
+        $nbAnciens = $anciensQuery->count();
+
+        // Demandes soumises en attente de réponse DRH
+        $nbCongesSoumis   = Conge::where('statut', 'soumis')
+            ->when($centreId, fn($q) => $q->whereHas('personnel', fn($q2) => $q2->where('centre_id', $centreId)))
+            ->count();
+        $nbAbsencesSoumis = Absence::where('statut', 'soumis')
+            ->when($centreId, fn($q) => $q->whereHas('personnel', fn($q2) => $q2->where('centre_id', $centreId)))
+            ->count();
+        $nbDemandesSoumis = Demande::where('statut', 'soumis')
+            ->when($centreId, fn($q) => $q->whereHas('personnel', fn($q2) => $q2->where('centre_id', $centreId)))
+            ->count();
+
+        $enConge = Conge::where('statut', 'approuve')
+            ->where('date_debut', '<=', now())->where('date_fin', '>=', now())
+            ->when($centreId, fn($q) => $q->whereHas('personnel', fn($q2) => $q2->where('centre_id', $centreId)))
+            ->count();
+
+        return view('dashboard.assistant_rh', compact(
+            'centre', 'effectifTotal', 'hommes', 'femmes', 'nbAnciens', 'anciens',
+            'nbCongesSoumis', 'nbAbsencesSoumis', 'nbDemandesSoumis', 'enConge'
+        ));
+    }
+}
