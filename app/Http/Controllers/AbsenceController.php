@@ -37,14 +37,18 @@ class AbsenceController extends Controller
 
         // Filtrage par centre
         $user = auth()->user();
-        if (!$user->isGlobal() && $user->centre_id) {
+        if ($request->filled('centre_id')) {
+            $query->whereHas('personnel', fn($q) => $q->where('centre_id', $request->centre_id));
+        } elseif (!$user->isGlobal() && $user->centre_id) {
             $query->whereHas('personnel', fn($q) => $q->where('centre_id', $user->centre_id));
         }
 
         $absences = $query->paginate(20)->withQueryString();
         $types    = Absence::typesDisponibles();
+        $centres  = \App\Models\Centre::actifs()->orderBy('nom')->get();
+        $selectedCentreId = $request->get('centre_id');
 
-        return view('absences.index', compact('absences', 'types'));
+        return view('absences.index', compact('absences', 'types', 'centres', 'selectedCentreId'));
     }
 
     // ── Création ──────────────────────────────────────────────────────────────

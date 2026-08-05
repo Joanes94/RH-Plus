@@ -33,8 +33,18 @@
                 <option value="rejete"    {{ request('statut') === 'rejete'    ? 'selected' : '' }}>Rejetée</option>
             </select>
         </div>
+        @if(auth()->user()->isGlobal() && isset($centres))
+        <div class="input-wrapper select-wrapper filter-select" style="min-width:160px">
+            <select name="centre_id">
+                <option value="">Tous les centres</option>
+                @foreach($centres as $c)
+                    <option value="{{ $c->id }}" {{ (string)request('centre_id') === (string)$c->id ? 'selected' : '' }}>{{ $c->nom }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
         <button type="submit" class="btn-ghost btn-sm">Filtrer</button>
-        @if(request()->hasAny(['search','type_demande','statut']))
+        @if(request()->hasAny(['search','statut','type_demande','centre_id']))
             <a href="{{ route('demandes.index') }}" class="btn-ghost btn-sm">✕ Réinitialiser</a>
         @endif
     </form>

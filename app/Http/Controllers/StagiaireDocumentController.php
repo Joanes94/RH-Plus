@@ -213,49 +213,58 @@ class StagiaireDocumentController extends Controller
      */
     public function demandes(Request $request)
     {
-        $search = $request->get('search');
-        $statut = $request->get('statut');
-        $type   = $request->get('type'); // autorisation, attestation, evaluation
+        $search   = $request->get('search');
+        $statut   = $request->get('statut');
+        $type     = $request->get('type'); // autorisation, attestation, evaluation
+        $centreId = $request->get('centre_id');
+        $user     = auth()->user();
 
         $items = collect();
 
-        StagiaireDocument::with('stagiaire', 'creePar', 'approuvePar')
-            ->when($type && in_array($type, ['autorisation', 'attestation']), fn($q) => $q->where('type_document', $type))
-            ->when(!$type, fn($q) => $q)
-            ->get()
-            ->each(function (StagiaireDocument $d) use ($items) {
-                if (!$d->stagiaire) return;
-                $items->push([
-                    'type_slug'    => $d->type_document,
-                    'type_label'   => $d->type_document === 'autorisation' ? 'Autorisation de stage' : 'Attestation de stage',
-                    'stagiaire'    => $d->stagiaire,
-                    'statut'       => $d->statut,
-                    'statut_label' => $d->statut_label,
-                    'statut_color' => $d->statut_color,
-                    'cree_par'     => $d->creePar,
-                    'date'         => $d->created_at,
-                    'route_show'   => route('stagiaires.documents.show', [$d->stagiaire_id, $d->id]),
-                    'route_pdf'    => $d->statut === 'approuve' ? route('stagiaires.documents.pdf', [$d->stagiaire_id, $d->id]) : null,
-                ]);
-            });
+        $docQuery = StagiaireDocument::with('stagiaire', 'creePar', 'approuvePar')
+            ->when($type && in_array($type, ['autorisation', 'attestation']), fn($q) => $q->where('type_document', $type));
 
-        Evaluation::with('stagiaire', 'creePar', 'approuvePar')
-            ->get()
-            ->each(function (Evaluation $e) use ($items) {
-                if (!$e->stagiaire) return;
-                $items->push([
-                    'type_slug'    => 'evaluation',
-                    'type_label'   => "Fiche d'évaluation",
-                    'stagiaire'    => $e->stagiaire,
-                    'statut'       => $e->statut,
-                    'statut_label' => $e->statut_label,
-                    'statut_color' => $e->statut_color,
-                    'cree_par'     => $e->creePar,
-                    'date'         => $e->created_at,
-                    'route_show'   => route('evaluations.show', $e),
-                    'route_pdf'    => $e->statut === 'approuve' ? route('evaluations.document', $e) : null,
-                ]);
-            });
+        $evalQuery = Evaluation::with('stagiaire', 'creePar', 'approuvePar');
+
+        if ($centreId) {
+            $docQuery->whereHas('stagiaire', fn($q) => $q->where('centre_id', $centreId));
+            $evalQuery->whereHas('stagiaire', fn($q) => $q->where('centre_id', $centreId));
+        } elseif (!$user->isGlobal() && $user->centre_id) {
+            $docQuery->whereHas('stagiaire', fn($q) => $q->where('centre_id', $user->centre_id));
+            $evalQuery->whereHas('stagiaire', fn($q) => $q->where('centre_id', $user->centre_id));
+        }
+
+        $docQuery->get()->each(function (StagiaireDocument $d) use ($items) {
+            if (!$d->stagiaire) return;
+            $items->push([
+                'type_slug'    => $d->type_document,
+                'type_label'   => $d->type_document === 'autorisation' ? 'Autorisation de stage' : 'Attestation de stage',
+                'stagiaire'    => $d->stagiaire,
+                'statut'       => $d->statut,
+                'statut_label' => $d->statut_label,
+                'statut_color' => $d->statut_color,
+                'cree_par'     => $d->creePar,
+                'date'         => $d->created_at,
+                'route_show'   => route('stagiaires.documents.show', [$d->stagiaire_id, $d->id]),
+                'route_pdf'    => $d->statut === 'approuve' ? route('stagiaires.documents.pdf', [$d->stagiaire_id, $d->id]) : null,
+            ]);
+        });
+
+        $evalQuery->get()->each(function (Evaluation $e) use ($items) {
+            if (!$e->stagiaire) return;
+            $items->push([
+                'type_slug'    => 'evaluation',
+                'type_label'   => "Fiche d'évaluation",
+                'stagiaire'    => $e->stagiaire,
+                'statut'       => $e->statut,
+                'statut_label' => $e->statut_label,
+                'statut_color' => $e->statut_color,
+                'cree_par'     => $e->creePar,
+                'date'         => $e->created_at,
+                'route_show'   => route('evaluations.show', $e),
+                'route_pdf'    => $e->statut === 'approuve' ? route('evaluations.document', $e) : null,
+            ]);
+        });
 
         if ($type === 'evaluation') {
             $items = $items->where('type_slug', 'evaluation');
@@ -286,7 +295,9 @@ class StagiaireDocumentController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        return view('stagiaires.demandes.index', compact('demandes'));
+        $centres = \App\Models\Centre::actifs()->orderBy('nom')->get();
+
+        return view('stagiaires.demandes.index', compact('demandes', 'centres'));
     }
 
     /**

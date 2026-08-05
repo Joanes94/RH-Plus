@@ -167,6 +167,19 @@
         <h3>Période de stage</h3>
     </div>
     <div class="form-grid">
+        @if(isset($centres))
+        <div class="form-group fg-3">
+            <label>Centre hospitalier d'affectation</label>
+            <div class="input-wrapper select-wrapper">
+                <select name="centre_id">
+                    <option value="">— Sélectionner un centre —</option>
+                    @foreach($centres as $c)
+                        <option value="{{ $c->id }}" {{ old('centre_id', $stagiaire->centre_id ?? '') == $c->id ? 'selected' : '' }}>{{ $c->nom }} ({{ $c->code }})</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+        @endif
         <div class="form-group fg-3">
             <label>Service d'accueil</label>
             <div class="input-wrapper select-wrapper">

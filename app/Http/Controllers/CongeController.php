@@ -37,7 +37,9 @@ class CongeController extends Controller
 
         // Filtrage par centre
         $user = auth()->user();
-        if (!$user->isGlobal() && $user->centre_id) {
+        if ($request->filled('centre_id')) {
+            $query->whereHas('personnel', fn($q) => $q->where('centre_id', $request->centre_id));
+        } elseif (!$user->isGlobal() && $user->centre_id) {
             $query->whereHas('personnel', fn($q) => $q->where('centre_id', $user->centre_id));
         }
 
@@ -46,7 +48,10 @@ class CongeController extends Controller
         $annees = Conge::distinct()->orderByDesc('annee')->pluck('annee')->map(fn($a) => (string)$a)->toArray();
         if (empty($annees)) $annees = [(string)date('Y')];
 
-        return view('conges.index', compact('conges', 'annees'));
+        $centres = \App\Models\Centre::actifs()->orderBy('nom')->get();
+        $selectedCentreId = $request->get('centre_id');
+
+        return view('conges.index', compact('conges', 'annees', 'centres', 'selectedCentreId'));
     }
 
     // ── Création ──────────────────────────────────────────────────────────────

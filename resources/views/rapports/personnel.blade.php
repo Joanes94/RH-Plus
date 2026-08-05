@@ -19,6 +19,20 @@
 
             <form method="GET" action="{{ route('rapports.personnel') }}" id="filtreForm">
 
+                @if(auth()->user()->isGlobal() && isset($centres))
+                <div class="form-group">
+                    <label>Centre hospitalier</label>
+                    <div class="input-wrapper select-wrapper">
+                        <select name="centre_id" id="f_centre">
+                            <option value="">Tous les centres (Vue Globale)</option>
+                            @foreach($centres as $c)
+                                <option value="{{ $c->id }}" {{ ($filters['centre_id'] ?? '') == $c->id ? 'selected' : '' }}>{{ $c->nom }} ({{ $c->code }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                @endif
+
                 <div class="form-group">
                     <label>Service</label>
                     <div class="input-wrapper select-wrapper">

@@ -55,6 +55,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [UserManagementController::class, 'store'])->name('store');
         Route::get('/{user}/edit', [UserManagementController::class, 'edit'])->name('edit');
         Route::put('/{user}', [UserManagementController::class, 'update'])->name('update');
+        Route::get('/{user}/transferer', [UserManagementController::class, 'showTransferer'])->name('transferer');
+        Route::post('/{user}/transferer', [UserManagementController::class, 'transferer'])->name('transferer.store');
         Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
     });
 
@@ -228,3 +230,13 @@ Route::middleware('auth')->group(function () {
     // ── Signature pad (DRH) ───────────────────────────────────────────────────
     Route::post('/config-rh/signature-pad',               [ConfigRhController::class, 'saveSignaturePad'])->name('config-rh.signature-pad')->middleware('role:drh,drh_centre,crh,directeur_centre');
 });
+
+// ── Fallback Media Storage pour Windows (Servir les photos et uploads si storage:link n'est pas créé)
+Route::get('/storage/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (file_exists($fullPath)) {
+        $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+        return response()->file($fullPath, ['Content-Type' => $mime]);
+    }
+    abort(404);
+})->where('path', '.*')->name('storage.fallback');

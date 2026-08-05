@@ -198,11 +198,14 @@
         NB : Nous vous rappelons qu&apos;il faudra d&eacute;poser au service des Ressources Humaines,
         la fiche de reprise de service d&ucirc;ment remplie et sign&eacute;e par votre chef service
         d&egrave;s votre retour.
+        @if(!empty($redige_par_nom))
+            <div style="margin-top:4px; font-style:italic; font-size:10px; color:#555;">R&eacute;dig&eacute; par : {{ $redige_par_nom }}</div>
+        @endif
     </div>
 
     {{-- SIGNATURE --}}
     <div class="sig-wrap">
-        <div class="sig-titre">Directeur des Ressources Humaines</div>
+        <div class="sig-titre">{{ $drh_titre ?? 'Directeur des Ressources Humaines' }}</div>
         @if(!empty($signature_url))
             <div class="sig-img-wrap"><img src="{{ $signature_url }}" alt="Signature" class="sig-img"></div>
         @else

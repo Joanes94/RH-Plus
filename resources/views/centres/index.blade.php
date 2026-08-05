@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
 @section('title', 'Gestion des centres')
-@section('page-title', 'Centres de santé')
+@section('page-title', 'Centres de santé & Identité officielle')
 
 @section('content')
 <div class="page-header">
     <div>
         <h1 class="page-heading">Centres de santé</h1>
-        <p class="page-subtitle">{{ $centres->count() }} centres enregistrés</p>
+        <p class="page-subtitle">{{ $centres->count() }} centres enregistrés avec en-têtes et visuels officiels</p>
     </div>
     <button class="btn btn-primary" onclick="document.getElementById('modalAjout').showModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -19,14 +19,18 @@
     @foreach($centres as $centre)
     <div class="centre-card {{ $centre->actif ? '' : 'centre-inactif' }}">
         <div class="centre-card-header">
-            <div class="centre-icon" style="background: {{ ['#1a5c45','#3b82f6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#10b981','#6366f1'][$loop->index % 8] }}">
-                {{ substr($centre->code, 0, 2) }}
-            </div>
+            @if($centre->logo_url)
+                <img src="{{ $centre->logo_url }}" alt="Logo {{ $centre->nom }}" class="centre-logo-img">
+            @else
+                <div class="centre-icon" style="background: {{ ['#1a5c45','#3b82f6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#10b981','#6366f1'][$loop->index % 8] }}">
+                    {{ substr($centre->code, 0, 2) }}
+                </div>
+            @endif
             <div class="centre-meta">
                 <h3 class="centre-nom">{{ $centre->nom }}</h3>
                 <span class="centre-code">{{ $centre->code }}</span>
             </div>
-            <button class="btn-icon" onclick="openEditModal({{ $centre->id }})" title="Modifier">
+            <button class="btn-icon" onclick='openEditModal(@json($centre))' title="Modifier l'identité et les coordonnées">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
         </div>
@@ -48,6 +52,12 @@
                 <div class="info-row">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                     <span>{{ $centre->telephone }}</span>
+                </div>
+                @endif
+                @if($centre->reference_suffix)
+                <div class="info-row">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span style="font-family:monospace; font-size:0.75rem;">Réf: {{ $centre->reference_suffix }}</span>
                 </div>
                 @endif
             </div>
@@ -74,7 +84,7 @@
             <h2>Ajouter un centre</h2>
             <button type="button" onclick="document.getElementById('modalAjout').close()" class="modal-close">&times;</button>
         </div>
-        <form action="{{ route('centres.store') }}" method="POST">
+        <form action="{{ route('centres.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="modal-body">
                 <div class="form-grid">
@@ -95,8 +105,24 @@
                         <input type="text" name="telephone" id="telephone" class="form-control">
                     </div>
                     <div class="form-group full-width">
-                        <label for="adresse">Adresse</label>
+                        <label for="adresse">Adresse complète</label>
                         <input type="text" name="adresse" id="adresse" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="logo">Logo / Visuel officiel du centre</label>
+                        <input type="file" name="logo" id="logo" accept="image/*" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="reference_suffix">Suffixe de référence officiel (ex: CSVHHSL/DIR/DRH)</label>
+                        <input type="text" name="reference_suffix" id="reference_suffix" class="form-control" placeholder="CSVHHSL/DIR/DRH">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="entete_texte">Texte d'en-tête officiel pour les documents</label>
+                        <textarea name="entete_texte" id="entete_texte" rows="2" class="form-control" placeholder="CENTRE SANITAIRE ET DE SANTÉ..."></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="pied_page_texte">Pied de page / Mentions légales pour les documents</label>
+                        <textarea name="pied_page_texte" id="pied_page_texte" rows="2" class="form-control" placeholder="N° IFU: ... - Tél: ... - Email: ..."></textarea>
                     </div>
                     <div class="form-group">
                         <label class="checkbox-label">
@@ -114,6 +140,87 @@
         </form>
     </div>
 </dialog>
+
+{{-- Modal édition centre --}}
+<dialog id="modalEdit" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Modifier l'identité du centre</h2>
+            <button type="button" onclick="document.getElementById('modalEdit').close()" class="modal-close">&times;</button>
+        </div>
+        <form id="formEditCentre" action="" method="POST" enctype="multipart/form-data">
+            @csrf
+            @method('PUT')
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="edit_nom">Nom du centre *</label>
+                        <input type="text" name="nom" id="edit_nom" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_email">Email</label>
+                        <input type="email" name="email" id="edit_email" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_telephone">Téléphone</label>
+                        <input type="text" name="telephone" id="edit_telephone" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_reference_suffix">Suffixe de référence officiel</label>
+                        <input type="text" name="reference_suffix" id="edit_reference_suffix" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="edit_adresse">Adresse</label>
+                        <input type="text" name="adresse" id="edit_adresse" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="edit_logo">Nouveau Logo / Visuel (Laissez vide pour conserver l'actuel)</label>
+                        <input type="file" name="logo" id="edit_logo" accept="image/*" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="edit_entete_texte">Texte d'en-tête officiel</label>
+                        <textarea name="entete_texte" id="edit_entete_texte" rows="2" class="form-control"></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="edit_pied_page_texte">Pied de page / Mentions légales</label>
+                        <textarea name="pied_page_texte" id="edit_pied_page_texte" rows="2" class="form-control"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="hidden" name="a_drh_dedie" value="0">
+                            <input type="checkbox" name="a_drh_dedie" id="edit_a_drh_dedie" value="1">
+                            Ce centre a un DRH dédié
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="document.getElementById('modalEdit').close()" class="btn btn-secondary">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+@push('scripts')
+<script>
+function openEditModal(centre) {
+    const form = document.getElementById('formEditCentre');
+    form.action = `/centres/${centre.id}`;
+
+    document.getElementById('edit_nom').value = centre.nom || '';
+    document.getElementById('edit_email').value = centre.email || '';
+    document.getElementById('edit_telephone').value = centre.telephone || '';
+    document.getElementById('edit_reference_suffix').value = centre.reference_suffix || '';
+    document.getElementById('edit_adresse').value = centre.adresse || '';
+    document.getElementById('edit_entete_texte').value = centre.entete_texte || '';
+    document.getElementById('edit_pied_page_texte').value = centre.pied_page_texte || '';
+    document.getElementById('edit_a_drh_dedie').checked = Boolean(centre.a_drh_dedie);
+
+    document.getElementById('modalEdit').showModal();
+}
+</script>
+@endpush
 
 @push('styles')
 <style>
@@ -135,6 +242,11 @@
 .centre-card-header {
     display: flex; align-items: center; gap: 0.75rem;
     padding: 1.25rem 1.25rem 0.75rem;
+}
+.centre-logo-img {
+    width: 44px; height: 44px;
+    object-fit: contain; border-radius: 10px;
+    border: 1px solid #f0f0f0; padding: 2px;
 }
 .centre-icon {
     width: 44px; height: 44px;
@@ -174,9 +286,8 @@
 .badge-inactif { background: rgba(239,68,68,0.1); color: #b91c1c; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; }
 
 /* Modal */
-.modal { border: none; border-radius: 20px; padding: 0; max-width: 560px; width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+.modal { border: none; border-radius: 20px; padding: 0; max-width: 620px; width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
 .modal::backdrop { background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
-.modal-content { }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f0f0f0; }
 .modal-header h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
 .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #9ca3af; padding: 0; line-height: 1; }
@@ -186,6 +297,7 @@
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .full-width { grid-column: 1 / -1; }
 .checkbox-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; }
+.form-control { width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.88rem; }
 </style>
 @endpush
-@endsection
+@section('title', 'Gestion des centres')

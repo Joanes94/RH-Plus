@@ -8,6 +8,10 @@ use App\Models\Absence;
 use App\Models\Demande;
 use App\Models\Personnel;
 use App\Models\Contrat;
+use App\Models\Stagiaire;
+use App\Models\StagiaireDocument;
+use App\Models\Evaluation;
+use App\Models\Avancement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -41,6 +45,7 @@ class DashboardController extends Controller
      */
     public function dashboardGlobal(Request $request)
     {
+        $selectedCentreId = $request->get('centre_id');
         $centres = Centre::actifs()->orderBy('nom')->get();
 
         $stats = [];
@@ -55,24 +60,38 @@ class DashboardController extends Controller
                 'cdd'          => (clone $personnelsCentre)->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'CDD'))->count(),
                 'cdi'          => (clone $personnelsCentre)->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'CDI'))->count(),
                 'prestataires' => (clone $personnelsCentre)->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'Prestataire'))->count(),
+                'stagiaires'   => Stagiaire::where('centre_id', $centre->id)->where('statut', 'en_cours')->count(),
             ];
         }
 
-        // Totaux globaux
-        $totaux = [
-            'total'        => array_sum(array_column($stats, 'total')),
-            'hommes'       => array_sum(array_column($stats, 'hommes')),
-            'femmes'       => array_sum(array_column($stats, 'femmes')),
-            'cdd'          => array_sum(array_column($stats, 'cdd')),
-            'cdi'          => array_sum(array_column($stats, 'cdi')),
-            'prestataires' => array_sum(array_column($stats, 'prestataires')),
-        ];
+        // Totaux globaux (ou filtrés si un centre est sélectionné)
+        if ($selectedCentreId && isset($stats[$selectedCentreId])) {
+            $totaux = $stats[$selectedCentreId];
+            $totaux['stagiaires'] = $stats[$selectedCentreId]['stagiaires'];
+        } else {
+            $totaux = [
+                'total'        => array_sum(array_column($stats, 'total')),
+                'hommes'       => array_sum(array_column($stats, 'hommes')),
+                'femmes'       => array_sum(array_column($stats, 'femmes')),
+                'cdd'          => array_sum(array_column($stats, 'cdd')),
+                'cdi'          => array_sum(array_column($stats, 'cdi')),
+                'prestataires' => array_sum(array_column($stats, 'prestataires')),
+                'stagiaires'   => array_sum(array_column($stats, 'stagiaires')),
+            ];
+        }
+
+        // Stagiaires globaux sans centre attribué si vue globale
+        if (!$selectedCentreId) {
+            $stagiairesNonAffectes = Stagiaire::whereNull('centre_id')->where('statut', 'en_cours')->count();
+            $totaux['stagiaires'] += $stagiairesNonAffectes;
+        }
 
         // Alertes globales
         $contratsExpirantBientot = Contrat::where('statut', 'actif')
             ->whereIn('type_contrat', ['CDD', 'Prestataire'])
             ->whereNotNull('date_fin')
             ->whereBetween('date_fin', [Carbon::today(), Carbon::today()->addDays(30)])
+            ->when($selectedCentreId, fn($q) => $q->whereHas('personnel', fn($q2) => $q2->where('centre_id', $selectedCentreId)))
             ->with('personnel.centre')
             ->orderBy('date_fin')
             ->get();
@@ -80,18 +99,43 @@ class DashboardController extends Controller
         $retraitesImminentes = Personnel::enPoste()
             ->whereNotNull('date_naissance')
             ->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'CDI'))
+            ->when($selectedCentreId, fn($q) => $q->where('centre_id', $selectedCentreId))
             ->get()
             ->filter(fn($p) => $p->date_naissance && $p->date_naissance->copy()->addYears(60)->between(Carbon::today(), Carbon::today()->addMonths(3)))
             ->values();
 
-        $nbCongesSoumis   = Conge::where('statut', 'soumis')->count();
-        $nbAbsencesSoumis = Absence::where('statut', 'soumis')->count();
-        $nbDemandesSoumis = Demande::where('statut', 'soumis')->count();
+        // Compteurs de demandes en attente
+        $congesQuery = Conge::where('statut', 'soumis');
+        $absencesQuery = Absence::where('statut', 'soumis');
+        $demandesQuery = Demande::where('statut', 'soumis');
+        $stagiaireDocsQuery = StagiaireDocument::where('statut', 'soumis');
+        $evaluationsQuery = Evaluation::where('statut', 'soumis');
+        $avancementsQuery = Avancement::where('statut', 'soumis');
+
+        if ($selectedCentreId) {
+            $congesQuery->whereHas('personnel', fn($q) => $q->where('centre_id', $selectedCentreId));
+            $absencesQuery->whereHas('personnel', fn($q) => $q->where('centre_id', $selectedCentreId));
+            $demandesQuery->whereHas('personnel', fn($q) => $q->where('centre_id', $selectedCentreId));
+            $stagiaireDocsQuery->whereHas('stagiaire', fn($q) => $q->where('centre_id', $selectedCentreId));
+            $evaluationsQuery->whereHas('stagiaire', fn($q) => $q->where('centre_id', $selectedCentreId));
+            $avancementsQuery->whereHas('personnel', fn($q) => $q->where('centre_id', $selectedCentreId));
+        }
+
+        $nbCongesSoumis      = $congesQuery->count();
+        $nbAbsencesSoumis    = $absencesQuery->count();
+        $nbDemandesSoumis    = $demandesQuery->count();
+        $nbStagiaireDocs     = $stagiaireDocsQuery->count();
+        $nbEvaluationsSoumis = $evaluationsQuery->count();
+        $nbAvancementsSoumis = $avancementsQuery->count();
+
+        $nbDemandesTotal = $nbCongesSoumis + $nbAbsencesSoumis + $nbDemandesSoumis + $nbStagiaireDocs + $nbEvaluationsSoumis;
 
         return view('dashboard.global', compact(
-            'centres', 'stats', 'totaux',
+            'centres', 'stats', 'totaux', 'selectedCentreId',
             'contratsExpirantBientot', 'retraitesImminentes',
-            'nbCongesSoumis', 'nbAbsencesSoumis', 'nbDemandesSoumis'
+            'nbCongesSoumis', 'nbAbsencesSoumis', 'nbDemandesSoumis',
+            'nbStagiaireDocs', 'nbEvaluationsSoumis', 'nbAvancementsSoumis',
+            'nbDemandesTotal'
         ));
     }
 

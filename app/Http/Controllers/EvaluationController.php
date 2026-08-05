@@ -48,9 +48,17 @@ class EvaluationController extends Controller
             $query->where('stagiaire_id', $request->stagiaire_id);
         }
 
-        $evaluations = $query->paginate(20)->withQueryString();
+        $user = auth()->user();
+        if ($request->filled('centre_id')) {
+            $query->whereHas('stagiaire', fn($q) => $q->where('centre_id', $request->centre_id));
+        } elseif (!$user->isGlobal() && $user->centre_id) {
+            $query->whereHas('stagiaire', fn($q) => $q->where('centre_id', $user->centre_id));
+        }
 
-        return view('evaluations.index', compact('evaluations'));
+        $evaluations = $query->paginate(20)->withQueryString();
+        $centres = \App\Models\Centre::actifs()->orderBy('nom')->get();
+
+        return view('evaluations.index', compact('evaluations', 'centres'));
     }
 
     // ── Création ──────────────────────────────────────────────────────────────

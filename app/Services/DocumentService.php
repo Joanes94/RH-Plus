@@ -76,17 +76,26 @@ class DocumentService
     public function buildCongeData(Conge $conge): array
     {
         $p = $conge->personnel;
+        $c = $p?->centre;
+        $currentUser = auth()->user();
+        $approuvePar = $conge->approuvePar ?? $currentUser;
+        $redigePar   = $conge->creator ?? $currentUser;
 
         return [
-            'type'          => 'conge',
-            'document'      => $conge,
-            'personnel'     => $p,
-            'drh_nom'       => ConfigRh::get('drh_nom',   'Nom du DRH'),
-            'drh_titre'     => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
-            'organisation'  => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
-            'ville'         => ConfigRh::get('ville', 'Cotonou'),
-            'signature_url' => $this->resolveSignature($conge->signature_path),
-            'date_doc'      => $conge->approuve_le
+            'type'            => 'conge',
+            'document'        => $conge,
+            'personnel'       => $p,
+            'centre'          => $c,
+            'redige_par_nom'  => $redigePar?->nom_complet,
+            'drh_nom'         => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', 'Nom du DRH'),
+            'drh_titre'       => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
+            'organisation'    => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
+            'ville'           => ConfigRh::get('ville', 'Cotonou'),
+            'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($conge->signature_path),
+            'centre_logo'     => $c?->logo_url,
+            'entete_texte'    => $c?->entete_texte,
+            'pied_page_texte' => $c?->pied_page_texte,
+            'date_doc'        => $conge->approuve_le
                 ? $conge->approuve_le->isoFormat('D MMMM YYYY')
                 : now()->isoFormat('D MMMM YYYY'),
         ];
@@ -95,17 +104,26 @@ class DocumentService
     public function buildAbsenceData(Absence $absence): array
     {
         $p = $absence->personnel;
+        $c = $p?->centre;
+        $currentUser = auth()->user();
+        $approuvePar = $absence->approuvePar ?? $currentUser;
+        $redigePar   = $absence->creator ?? $currentUser;
 
         return [
-            'type'          => 'absence',
-            'document'      => $absence,
-            'personnel'     => $p,
-            'drh_nom'       => ConfigRh::get('drh_nom',   'Nom du DRH'),
-            'drh_titre'     => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
-            'organisation'  => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
-            'ville'         => ConfigRh::get('ville', 'Cotonou'),
-            'signature_url' => $this->resolveSignature($absence->signature_path),
-            'date_doc'      => $absence->approuve_le
+            'type'            => 'absence',
+            'document'        => $absence,
+            'personnel'       => $p,
+            'centre'          => $c,
+            'redige_par_nom'  => $redigePar?->nom_complet,
+            'drh_nom'         => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', 'Nom du DRH'),
+            'drh_titre'       => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
+            'organisation'    => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
+            'ville'           => ConfigRh::get('ville', 'Cotonou'),
+            'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($absence->signature_path),
+            'centre_logo'     => $c?->logo_url,
+            'entete_texte'    => $c?->entete_texte,
+            'pied_page_texte' => $c?->pied_page_texte,
+            'date_doc'        => $absence->approuve_le
                 ? $absence->approuve_le->isoFormat('D MMMM YYYY')
                 : now()->isoFormat('D MMMM YYYY'),
         ];

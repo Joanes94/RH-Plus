@@ -213,12 +213,19 @@ class Personnel extends Model
     }
 
     public function getPhotoUrlAttribute(): ?string
-{
-    if ($this->photo_path && Storage::disk('public')->exists($this->photo_path)) {
-        return Storage::url($this->photo_path);
+    {
+        if (!$this->photo_path) {
+            return null;
+        }
+
+        $cleanPath = ltrim(str_replace(['public/', 'storage/'], '', $this->photo_path), '/');
+
+        if (Storage::disk('public')->exists($cleanPath) || file_exists(storage_path('app/public/' . $cleanPath)) || file_exists(public_path('storage/' . $cleanPath))) {
+            return asset('storage/' . $cleanPath);
+        }
+
+        return null;
     }
-    return null;
-}
 
     public function isActif(): bool { return $this->statut === 'actif'; }
 

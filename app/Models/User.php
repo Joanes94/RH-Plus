@@ -18,6 +18,8 @@ class User extends Authenticatable
         'role',
         'password',
         'centre_id',
+        'signature_path',
+        'titre_officiel',
     ];
 
     protected $hidden = [
@@ -40,11 +42,57 @@ class User extends Authenticatable
         return $this->belongsTo(Centre::class);
     }
 
+    public function historiques()
+    {
+        return $this->hasMany(UserHistorique::class, 'user_id')->orderByDesc('date_transfert');
+    }
+
     // ── Accessors ─────────────────────────────────────────────────────────────
 
     public function getNomCompletAttribute(): string
     {
         return $this->prenoms . ' ' . strtoupper($this->nom);
+    }
+
+    public function getTitreEffectifAttribute(): string
+    {
+        if (!empty($this->titre_officiel)) {
+            return $this->titre_officiel;
+        }
+        return $this->role_label;
+    }
+
+    public function getSignatureUrlAttribute(): ?string
+    {
+        if (!$this->signature_path) {
+            return null;
+        }
+
+        $cleanPath = ltrim(str_replace(['public/', 'storage/'], '', $this->signature_path), '/');
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanPath) || file_exists(storage_path('app/public/' . $cleanPath)) || file_exists(public_path('storage/' . $cleanPath))) {
+            return asset('storage/' . $cleanPath);
+        }
+
+        return null;
+    }
+
+    public function getSignatureBase64Attribute(): ?string
+    {
+        if (!$this->signature_path) {
+            return null;
+        }
+
+        $fullPath = storage_path('app/public/' . ltrim(str_replace(['public/', 'storage/'], '', $this->signature_path), '/'));
+
+        if (!file_exists($fullPath)) {
+            return null;
+        }
+
+        $mime = mime_content_type($fullPath) ?: 'image/png';
+        $encoded = base64_encode(file_get_contents($fullPath));
+
+        return "data:{$mime};base64,{$encoded}";
     }
 
     public function getRoleLabelAttribute(): string
@@ -109,13 +157,25 @@ class User extends Authenticatable
     /** L'utilisateur est-il en mode lecture seule ? */
     public function isReadOnly(): bool
     {
-        return in_array($this->role, ['ddrh', 'directeur_centre']);
+        if (in_array($this->role, ['ddrh', 'ddis'])) {
+            return true;
+        }
+        if ($this->isDirecteurCentre() && $this->centre?->a_drh_dedie) {
+            return true;
+        }
+        return false;
     }
 
     /** L'utilisateur peut-il approuver des demandes (DRH, Directeur faisant office, ou CRH) ? */
     public function canApprove(): bool
     {
-        return in_array($this->role, ['crh', 'drh_centre', 'drh', 'directeur_centre']);
+        if ($this->isCRH() || $this->isDRH()) {
+            return true;
+        }
+        if ($this->isDirecteurCentre()) {
+            return !$this->centre?->a_drh_dedie;
+        }
+        return false;
     }
 
     /** L'utilisateur peut-il gérer un centre donné ? */

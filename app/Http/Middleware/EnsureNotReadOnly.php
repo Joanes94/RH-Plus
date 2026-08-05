@@ -21,19 +21,22 @@ class EnsureNotReadOnly
             return redirect()->route('login');
         }
 
-        // Le DDRH est toujours en lecture seule
-        if ($user->isDDRH()) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Accès en lecture seule.'], 403);
+        // DDRH et DDIS sont en mode lecture seule globale (sauf approbation des bonifications Art 88 pour DDIS)
+        if ($user->isDDRH() || $user->isDDIS()) {
+            if ($user->isDDIS() && ($request->routeIs('avancements.approuver') || $request->routeIs('avancements.rejeter'))) {
+                return $next($request);
             }
-            abort(403, 'Votre rôle est en mode lecture seule. Vous ne pouvez pas effectuer de modifications.');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Accès en lecture seule pour DDRH / DDIS.'], 403);
+            }
+            abort(403, 'Votre rôle (DDIS / DDRH) est en mode lecture seule. Vous ne pouvez pas effectuer de modifications.');
         }
 
         // Le Directeur est en lecture seule SAUF dans les centres sans DRH dédié
         // (où il fait office de DRH)
         if ($user->isDirecteurCentre()) {
             $centre = $user->centre;
-            // Si le centre a un DRH dédié, le directeur est en lecture seule
             if ($centre && $centre->a_drh_dedie) {
                 if ($request->expectsJson()) {
                     return response()->json(['message' => 'Accès en lecture seule.'], 403);

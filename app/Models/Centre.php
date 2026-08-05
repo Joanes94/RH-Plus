@@ -8,12 +8,21 @@ class Centre extends Model
 {
     protected $fillable = [
         'nom', 'code', 'email', 'adresse', 'telephone', 'a_drh_dedie', 'actif',
+        'logo_path', 'entete_texte', 'pied_page_texte', 'reference_suffix',
     ];
 
     protected $casts = [
         'a_drh_dedie' => 'boolean',
-        'actif' => 'boolean',
+        'actif'       => 'boolean',
     ];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        if ($this->logo_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->logo_path)) {
+            return \Illuminate\Support\Facades\Storage::url($this->logo_path);
+        }
+        return null;
+    }
 
     // ── Relations ─────────────────────────────────────────────────────────────
 

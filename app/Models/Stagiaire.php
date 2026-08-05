@@ -22,8 +22,21 @@ class Stagiaire extends Model
         'date_debut_stage', 'date_fin_stage', 'type_stage',
         'observations',
         'contact_urgence_nom', 'contact_urgence_telephone',
-        'statut', 'created_by',
+        'statut', 'created_by', 'centre_id',
     ];
+
+    public function scopeForCentre($query, $centreId)
+    {
+        return $query->where('centre_id', $centreId);
+    }
+
+    public function scopeForUser($query, $user)
+    {
+        if ($user->isGlobal()) {
+            return $query;
+        }
+        return $query->where('centre_id', $user->centre_id);
+    }
 
     protected $casts = [
         'date_naissance'              => 'date',
@@ -87,9 +100,16 @@ class Stagiaire extends Model
 
     public function getPhotoUrlAttribute(): ?string
     {
-        if ($this->photo_path && Storage::disk('public')->exists($this->photo_path)) {
-            return Storage::url($this->photo_path);
+        if (!$this->photo_path) {
+            return null;
         }
+
+        $cleanPath = ltrim(str_replace(['public/', 'storage/'], '', $this->photo_path), '/');
+
+        if (Storage::disk('public')->exists($cleanPath) || file_exists(storage_path('app/public/' . $cleanPath)) || file_exists(public_path('storage/' . $cleanPath))) {
+            return asset('storage/' . $cleanPath);
+        }
+
         return null;
     }
 
@@ -109,5 +129,10 @@ class Stagiaire extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function centre()
+    {
+        return $this->belongsTo(Centre::class);
     }
 }

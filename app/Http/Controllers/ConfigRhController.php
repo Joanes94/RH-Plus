@@ -91,10 +91,11 @@ class ConfigRhController extends Controller
         }
 
         // Sauvegarder en PNG
-        $filename = 'signatures/signature_drh_' . time() . '.png';
+        $filename = 'signatures/signature_user_' . auth()->id() . '_' . time() . '.png';
         Storage::disk('public')->put($filename, $decoded);
 
         ConfigRh::set('drh_signature_path', $filename);
+        auth()->user()->update(['signature_path' => $filename]);
 
         return response()->json([
             'success' => true,
@@ -105,6 +106,10 @@ class ConfigRhController extends Controller
 
     public function storeFerie(Request $request)
     {
+        if (!auth()->user()->isCRH()) {
+            abort(403, 'Seul le Conseiller RH (CRH) est autorisé à ajouter des jours fériés.');
+        }
+
         $data = $request->validate([
             'date'    => 'required|date',
             'libelle' => 'required|string|max:150',
@@ -123,6 +128,10 @@ class ConfigRhController extends Controller
 
     public function destroyFerie(JourFerie $jourFerie)
     {
+        if (!auth()->user()->isCRH()) {
+            abort(403, 'Seul le Conseiller RH (CRH) est autorisé à supprimer des jours fériés.');
+        }
+
         $annee = $jourFerie->annee;
         $jourFerie->delete();
         return redirect()->route('config-rh.index', ['annee' => $annee])
@@ -131,6 +140,10 @@ class ConfigRhController extends Controller
 
     public function importFixesBenin(Request $request)
     {
+        if (!auth()->user()->isCRH()) {
+            abort(403, 'Seul le Conseiller RH (CRH) est autorisé à importer des jours fériés.');
+        }
+
         $annee = $request->input('annee', date('Y'));
         $jours = JourFerie::joursFixesBenin((int)$annee);
         $count = 0;

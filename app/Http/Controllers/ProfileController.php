@@ -23,17 +23,26 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
-        $request->validate([
-            'nom'       => 'required|string|max:100',
-            'prenoms'   => 'required|string|max:150',
-            'sexe'      => 'required|in:M,F',
-            'email'     => 'required|email|unique:users,email,' . $user->id,
-            'telephone' => 'nullable|string|max:20',
+        $validated = $request->validate([
+            'nom'            => 'required|string|max:100',
+            'prenoms'        => 'required|string|max:150',
+            'sexe'           => 'required|in:M,F',
+            'email'          => 'required|email|unique:users,email,' . $user->id,
+            'telephone'      => 'nullable|string|max:20',
+            'titre_officiel' => 'nullable|string|max:200',
+            'signature'      => 'nullable|image|max:2048|mimes:jpeg,png,jpg',
         ]);
 
-        $user->update($request->only('nom', 'prenoms', 'sexe', 'email', 'telephone'));
+        if ($request->hasFile('signature')) {
+            if ($user->signature_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->signature_path);
+            }
+            $validated['signature_path'] = $request->file('signature')->store('signatures/users', 'public');
+        }
 
-        return redirect()->route('profile.show')->with('success', 'Profil mis à jour avec succès.');
+        $user->update($validated);
+
+        return redirect()->route('profile.show')->with('success', 'Profil et signature mis à jour avec succès.');
     }
 
     public function updatePassword(Request $request)

@@ -19,10 +19,10 @@ class RapportController extends Controller
     public function personnel(Request $request)
     {
         $user = auth()->user();
-        $isGlobal = $user?->isGlobal() || $user?->isCRH();
+        $centreId = $request->filled('centre_id') && $user?->isGlobal() ? (int)$request->centre_id : (!$user?->isGlobal() ? $user?->centre_id : null);
 
         // Stats de prévisualisation selon les filtres
-        $query = $this->buildQuery($request, $isGlobal ? null : $user?->centre_id);
+        $query = $this->buildQuery($request, $centreId);
 
         // "En congé" n'est pas une valeur stockée dans personnels.statut : c'est
         // un état calculé à partir des congés approuvés couvrant la date du jour.
@@ -52,7 +52,8 @@ class RapportController extends Controller
             'services'     => Personnel::services(),
             'corporations' => Personnel::corporations(),
             'contrats'     => Personnel::typesContrat(),
-            'filters'      => $request->only('service', 'sexe', 'statut', 'type_contrat', 'corporation'),
+            'centres'      => \App\Models\Centre::actifs()->orderBy('nom')->get(),
+            'filters'      => $request->only('service', 'sexe', 'statut', 'type_contrat', 'corporation', 'centre_id'),
             'stats'        => $stats,
             'apercu'       => $apercu,
         ]);

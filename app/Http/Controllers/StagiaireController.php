@@ -12,9 +12,8 @@ class StagiaireController extends Controller
     // ── Liste ─────────────────────────────────────────────────────────────────
     public function index(Request $request)
     {
-        $query = Stagiaire::query();
+        $query = Stagiaire::query()->with('centre');
         $user = auth()->user();
-        $isGlobal = $user?->isGlobal() || $user?->isCRH();
 
         if ($request->filled('search')) {
             $mots = preg_split('/\s+/', trim($request->search), -1, PREG_SPLIT_NO_EMPTY);
@@ -31,21 +30,38 @@ class StagiaireController extends Controller
         if ($request->filled('statut'))  $query->where('statut',  $request->statut);
         if ($request->filled('sexe'))    $query->where('sexe',    $request->sexe);
 
+        // Filtrage par centre
+        if ($request->filled('centre_id')) {
+            $query->where('centre_id', $request->centre_id);
+        } elseif (!$user->isGlobal() && $user->centre_id) {
+            $query->where('centre_id', $user->centre_id);
+        }
+
         $stagiaires = $query->orderBy('nom')->paginate(20)->withQueryString();
 
+        $statsQuery = Stagiaire::query();
+        if ($request->filled('centre_id')) {
+            $statsQuery->where('centre_id', $request->centre_id);
+        } elseif (!$user->isGlobal() && $user->centre_id) {
+            $statsQuery->where('centre_id', $user->centre_id);
+        }
+
         $stats = [
-            'total'     => Stagiaire::count(),
-            'en_cours'  => Stagiaire::where('statut', 'en_cours')->count(),
-            'termines'  => Stagiaire::where('statut', 'termine')->count(),
-            'hommes'    => Stagiaire::count() > 0 ? Stagiaire::where('sexe', 'M')->count() : 0,
-            'femmes'    => Stagiaire::count() > 0 ? Stagiaire::where('sexe', 'F')->count() : 0,
+            'total'     => (clone $statsQuery)->count(),
+            'en_cours'  => (clone $statsQuery)->where('statut', 'en_cours')->count(),
+            'termines'  => (clone $statsQuery)->where('statut', 'termine')->count(),
+            'hommes'    => (clone $statsQuery)->where('sexe', 'M')->count(),
+            'femmes'    => (clone $statsQuery)->where('sexe', 'F')->count(),
         ];
+
+        $centres = \App\Models\Centre::actifs()->orderBy('nom')->get();
 
         return view('stagiaires.index', [
             'stagiaires' => $stagiaires,
             'stats'      => $stats,
             'services'   => \App\Models\Personnel::services(),
-            'filters'    => $request->only('search', 'service', 'statut', 'sexe'),
+            'centres'    => $centres,
+            'filters'    => $request->only('search', 'service', 'statut', 'sexe', 'centre_id'),
         ]);
     }
 
@@ -56,6 +72,7 @@ class StagiaireController extends Controller
             'niveaux'    => Stagiaire::niveauxEtude(),
             'situations' => Stagiaire::situationsMatrimoniales(),
             'services'   => \App\Models\Personnel::services(),
+            'centres'    => \App\Models\Centre::actifs()->orderBy('nom')->get(),
         ]);
     }
 
@@ -63,6 +80,11 @@ class StagiaireController extends Controller
     {
         $data = $this->valider($request);
         $data['created_by'] = Auth::id();
+
+        // Par défaut le centre de l'utilisateur connecté si non renseigné
+        if (empty($data['centre_id']) && auth()->user()->centre_id) {
+            $data['centre_id'] = auth()->user()->centre_id;
+        }
 
         // Photo
         if ($request->hasFile('photo')) {
@@ -79,6 +101,7 @@ class StagiaireController extends Controller
     // ── Détail ────────────────────────────────────────────────────────────────
     public function show(Stagiaire $stagiaire)
     {
+        $stagiaire->load('centre');
         return view('stagiaires.show', compact('stagiaire'));
     }
 
@@ -90,6 +113,7 @@ class StagiaireController extends Controller
             'niveaux'    => Stagiaire::niveauxEtude(),
             'situations' => Stagiaire::situationsMatrimoniales(),
             'services'   => \App\Models\Personnel::services(),
+            'centres'    => \App\Models\Centre::actifs()->orderBy('nom')->get(),
         ]);
     }
 
@@ -127,6 +151,7 @@ class StagiaireController extends Controller
             'nom'                           => 'required|string|max:100',
             'prenoms'                       => 'required|string|max:150',
             'email'                         => 'nullable|email|unique:stagiaires,email,' . $ignoreId,
+            'centre_id'                     => 'nullable|exists:centres,id',
             'date_naissance'                => 'nullable|date',
             'lieu_naissance'                => 'nullable|string|max:150',
             'sexe'                          => 'required|in:M,F',

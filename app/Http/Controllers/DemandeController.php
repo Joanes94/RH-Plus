@@ -33,14 +33,18 @@ class DemandeController extends Controller
 
         // Filtrage par centre
         $user = auth()->user();
-        if (!$user->isGlobal() && $user->centre_id) {
+        if ($request->filled('centre_id')) {
+            $query->whereHas('personnel', fn($q) => $q->where('centre_id', $request->centre_id));
+        } elseif (!$user->isGlobal() && $user->centre_id) {
             $query->whereHas('personnel', fn($q) => $q->where('centre_id', $user->centre_id));
         }
 
         $demandes  = $query->paginate(20)->withQueryString();
         $catalogue = Demande::catalogue();
+        $centres   = \App\Models\Centre::actifs()->orderBy('nom')->get();
+        $selectedCentreId = $request->get('centre_id');
 
-        return view('demandes.index', compact('demandes', 'catalogue'));
+        return view('demandes.index', compact('demandes', 'catalogue', 'centres', 'selectedCentreId'));
     }
 
     // ── Formulaire de création ────────────────────────────────────────────────

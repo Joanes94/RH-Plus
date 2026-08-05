@@ -80,6 +80,10 @@ class PersonnelController extends Controller
     // ── Création ──────────────────────────────────────────────────────────────
     public function create()
     {
+        if (!Auth::user()?->isCRH()) {
+            abort(403, 'Seul le Conseiller RH (CRH) est autorisé à créer du personnel.');
+        }
+
         return view('personnel.create', [
             'corporations' => Personnel::corporations(),
             'services'     => Personnel::services(),
@@ -91,6 +95,10 @@ class PersonnelController extends Controller
 
     public function store(Request $request)
     {
+        if (!Auth::user()?->isCRH()) {
+            abort(403, 'Seul le Conseiller RH (CRH) est autorisé à créer du personnel.');
+        }
+
         $data = $this->validatePersonnel($request);
         $data['created_by'] = Auth::id();
         $this->syncCentreSelection($data);
@@ -234,11 +242,19 @@ class PersonnelController extends Controller
     // ── Import Excel ──────────────────────────────────────────────────────────
     public function importForm()
     {
+        if (!Auth::user()?->isCRH()) {
+            abort(403, 'Seul le Conseiller RH (CRH) est autorisé à importer du personnel.');
+        }
+
         return view('personnel.import');
     }
 
     public function import(Request $request)
     {
+        if (!Auth::user()?->isCRH()) {
+            abort(403, 'Seul le Conseiller RH (CRH) est autorisé à importer du personnel.');
+        }
+
         $request->validate([
             'fichier' => 'required|file|mimes:xlsx,xls,csv|max:5120',
         ]);

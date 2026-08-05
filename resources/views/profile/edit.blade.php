@@ -9,7 +9,7 @@
         <h3>Informations personnelles</h3>
     </div>
 
-    <form method="POST" action="{{ route('profile.update') }}" class="profile-form">
+    <form method="POST" action="{{ route('profile.update') }}" class="profile-form" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -51,13 +51,34 @@
             </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group mb-15">
             <label for="email">Adresse email <span class="req">*</span></label>
             <div class="input-wrapper">
                 <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}"
                        class="{{ $errors->has('email') ? 'is-invalid' : '' }}">
             </div>
             @error('email') <span class="field-error">{{ $message }}</span> @enderror
+        </div>
+
+        <div class="form-group mb-15">
+            <label for="titre_officiel">Titre officiel sur les documents (Ex: Le Directeur des Ressources Humaines)</label>
+            <div class="input-wrapper">
+                <input type="text" id="titre_officiel" name="titre_officiel" value="{{ old('titre_officiel', $user->titre_officiel) }}"
+                       placeholder="Ex: Le Directeur des Ressources Humaines du CSVH St Luc">
+            </div>
+        </div>
+
+        <div class="form-group mb-20">
+            <label for="signature">Ma Signature manuscrite (Image JPG/PNG)</label>
+            @if($user->signature_url)
+                <div style="margin-bottom:8px;">
+                    <img src="{{ $user->signature_url }}" alt="Ma signature" style="max-height:60px; border:1px solid #e5e7eb; padding:4px; border-radius:6px; background:#fff;">
+                </div>
+            @endif
+            <div class="input-wrapper">
+                <input type="file" id="signature" name="signature" accept="image/png,image/jpeg,image/jpg" class="form-control">
+            </div>
+            @error('signature') <span class="field-error">{{ $message }}</span> @enderror
         </div>
 
         <div class="form-actions">

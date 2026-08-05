@@ -134,6 +134,7 @@
                 </form>
             </div>
 
+            @if(auth()->user()->isCRH())
             <div class="import-fixes-bar">
                 <div>
                     <p class="text-sm">Importer les jours fériés officiels du Bénin pour {{ $annee }}</p>
@@ -148,6 +149,7 @@
                     </button>
                 </form>
             </div>
+            @endif
 
             <div class="feries-list">
                 @forelse($feries as $f)
@@ -162,6 +164,7 @@
                             {{ $f->type === 'mobile' ? 'Mobile' : 'Fixe' }}
                         </span>
                     </div>
+                    @if(auth()->user()->isCRH())
                     <form method="POST" action="{{ route('config-rh.feries.destroy', $f) }}"
                           onsubmit="return confirm('Supprimer ?')">
                         @csrf @method('DELETE')
@@ -169,6 +172,7 @@
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
                         </button>
                     </form>
+                    @endif
                 </div>
                 @empty
                 <div class="empty-state" style="padding:24px">
@@ -177,6 +181,7 @@
                 @endforelse
             </div>
 
+            @if(auth()->user()->isCRH())
             {{-- Ajouter un jour férié --}}
             <div style="border-top:1px solid var(--col-border);margin-top:12px;padding-top:16px">
                 <p style="font-size:.82rem;font-weight:600;margin-bottom:10px">Ajouter un jour férié</p>
@@ -212,6 +217,7 @@
                     </div>
                 </form>
             </div>
+            @endif
         </div>
 
     </div>

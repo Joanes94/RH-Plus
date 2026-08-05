@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Centre;
 use App\Models\User;
+use App\Models\UserHistorique;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -11,7 +12,7 @@ class UserManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with('centre')->orderBy('nom');
+        $query = User::with('centre', 'historiques')->orderBy('nom');
 
         if ($request->filled('centre_id')) {
             $query->where('centre_id', $request->centre_id);
@@ -96,6 +97,46 @@ class UserManagementController extends Controller
         $user->update($validated);
 
         return redirect()->route('users.index')->with('success', 'Utilisateur mis à jour.');
+    }
+
+    public function showTransferer(User $user)
+    {
+        $user->load('centre');
+        $centres = Centre::actifs()->orderBy('nom')->get();
+        return view('users.transferer', compact('user', 'centres'));
+    }
+
+    public function transferer(Request $request, User $user)
+    {
+        $request->validate([
+            'nouveau_centre_id' => 'required|exists:centres,id',
+            'date_transfert'    => 'required|date',
+            'motif'             => 'nullable|string',
+        ]);
+
+        if ((int)$request->nouveau_centre_id === (int)$user->centre_id) {
+            return back()->withErrors(['nouveau_centre_id' => 'L\'utilisateur est déjà rattaché à ce centre.'])->withInput();
+        }
+
+        $ancienCentre = $user->centre;
+        $nouveauCentre = Centre::findOrFail($request->nouveau_centre_id);
+
+        UserHistorique::create([
+            'user_id'            => $user->id,
+            'ancien_centre_id'   => $user->centre_id,
+            'nouveau_centre_id'  => $nouveauCentre->id,
+            'ancien_centre_nom'  => $ancienCentre?->nom,
+            'nouveau_centre_nom' => $nouveauCentre->nom,
+            'role'               => $user->role,
+            'date_transfert'     => $request->date_transfert,
+            'motif'              => $request->motif,
+            'transfere_par'      => auth()->id(),
+        ]);
+
+        $user->update(['centre_id' => $nouveauCentre->id]);
+
+        return redirect()->route('users.index')
+            ->with('success', "Passation de service effectuée. {$user->nom_complet} est désormais rattaché(e) au centre {$nouveauCentre->nom}.");
     }
 
     public function destroy(User $user)

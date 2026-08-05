@@ -1,10 +1,44 @@
 @extends('layouts.app')
 
 @section('title', 'Tableau de bord général')
-@section('page-title', 'Tableau de bord général — DDIS')
+@section('page-title', 'Tableau de bord général — ' . auth()->user()->role_label)
 
 @section('content')
 <div class="dashboard-global">
+
+    {{-- ── Barre de filtre par centre & Mode Rôle ────────────────────────────── --}}
+    <div class="dashboard-header-bar">
+        <form method="GET" action="{{ route('dashboard') }}" class="centre-filter-form">
+            <label for="centre_id" class="filter-label">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Vue du Centre :
+            </label>
+            <select name="centre_id" id="centre_id" onchange="this.form.submit()" class="form-select select-centre">
+                <option value="">Tous les centres (Vue Globale National)</option>
+                @foreach($centres as $c)
+                    <option value="{{ $c->id }}" {{ (string)$selectedCentreId === (string)$c->id ? 'selected' : '' }}>
+                        {{ $c->nom }} ({{ $c->code }})
+                    </option>
+                @endforeach
+            </select>
+            @if($selectedCentreId)
+                <a href="{{ route('dashboard') }}" class="btn-clear-filter" title="Revenir à la vue globale">
+                    ✕ Réinitialiser
+                </a>
+            @endif
+        </form>
+
+        <div class="role-badge-status">
+            <span class="role-chip role-{{ auth()->user()->role }}">
+                {{ auth()->user()->role_label }}
+            </span>
+            @if(auth()->user()->isReadOnly())
+                <span class="chip-read-only" title="Accès en consultation seule">🔒 Lecture seule</span>
+            @elseif(auth()->user()->isDDIS())
+                <span class="chip-ddis" title="Validation exclusive des bonifications (Art. 88)">⭐ Approbateur DDIS</span>
+            @endif
+        </div>
+    </div>
 
     {{-- ── KPI Cards ──────────────────────────────────────────────────────── --}}
     <div class="kpi-row">
@@ -52,17 +86,41 @@
             </div>
         </div>
 
+        <div class="kpi-card kpi-teal">
+            <div class="kpi-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-value">{{ $totaux['stagiaires'] }}</span>
+                <span class="kpi-label">Stagiaires actifs</span>
+            </div>
+        </div>
+
         <div class="kpi-card kpi-danger">
             <div class="kpi-icon">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
             <div class="kpi-content">
-                <span class="kpi-value">{{ $nbCongesSoumis + $nbAbsencesSoumis + $nbDemandesSoumis }}</span>
+                <span class="kpi-value">{{ $nbDemandesTotal }}</span>
                 <span class="kpi-label">Demandes en attente</span>
                 <div class="kpi-sub">
-                    <span class="kpi-tag">{{ $nbCongesSoumis }} congés</span>
-                    <span class="kpi-tag">{{ $nbAbsencesSoumis }} abs.</span>
-                    <span class="kpi-tag">{{ $nbDemandesSoumis }} dem.</span>
+                    <span class="kpi-tag" title="Congés">{{ $nbCongesSoumis }} congés</span>
+                    <span class="kpi-tag" title="Absences">{{ $nbAbsencesSoumis }} abs.</span>
+                    <span class="kpi-tag" title="Demandes officielles">{{ $nbDemandesSoumis }} dem.</span>
+                    <span class="kpi-tag" title="Docs Stagiaires">{{ $nbStagiaireDocs }} docs stag.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card kpi-avancements">
+            <div class="kpi-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-value">{{ $nbAvancementsSoumis }}</span>
+                <span class="kpi-label">Avancements à traiter</span>
+                <div class="kpi-sub">
+                    <a href="{{ route('avancements.index') }}" class="kpi-link">Voir la liste →</a>
                 </div>
             </div>
         </div>
@@ -85,6 +143,7 @@
                             <th class="text-center">CDD</th>
                             <th class="text-center">CDI</th>
                             <th class="text-center">Prestataires</th>
+                            <th class="text-center">Stagiaires</th>
                             <th class="text-center">Hommes</th>
                             <th class="text-center">Femmes</th>
                             <th class="text-center total-col">Total</th>
@@ -106,6 +165,7 @@
                             <td class="text-center"><span class="badge badge-cdd">{{ $data['cdd'] }}</span></td>
                             <td class="text-center"><span class="badge badge-cdi">{{ $data['cdi'] }}</span></td>
                             <td class="text-center"><span class="badge badge-prest">{{ $data['prestataires'] }}</span></td>
+                            <td class="text-center"><span class="badge badge-stag">{{ $data['stagiaires'] }}</span></td>
                             <td class="text-center"><span class="gender-m">{{ $data['hommes'] }}</span></td>
                             <td class="text-center"><span class="gender-f">{{ $data['femmes'] }}</span></td>
                             <td class="text-center total-col"><strong>{{ $data['total'] }}</strong></td>
@@ -123,6 +183,7 @@
                             <td class="text-center"><strong>{{ $totaux['cdd'] }}</strong></td>
                             <td class="text-center"><strong>{{ $totaux['cdi'] }}</strong></td>
                             <td class="text-center"><strong>{{ $totaux['prestataires'] }}</strong></td>
+                            <td class="text-center"><strong>{{ $totaux['stagiaires'] }}</strong></td>
                             <td class="text-center"><strong>{{ $totaux['hommes'] }}</strong></td>
                             <td class="text-center"><strong>{{ $totaux['femmes'] }}</strong></td>
                             <td class="text-center total-col"><strong>{{ $totaux['total'] }}</strong></td>
@@ -253,10 +314,84 @@
 /* ── Dashboard Global ───────────────────────────────────────────────── */
 .dashboard-global { max-width: 1400px; }
 
+/* Header Bar & Centre Filter */
+.dashboard-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    border-radius: 14px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #f0f0f0;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.centre-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.filter-label {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.select-centre {
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #fafafa;
+    font-weight: 500;
+    font-size: 0.88rem;
+    color: #111827;
+}
+.btn-clear-filter {
+    font-size: 0.78rem;
+    color: #ef4444;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.role-badge-status { display: flex; align-items: center; gap: 0.5rem; }
+.role-chip {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #e5e7eb;
+    color: #374151;
+}
+.role-crh { background: rgba(26,92,69,0.12); color: var(--col-primary, #1a5c45); }
+.role-ddis { background: rgba(139,92,246,0.12); color: #6d28d9; }
+.role-ddrh { background: rgba(59,130,246,0.12); color: #1d4ed8; }
+
+.chip-read-only {
+    font-size: 0.75rem;
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+.chip-ddis {
+    font-size: 0.75rem;
+    background: #f3e8ff;
+    color: #6b21a8;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
 /* KPI Row */
 .kpi-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
@@ -264,10 +399,10 @@
 .kpi-card {
     background: #fff;
     border-radius: 16px;
-    padding: 1.25rem;
+    padding: 1.15rem;
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.85rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
     border: 1px solid #f0f0f0;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -275,7 +410,7 @@
 .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 
 .kpi-icon {
-    width: 44px; height: 44px;
+    width: 42px; height: 42px;
     border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
@@ -284,14 +419,17 @@
 .kpi-info .kpi-icon    { background: rgba(59,130,246,0.1); color: #3b82f6; }
 .kpi-warning .kpi-icon { background: rgba(245,158,11,0.1); color: #f59e0b; }
 .kpi-accent .kpi-icon  { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+.kpi-teal .kpi-icon    { background: rgba(20,184,166,0.1); color: #0d9488; }
 .kpi-danger .kpi-icon  { background: rgba(239,68,68,0.1); color: #ef4444; }
+.kpi-avancements .kpi-icon { background: rgba(16,185,129,0.1); color: #10b981; }
 
-.kpi-value { font-size: 1.75rem; font-weight: 700; line-height: 1; display: block; color: #111827; }
-.kpi-label { font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem; display: block; }
-.kpi-sub { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
-.kpi-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; background: #f3f4f6; color: #374151; }
+.kpi-value { font-size: 1.65rem; font-weight: 700; line-height: 1; display: block; color: #111827; }
+.kpi-label { font-size: 0.78rem; color: #6b7280; margin-top: 0.25rem; display: block; }
+.kpi-sub { display: flex; gap: 0.35rem; margin-top: 0.45rem; flex-wrap: wrap; }
+.kpi-tag { font-size: 0.68rem; padding: 2px 7px; border-radius: 99px; background: #f3f4f6; color: #374151; }
 .kpi-tag-blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
 .kpi-tag-pink { background: rgba(236,72,153,0.1); color: #ec4899; }
+.kpi-link { font-size: 0.72rem; color: #10b981; font-weight: 600; text-decoration: none; }
 
 /* Tableau centres */
 .card-table { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; overflow: hidden; margin-bottom: 1.5rem; }
@@ -321,9 +459,10 @@
 .centre-name .email { display: block; font-size: 0.75rem; color: #9ca3af; }
 
 .badge { padding: 3px 10px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
-.badge-cdd  { background: rgba(245,158,11,0.12); color: #b45309; }
-.badge-cdi  { background: rgba(59,130,246,0.12); color: #1d4ed8; }
+.badge-cdd   { background: rgba(245,158,11,0.12); color: #b45309; }
+.badge-cdi   { background: rgba(59,130,246,0.12); color: #1d4ed8; }
 .badge-prest { background: rgba(139,92,246,0.12); color: #6d28d9; }
+.badge-stag  { background: rgba(20,184,166,0.12); color: #0f766e; }
 
 .gender-m { color: #3b82f6; font-weight: 500; }
 .gender-f { color: #ec4899; font-weight: 500; }
@@ -367,7 +506,6 @@
 .count-badge { font-size: 0.7rem; background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 99px; margin-left: 0.5rem; }
 .card-header-warning .count-badge { background: #f59e0b; }
 
-.alert-list { }
 .alert-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; border-bottom: 1px solid #f9fafb; transition: background 0.15s; }
 .alert-item:hover { background: #fafafa; }
 .alert-item:last-child { border-bottom: none; }
@@ -383,6 +521,7 @@
 }
 @media (max-width: 768px) {
     .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .dashboard-header-bar { flex-direction: column; align-items: flex-start; }
 }
 </style>
 @endpush
