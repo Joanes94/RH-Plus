@@ -57,7 +57,15 @@ class CongeController extends Controller
     // ── Création ──────────────────────────────────────────────────────────────
     public function create()
     {
-        $personnels = Personnel::personnelPrincipal()->orderBy('nom')->get();
+        $user = auth()->user();
+        $personnelsQuery = Personnel::personnelPrincipal()->orderBy('nom');
+
+        // Filtrer par centre si l'utilisateur n'est pas global
+        if (!$user->isGlobal() && $user->centre_id) {
+            $personnelsQuery->where('centre_id', $user->centre_id);
+        }
+
+        $personnels = $personnelsQuery->get();
 
         $typesConge = [
             'administratif' => 'Congé Administratif',

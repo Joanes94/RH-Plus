@@ -99,7 +99,7 @@
     </div>
 </div>
 
-@if($personnel->est_ancien_travailleur)
+@if($personnel->est_ancien_travailleur && !auth()->user()->isReadOnly())
 <div class="dash-card" style="border-left:4px solid var(--col-text-3);margin-top:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div style="font-size:.85rem;color:var(--col-text-2)">
         📦 <strong>Ancien travailleur</strong> — {{ $personnel->motif_depart_label }}
@@ -314,6 +314,7 @@
 </div>
 
 {{-- Zone danger --}}
+@if(!auth()->user()->isReadOnly())
 <div class="dash-card danger-zone" style="max-width:600px; margin-top:8px;">
     <div class="card-header"><h3 class="danger-title">Zone de danger</h3></div>
     @if($personnel->est_ancien_travailleur)
@@ -323,6 +324,7 @@
         <button type="button" class="btn-danger" onclick="document.getElementById('modal-archiver').style.display='flex'">Archiver cet agent</button>
     @endif
 </div>
+@endif
 
 {{-- ── Modal Archiver (Ancien travailleur) ────────────────────────────────── --}}
 <div id="modal-archiver" class="modal-backdrop" style="display:none" onclick="if(event.target===this)this.style.display='none'">

@@ -50,8 +50,16 @@ class DemandeController extends Controller
     // ── Formulaire de création ────────────────────────────────────────────────
     public function create(Request $request)
     {
-        $personnels = Personnel::where('statut', 'actif')->orderBy('nom')->get();
-        $catalogue  = Demande::catalogue();
+        $user = auth()->user();
+        $personnelsQuery = Personnel::where('statut', 'actif')->orderBy('nom');
+
+        // Filtrer par centre si l'utilisateur n'est pas global
+        if (!$user->isGlobal() && $user->centre_id) {
+            $personnelsQuery->where('centre_id', $user->centre_id);
+        }
+
+        $personnels    = $personnelsQuery->get();
+        $catalogue     = Demande::catalogue();
         $typePreselect = $request->get('type');
 
         return view('demandes.create', compact('personnels', 'catalogue', 'typePreselect'));

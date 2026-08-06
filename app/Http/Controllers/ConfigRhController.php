@@ -14,14 +14,16 @@ class ConfigRhController extends Controller
 
     public function index()
     {
-        $annee   = request('annee', date('Y'));
-        $feries  = JourFerie::where('annee', $annee)->orderBy('date')->get();
-        $config  = [
-            'drh_nom'         => ConfigRh::get('drh_nom', ''),
-            'drh_titre'       => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
-            'organisation'    => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
-            'ville'           => ConfigRh::get('ville', 'Cotonou'),
-            'signature_path'  => ConfigRh::get('drh_signature_path'),
+        $annee  = request('annee', date('Y'));
+        $feries = JourFerie::where('annee', $annee)->orderBy('date')->get();
+        $user   = auth()->user();
+
+        $config = [
+            'drh_nom'        => ConfigRh::get('drh_nom', '', $user),
+            'drh_titre'      => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $user),
+            'organisation'   => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines', $user),
+            'ville'          => ConfigRh::get('ville', 'Cotonou', $user),
+            'signature_path' => ConfigRh::get('drh_signature_path', null, $user),
         ];
 
         $joursFixesSuggeres = JourFerie::joursFixesBenin((int)$annee);
@@ -38,22 +40,28 @@ class ConfigRhController extends Controller
             'ville'        => 'nullable|string|max:100',
         ]);
 
+        $user = auth()->user();
+
         foreach ($data as $cle => $valeur) {
-            ConfigRh::set($cle, $valeur);
+            ConfigRh::set($cle, $valeur, $user);
+        }
+
+        if (isset($data['drh_titre'])) {
+            $user->update(['titre_officiel' => $data['drh_titre']]);
         }
 
         // Upload image de signature
         if ($request->hasFile('signature')) {
             $request->validate(['signature' => 'image|max:2048|mimes:png,jpg,jpeg']);
 
-            // Supprimer l'ancienne signature si elle existe
-            $oldPath = ConfigRh::get('drh_signature_path');
+            $oldPath = ConfigRh::get('drh_signature_path', null, $user);
             if ($oldPath && Storage::disk('public')->exists($oldPath)) {
                 Storage::disk('public')->delete($oldPath);
             }
 
             $path = $this->doc->sauvegarderSignature($request->file('signature'));
-            ConfigRh::set('drh_signature_path', $path);
+            ConfigRh::set('drh_signature_path', $path, $user);
+            $user->update(['signature_path' => $path]);
         }
 
         return redirect()->route('config-rh.index')
@@ -84,18 +92,20 @@ class ConfigRhController extends Controller
             return response()->json(['error' => 'Décodage impossible.'], 422);
         }
 
-        // Supprimer l'ancienne signature
-        $oldPath = ConfigRh::get('drh_signature_path');
+        $user = auth()->user();
+
+        // Supprimer l'ancienne signature de CET utilisateur uniquement
+        $oldPath = ConfigRh::get('drh_signature_path', null, $user);
         if ($oldPath && Storage::disk('public')->exists($oldPath)) {
             Storage::disk('public')->delete($oldPath);
         }
 
         // Sauvegarder en PNG
-        $filename = 'signatures/signature_user_' . auth()->id() . '_' . time() . '.png';
+        $filename = 'signatures/signature_user_' . $user->id . '_' . time() . '.png';
         Storage::disk('public')->put($filename, $decoded);
 
-        ConfigRh::set('drh_signature_path', $filename);
-        auth()->user()->update(['signature_path' => $filename]);
+        ConfigRh::set('drh_signature_path', $filename, $user);
+        $user->update(['signature_path' => $filename]);
 
         return response()->json([
             'success' => true,

@@ -7,13 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 class Notification extends Model
 {
     protected $fillable = [
-        'type', 'titre', 'message', 'personnel_id', 'avancement_id', 'payload', 'date_notification',
+        'centre_id', 'type', 'titre', 'message', 'personnel_id', 'avancement_id', 'payload', 'date_notification',
     ];
 
     protected $casts = [
         'payload'           => 'array',
         'date_notification' => 'date',
     ];
+
+    public function centre()
+    {
+        return $this->belongsTo(Centre::class);
+    }
 
     public function personnel()
     {
@@ -47,6 +52,8 @@ class Notification extends Model
         return match ($this->type) {
             'bonification'   => '🎖️',
             'digest_mensuel' => '📅',
+            'affectation'    => '👤',
+            'transfert'      => '🔄',
             default          => '📈',
         };
     }

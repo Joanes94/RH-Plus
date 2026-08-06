@@ -100,6 +100,7 @@ class AvancementService
         // On ne met pas à jour le contrat ici, on attend l'approbation du DDIS.
 
         \App\Models\Notification::create([
+            'centre_id'         => $personnel->centre_id,
             'type'              => 'bonification',
             'titre'             => 'Bonification (58 ans) soumise — ' . $personnel->nom_complet,
             'message'           => "{$personnel->nom_complet} a atteint 58 ans. Une bonification de l'article 88 (coefficient {$coefficient}) est soumise pour validation par la DDIS.",
@@ -149,6 +150,7 @@ class AvancementService
         ]);
 
         \App\Models\Notification::create([
+            'centre_id'         => $avancement->personnel?->centre_id,
             'type'              => 'bonification',
             'titre'             => 'Bonification validée — ' . $avancement->personnel->nom_complet,
             'message'           => "La bonification de l'article 88 pour {$avancement->personnel->nom_complet} a été validée par la DDIS. Nouveau salaire : " . number_format($avancement->nouveau_salaire, 0, ',', ' ') . ' FCFA.',
@@ -174,6 +176,7 @@ class AvancementService
         ]);
 
         \App\Models\Notification::create([
+            'centre_id'         => $avancement->personnel?->centre_id,
             'type'              => 'bonification',
             'titre'             => 'Bonification rejetée — ' . $avancement->personnel->nom_complet,
             'message'           => "La bonification de l'article 88 pour {$avancement->personnel->nom_complet} a été rejetée par la DDIS.",
@@ -229,6 +232,7 @@ class AvancementService
         $contrat->update(['echelon' => $nouvelEchelon, 'salaire_base' => $caseGrille->salaire]);
 
         \App\Models\Notification::create([
+            'centre_id'         => $personnel->centre_id,
             'type'              => 'echelon',
             'titre'             => "Avancement d'échelon — " . $personnel->nom_complet,
             'message'           => "{$personnel->nom_complet} passe aujourd'hui de {$contrat->categorie}-{$avancement->ancien_echelon} à {$contrat->categorie}-{$nouvelEchelon}.",

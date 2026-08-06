@@ -54,7 +54,15 @@ class AbsenceController extends Controller
     // ── Création ──────────────────────────────────────────────────────────────
     public function create()
     {
-        $personnels = Personnel::where('statut', 'actif')->orderBy('nom')->get();
+        $user = auth()->user();
+        $personnelsQuery = Personnel::where('statut', 'actif')->orderBy('nom');
+
+        // Filtrer par centre si l'utilisateur n'est pas global
+        if (!$user->isGlobal() && $user->centre_id) {
+            $personnelsQuery->where('centre_id', $user->centre_id);
+        }
+
+        $personnels = $personnelsQuery->get();
         $types      = Absence::typesDisponibles();
         return view('absences.create', compact('personnels', 'types'));
     }

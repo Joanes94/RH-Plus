@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:crh')->prefix('centres')->name('centres.')->group(function () {
         Route::get('/', [CentreController::class, 'index'])->name('index');
         Route::post('/', [CentreController::class, 'store'])->name('store');
+        Route::patch('/reorder', [CentreController::class, 'reorder'])->name('reorder');
         Route::put('/{centre}', [CentreController::class, 'update'])->name('update');
     });
 

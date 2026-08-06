@@ -31,12 +31,14 @@
             <a href="{{ route('absences.index') }}" class="btn-ghost btn-sm">✕ Réinitialiser</a>
         @endif
     </form>
+    @if(!auth()->user()->isReadOnly())
     <div class="toolbar-actions">
         <a href="{{ route('absences.create') }}" class="btn-primary btn-sm">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nouvelle demande
         </a>
     </div>
+    @endif
 </div>
 
 <div class="dash-card p-0">
@@ -44,7 +46,9 @@
         <div class="empty-state">
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="color:var(--col-text-3)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             <p>Aucune demande d'absence.</p>
+            @if(!auth()->user()->isReadOnly())
             <a href="{{ route('absences.create') }}" class="btn-primary btn-sm">Créer une demande</a>
+            @endif
         </div>
     @else
     <div class="table-scroll">
@@ -99,7 +103,7 @@
                     <a href="{{ route('absences.show', $a) }}" class="icon-btn" title="Voir">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </a>
-                    @if($a->isEditable())
+                    @if($a->isEditable() && !auth()->user()->isReadOnly())
                     <a href="{{ route('absences.edit', $a) }}" class="icon-btn" title="Modifier">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </a>

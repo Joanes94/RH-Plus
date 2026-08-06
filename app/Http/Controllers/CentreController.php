@@ -11,7 +11,7 @@ class CentreController extends Controller
     {
         $centres = Centre::withCount([
             'personnels as effectif_actif' => fn($q) => $q->whereNotIn('statut', ['ancien', 'retraite']),
-        ])->orderBy('nom')->get();
+        ])->orderByRaw('ordre IS NULL, ordre ASC, nom ASC')->get();
 
         return view('centres.index', compact('centres'));
     }
@@ -64,5 +64,25 @@ class CentreController extends Controller
         $centre->update($validated);
 
         return back()->with('success', 'Centre mis à jour avec succès.');
+    }
+
+    /**
+     * Enregistre le nouvel ordre des centres après drag & drop.
+     * Envoyé via PATCH /centres/reorder avec { ordre: [id1, id2, ...] }.
+     */
+    public function reorder(Request $request)
+    {
+        $request->validate(['ordre' => 'required|array']);
+
+        try {
+            foreach ($request->ordre as $position => $id) {
+                Centre::where('id', $id)->update(['ordre' => $position + 1]);
+            }
+        } catch (\Exception $e) {
+            // La colonne `ordre` n'existe peut-être pas encore — on l'ignore silencieusement.
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 200);
+        }
+
+        return response()->json(['ok' => true]);
     }
 }

@@ -26,17 +26,12 @@ class DashboardController extends Controller
             return $this->dashboardGlobal($request);
         }
 
-        // DRH centre ou Directeur faisant office de DRH
-        if ($user->isDRH() || ($user->isDirecteurCentre() && !$user->centre?->a_drh_dedie)) {
+        // DRH centre ou Directeur (avec ou sans DRH dédié) → dashboard.drh (vue enrichie)
+        if ($user->isDRH() || $user->isDirecteurCentre()) {
             return $this->dashboardDrhCentre($request, $user->centre_id);
         }
 
-        // Directeur en lecture seule (centre avec DRH dédié)
-        if ($user->isDirecteurCentre()) {
-            return $this->dashboardDrhCentre($request, $user->centre_id);
-        }
-
-        // Assistant RH
+        // Assistant RH → dashboard.assistant_rh (vue simplifiée)
         return $this->dashboardAssistant($request, $user->centre_id);
     }
 
@@ -192,6 +187,11 @@ class DashboardController extends Controller
         $nbAbsencesSoumis = $absencesQuery->count();
         $nbDemandesSoumis = $demandesQuery->count();
 
+        $nbStagiairesEnCours = Stagiaire::query()
+            ->when($centreId, fn($q) => $q->where('centre_id', $centreId))
+            ->where('statut', 'en_cours')
+            ->count();
+
         // Personnel en congé
         $enConge = Conge::where('statut', 'approuve')
             ->where('date_debut', '<=', now())
@@ -214,7 +214,7 @@ class DashboardController extends Controller
             ->get();
 
         return view('dashboard.drh', compact(
-            'centre', 'centres', 'effectifTotal', 'hommes', 'femmes', 'nbAnciens',
+            'centre', 'centres', 'effectifTotal', 'hommes', 'femmes', 'nbAnciens', 'nbStagiairesEnCours',
             'nbCongesSoumis', 'nbAbsencesSoumis', 'nbDemandesSoumis',
             'enConge', 'parService', 'contratsExpirantBientot'
         ));

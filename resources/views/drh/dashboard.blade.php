@@ -47,7 +47,7 @@
     {{-- Congés en attente --}}
     <div class="dash-card">
         <div class="card-header">
-            <h3>Demande de Congés en attente</h3>
+            <h3>Demandes à valider ou non (Congés)</h3>
             <span class="badge badge-warn">{{ $congesEnAttente->count() }}</span>
         </div>
         @if($congesEnAttente->isEmpty())
@@ -76,7 +76,7 @@
         {{-- Absences en attente --}}
         <div class="dash-card">
             <div class="card-header">
-                <h3>Demande d'Absences en attente</h3>
+                <h3>Demandes à valider ou non (Absences)</h3>
                 <span class="badge badge-warn">{{ $absencesEnAttente->count() }}</span>
             </div>
             @if($absencesEnAttente->isEmpty())
@@ -100,7 +100,7 @@
         {{-- Demandes en attente --}}
         <div class="dash-card">
             <div class="card-header">
-                <h3>Autres Demandes en attente</h3>
+                <h3>Demandes à valider ou non (Officielles)</h3>
                 <span class="badge badge-warn">{{ $demandesEnAttente->count() }}</span>
             </div>
             @if($demandesEnAttente->isEmpty())

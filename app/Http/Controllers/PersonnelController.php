@@ -55,8 +55,23 @@ class PersonnelController extends Controller
 
         $personnels = $query->orderBy('nom')->paginate(20)->withQueryString();
 
-        // Stats sur le personnel principal uniquement
+        // Stats sur le personnel filtré par centre
         $base = Personnel::personnelPrincipal();
+        if (!$user->isGlobal() && $user->centre_id) {
+            $base->where('centre_id', $user->centre_id);
+        } elseif ($request->filled('centre_id') && $user->isGlobal()) {
+            $base->where('centre_id', $request->centre_id);
+        }
+
+        $congesCountQuery = \App\Models\Conge::where('statut', 'approuve')
+            ->whereDate('date_debut', '<=', now())
+            ->whereDate('date_fin', '>=', now());
+        if (!$user->isGlobal() && $user->centre_id) {
+            $congesCountQuery->whereHas('personnel', fn ($q) => $q->where('centre_id', $user->centre_id));
+        } elseif ($request->filled('centre_id') && $user->isGlobal()) {
+            $congesCountQuery->whereHas('personnel', fn ($q) => $q->where('centre_id', $request->centre_id));
+        }
+
         return view('personnel.index', [
             'personnels'   => $personnels,
             'services'     => Personnel::services(),
@@ -65,11 +80,7 @@ class PersonnelController extends Controller
             'stats' => [
                 'total'    => (clone $base)->count(),
                 'actifs'   => (clone $base)->where('statut', 'actif')->count(),
-                'conges'   => \App\Models\Conge::where('statut', 'approuve')
-                                    ->whereDate('date_debut', '<=', now())
-                                    ->whereDate('date_fin', '>=', now())
-                                    ->distinct('personnel_id')
-                                    ->count('personnel_id'),
+                'conges'   => $congesCountQuery->distinct('personnel_id')->count('personnel_id'),
                 'inactifs' => (clone $base)->where('statut', 'inactif')->count(),
                 'hommes'   => (clone $base)->where('sexe', 'M')->count(),
                 'femmes'   => (clone $base)->where('sexe', 'F')->count(),
@@ -110,6 +121,17 @@ class PersonnelController extends Controller
 
         $personnel = Personnel::create($data);
         $this->syncAyantsDroit($request, $personnel);
+
+        if ($personnel->centre_id) {
+            \App\Models\Notification::create([
+                'centre_id'         => $personnel->centre_id,
+                'personnel_id'      => $personnel->id,
+                'type'              => 'affectation',
+                'titre'             => 'Nouveau personnel affecté',
+                'message'           => "M./Mme {$personnel->nom_complet} a été créé(e) et affecté(e) à votre centre par le CRH.",
+                'date_notification' => now(),
+            ]);
+        }
 
         return redirect()->route('personnel.index')
             ->with('success', 'Personnel ajouté avec succès.');
@@ -276,6 +298,7 @@ class PersonnelController extends Controller
 
             $imported = 0;
             $errors   = [];
+            $parCentre = []; // centre_id → count
 
             foreach ($rows as $i => $row) {
                 $line = $i + 2;
@@ -292,11 +315,26 @@ class PersonnelController extends Controller
                     continue;
                 }
 
-                Personnel::create(array_merge(
-                    $this->sanitizeImportRow($row),
-                    ['created_by' => Auth::id()]
-                ));
+                $sanitized = $this->sanitizeImportRow($row);
+                Personnel::create(array_merge($sanitized, ['created_by' => Auth::id()]));
                 $imported++;
+
+                // Comptabiliser par centre
+                $cId = $sanitized['centre_id'] ?? null;
+                if ($cId) {
+                    $parCentre[$cId] = ($parCentre[$cId] ?? 0) + 1;
+                }
+            }
+
+            // Notifications de résumé d'import par centre
+            foreach ($parCentre as $centreId => $count) {
+                \App\Models\Notification::create([
+                    'centre_id'         => $centreId,
+                    'type'              => 'affectation',
+                    'titre'             => 'Import de personnel',
+                    'message'           => "$count personnel(s) ont été importé(s) dans votre centre par le CRH.",
+                    'date_notification' => now(),
+                ]);
             }
 
             $msg = "$imported personnel(s) importé(s).";
@@ -610,6 +648,30 @@ class PersonnelController extends Controller
         // Mettre à jour le contrat actif
         if ($personnel->contrat_actif) {
             $personnel->contrat_actif->update(['centre_id' => $request->centre_id, 'centre' => $nouveauCentre->nom]);
+        }
+
+        // Notification au centre de départ (Centre A)
+        if ($ancienCentre) {
+            \App\Models\Notification::create([
+                'centre_id'         => $ancienCentre->id,
+                'personnel_id'      => $personnel->id,
+                'type'              => 'transfert',
+                'titre'             => 'Transfert de personnel (Départ)',
+                'message'           => "M./Mme {$personnel->nom_complet} a été transféré(e) de votre centre ({$ancienCentre->nom}) vers le centre {$nouveauCentre->nom}.",
+                'date_notification' => now(),
+            ]);
+        }
+
+        // Notification au centre d'arrivée (Centre B)
+        if ($nouveauCentre) {
+            \App\Models\Notification::create([
+                'centre_id'         => $nouveauCentre->id,
+                'personnel_id'      => $personnel->id,
+                'type'              => 'transfert',
+                'titre'             => 'Transfert de personnel (Arrivée)',
+                'message'           => "M./Mme {$personnel->nom_complet} a été transféré(e) du centre " . ($ancienCentre?->nom ?? 'N/A') . " vers votre centre ({$nouveauCentre->nom}).",
+                'date_notification' => now(),
+            ]);
         }
 
         return redirect()->route('personnel.show', $personnel)

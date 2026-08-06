@@ -15,10 +15,18 @@
     </button>
 </div>
 
-<div class="centres-grid">
+<div class="drag-hint">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
+    Glissez les cartes pour réorganiser l'ordre des centres
+</div>
+
+<div class="centres-grid" id="centresGrid">
     @foreach($centres as $centre)
-    <div class="centre-card {{ $centre->actif ? '' : 'centre-inactif' }}">
+    <div class="centre-card {{ $centre->actif ? '' : 'centre-inactif' }}" data-id="{{ $centre->id }}">
         <div class="centre-card-header">
+            <div class="centre-drag-handle" title="Glisser pour réorganiser">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
+            </div>
             @if($centre->logo_url)
                 <img src="{{ $centre->logo_url }}" alt="Logo {{ $centre->nom }}" class="centre-logo-img">
             @else
@@ -203,6 +211,7 @@
 </dialog>
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script>
 function openEditModal(centre) {
     const form = document.getElementById('formEditCentre');
@@ -219,26 +228,108 @@ function openEditModal(centre) {
 
     document.getElementById('modalEdit').showModal();
 }
+
+// ── Drag & Drop pour réordonner les cartes ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    const grid = document.getElementById('centresGrid');
+    if (!grid) return;
+
+    const sortable = Sortable.create(grid, {
+        animation: 180,
+        ghostClass: 'centre-card-ghost',
+        chosenClass: 'centre-card-chosen',
+        dragClass: 'centre-card-drag',
+        handle: '.centre-drag-handle',
+        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        onEnd: function (evt) {
+            // Collecter le nouvel ordre
+            const ids = [...grid.querySelectorAll('.centre-card')].map(el => el.dataset.id);
+
+            // Envoyer au serveur
+            fetch('{{ route("centres.reorder") }}', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ ordre: ids }),
+            }).then(r => {
+                if (!r.ok) console.warn('Réordonnancement non enregistré.');
+            }).catch(err => console.warn('Erreur réseau:', err));
+        },
+    });
+});
 </script>
 @endpush
 
 @push('styles')
 <style>
+/* ── Grille des centres ───────────────────────────────────────────────────── */
 .centres-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.25rem;
+    align-items: start;
 }
+
+/* ── Carte centre ─────────────────────────────────────────────────────────── */
 .centre-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     background: #fff;
     border-radius: 16px;
-    border: 1px solid #f0f0f0;
+    border: 1px solid #e5e7eb;
     overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                border-color 0.25s ease;
+    will-change: transform;
+    user-select: none;
 }
-.centre-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
-.centre-inactif { opacity: 0.6; }
+.centre-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.10);
+    border-color: #d1d5db;
+}
+.centre-inactif { opacity: 0.55; }
 
+/* ── États Drag & Drop ────────────────────────────────────────────────────── */
+.centre-card-ghost {
+    opacity: 0.35;
+    background: #f3f4f6;
+    border: 2px dashed #9ca3af !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+.centre-card-chosen {
+    box-shadow: 0 16px 40px rgba(26, 92, 69, 0.18) !important;
+    border-color: var(--col-primary, #1a5c45) !important;
+    transform: scale(1.02) !important;
+    z-index: 10;
+}
+.centre-card-drag {
+    cursor: grabbing !important;
+    opacity: 0.92;
+}
+
+/* ── Poignée de glissement ────────────────────────────────────────────────── */
+.centre-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    color: #d1d5db;
+    cursor: grab;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+    margin-right: -4px;
+}
+.centre-drag-handle:hover { color: #6b7280; background: #f3f4f6; }
+.centre-drag-handle:active { cursor: grabbing; }
+
+/* ── En-tête carte ────────────────────────────────────────────────────────── */
 .centre-card-header {
     display: flex; align-items: center; gap: 0.75rem;
     padding: 1.25rem 1.25rem 0.75rem;
@@ -247,7 +338,9 @@ function openEditModal(centre) {
     width: 44px; height: 44px;
     object-fit: contain; border-radius: 10px;
     border: 1px solid #f0f0f0; padding: 2px;
+    transition: transform 0.2s ease;
 }
+.centre-card:hover .centre-logo-img { transform: scale(1.05); }
 .centre-icon {
     width: 44px; height: 44px;
     border-radius: 12px;
@@ -255,6 +348,11 @@ function openEditModal(centre) {
     display: flex; align-items: center; justify-content: center;
     font-size: 0.75rem; font-weight: 700;
     flex-shrink: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.centre-card:hover .centre-icon {
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 .centre-meta { flex: 1; min-width: 0; }
 .centre-nom { font-size: 0.95rem; font-weight: 600; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -268,12 +366,14 @@ function openEditModal(centre) {
     cursor: pointer; color: #6b7280;
     transition: all 0.15s;
 }
-.btn-icon:hover { background: #f3f4f6; color: #111827; }
+.btn-icon:hover { background: #f3f4f6; color: #111827; border-color: #d1d5db; }
 
+/* ── Corps carte ──────────────────────────────────────────────────────────── */
 .centre-card-body { padding: 0 1.25rem 1.25rem; }
 
 .centre-stat { text-align: center; padding: 0.75rem 0; }
-.stat-value { display: block; font-size: 2rem; font-weight: 700; color: var(--col-primary, #1a5c45); }
+.stat-value { display: block; font-size: 2rem; font-weight: 700; color: var(--col-primary, #1a5c45); transition: transform 0.2s; }
+.centre-card:hover .stat-value { transform: scale(1.05); }
 .stat-label { font-size: 0.75rem; color: #6b7280; }
 
 .centre-infos { margin-top: 0.5rem; }
@@ -285,7 +385,7 @@ function openEditModal(centre) {
 .badge-actif  { background: rgba(16,185,129,0.1); color: #047857; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; }
 .badge-inactif { background: rgba(239,68,68,0.1); color: #b91c1c; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; }
 
-/* Modal */
+/* ── Modal ────────────────────────────────────────────────────────────────── */
 .modal { border: none; border-radius: 20px; padding: 0; max-width: 620px; width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
 .modal::backdrop { background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f0f0f0; }
@@ -298,6 +398,13 @@ function openEditModal(centre) {
 .full-width { grid-column: 1 / -1; }
 .checkbox-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; }
 .form-control { width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.88rem; }
+
+/* ── Indicateur de réordonnancement ──────────────────────────────────────── */
+.drag-hint {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.72rem; color: #9ca3af;
+    margin-bottom: 0.75rem;
+    user-select: none;
+}
 </style>
 @endpush
-@section('title', 'Gestion des centres')

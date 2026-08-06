@@ -142,6 +142,7 @@
 </div>
 
 {{-- Zone danger --}}
+@if(!auth()->user()->isReadOnly())
 <div class="dash-card danger-zone" style="max-width:600px;margin-top:8px">
     <div class="card-header"><h3 class="danger-title">Zone de danger</h3></div>
     <p class="danger-text">Archiver ce stagiaire le masquera de la liste. L'action est réversible.</p>
@@ -151,5 +152,6 @@
         <button type="submit" class="btn-danger">Archiver ce stagiaire</button>
     </form>
 </div>
+@endif
 
 @endsection

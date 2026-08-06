@@ -18,173 +18,121 @@
 </div>
 @endif
 
-{{-- KPI Cards DRH --}}
-<div class="kpi-grid">
-    <div class="kpi-card kpi-blue">
-        <div class="kpi-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+<div class="dashboard-centre">
+    @if($centre)
+    <div class="centre-banner">
+        <div class="centre-banner-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </div>
-        <div class="kpi-body">
-            <div class="kpi-value">142</div>
-            <div class="kpi-label">Effectif total</div>
-        </div>
-        <div class="kpi-trend up">↑ 5.2% vs N-1</div>
+        <span>{{ $centre->nom }}</span>
     </div>
+    @endif
 
-    <div class="kpi-card kpi-green">
-        <div class="kpi-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        </div>
-        <div class="kpi-body">
-            <div class="kpi-value">87,4M</div>
-            <div class="kpi-label">Masse salariale (FCFA)</div>
-        </div>
-        <div class="kpi-trend warn">+2.1% ce mois</div>
-    </div>
-
-    <div class="kpi-card kpi-amber">
-        <div class="kpi-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        </div>
-        <div class="kpi-body">
-            <div class="kpi-value">3.8%</div>
-            <div class="kpi-label">Taux d'absentéisme</div>
-        </div>
-        <div class="kpi-trend warn">↑ 0.4 pts</div>
-    </div>
-
-    <div class="kpi-card kpi-purple">
-        <div class="kpi-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        </div>
-        <div class="kpi-body">
-            <div class="kpi-value">94.2%</div>
-            <div class="kpi-label">Taux de rétention</div>
-        </div>
-        <div class="kpi-trend up">Excellent</div>
-    </div>
-</div>
-
-{{-- Charts row --}}
-<div class="dash-two-col">
-
-    {{-- Répartition par département --}}
-    <div class="dash-card">
-        <div class="card-header">
-            <h3>Effectifs par département</h3>
-        </div>
-        <div class="dept-chart">
-            @php
-            $depts = [
-                ['name' => 'Opérations',      'count' => 38, 'pct' => 27, 'color' => '#2563eb'],
-                ['name' => 'Finance',          'count' => 22, 'pct' => 15, 'color' => '#7c3aed'],
-                ['name' => 'Ressources Hum.',  'count' => 12, 'pct' => 8,  'color' => '#059669'],
-                ['name' => 'Commercial',       'count' => 31, 'pct' => 22, 'color' => '#d97706'],
-                ['name' => 'Informatique',     'count' => 24, 'pct' => 17, 'color' => '#dc2626'],
-                ['name' => 'Direction',        'count' => 15, 'pct' => 11, 'color' => '#0891b2'],
-            ];
-            @endphp
-            @foreach($depts as $d)
-            <div class="dept-row">
-                <div class="dept-name">{{ $d['name'] }}</div>
-                <div class="dept-bar-wrap">
-                    <div class="dept-bar" style="width: {{ $d['pct'] }}%; background: {{ $d['color'] }}"></div>
-                </div>
-                <div class="dept-count">{{ $d['count'] }}</div>
+    <div class="kpi-grid">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
-            @endforeach
+            <div class="kpi-body">
+                <div class="kpi-value">{{ $effectifTotal }}</div>
+                <div class="kpi-label">Effectif en poste</div>
+            </div>
+            <div class="kpi-trend up">{{ $hommes }} H · {{ $femmes }} F</div>
+        </div>
+
+        <div class="kpi-card kpi-green">
+            <div class="kpi-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ is_object($enConge) ? $enConge->count() : $enConge }}</div>
+                <div class="kpi-label">En congé aujourd'hui</div>
+            </div>
+            <div class="kpi-trend warn">{{ $nbCongesSoumis }} congés à traiter</div>
+        </div>
+
+        <div class="kpi-card kpi-amber">
+            <div class="kpi-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ $nbCongesSoumis + $nbAbsencesSoumis + $nbDemandesSoumis }}</div>
+                <div class="kpi-label">Demandes en attente</div>
+            </div>
+            <div class="kpi-trend warn">{{ $nbAbsencesSoumis }} abs. · {{ $nbDemandesSoumis }} dem.</div>
+        </div>
+
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ $nbAnciens }}</div>
+                <div class="kpi-label">Anciens travailleurs</div>
+            </div>
+            <div class="kpi-trend up">{{ $nbStagiairesEnCours }} stagiaires actifs</div>
         </div>
     </div>
 
-    {{-- Colonne droite DRH --}}
-    <div class="dash-col-right">
-
-        {{-- Recrutements en cours --}}
+    <div class="dash-two-col">
         <div class="dash-card">
             <div class="card-header">
-                <h3>Recrutements ouverts</h3>
-                <span class="badge badge-blue">6 postes</span>
+                <h3>Répartition par service</h3>
             </div>
-            <div class="recruit-list">
-                @php
-                $recruits = [
-                    ['poste' => 'Développeur Backend', 'dept' => 'Informatique', 'candidats' => 14, 'status' => 'active'],
-                    ['poste' => 'Chargé de comptabilité', 'dept' => 'Finance', 'candidats' => 7, 'status' => 'active'],
-                    ['poste' => 'Commercial terrain', 'dept' => 'Commercial', 'candidats' => 21, 'status' => 'review'],
-                    ['poste' => 'Assistante de direction', 'dept' => 'Direction', 'candidats' => 9, 'status' => 'active'],
-                ];
-                @endphp
-                @foreach($recruits as $r)
-                <div class="recruit-item">
-                    <div class="recruit-info">
-                        <span class="recruit-poste">{{ $r['poste'] }}</span>
-                        <span class="recruit-dept">{{ $r['dept'] }}</span>
+            <div class="dept-chart">
+                @forelse($parService as $service => $count)
+                <div class="dept-row">
+                    <div class="dept-name">{{ $service ?: 'Non défini' }}</div>
+                    <div class="dept-bar-wrap">
+                        <div class="dept-bar" style="width: {{ $parService->count() > 0 ? min(100, round(($count / max($parService->max(), 1)) * 100)) : 0 }}%; background: var(--col-primary, #1a5c45)"></div>
                     </div>
-                    <div class="recruit-right">
-                        <span class="recruit-count">{{ $r['candidats'] }} candidats</span>
-                        <span class="status-badge status-{{ $r['status'] === 'review' ? 'warn' : 'approved' }}">
-                            {{ $r['status'] === 'review' ? 'En cours' : 'Actif' }}
-                        </span>
+                    <div class="dept-count">{{ $count }}</div>
+                </div>
+                @empty
+                <p class="empty-inline">Aucune répartition disponible.</p>
+                @endforelse
+            </div>
+        </div>
+
+        <div class="dash-col-right">
+            <div class="dash-card">
+                <div class="card-header">
+                    <h3>Contrats expirant bientôt</h3>
+                    <span class="badge badge-warn">{{ $contratsExpirantBientot->count() }}</span>
+                </div>
+                <div class="recruit-list">
+                    @forelse($contratsExpirantBientot as $contrat)
+                    <div class="recruit-item">
+                        <div class="recruit-info">
+                            <span class="recruit-poste">{{ $contrat->personnel->nom_complet }}</span>
+                            <span class="recruit-dept">{{ $contrat->type_contrat }} · {{ $contrat->date_fin?->format('d/m/Y') }}</span>
+                        </div>
+                        <div class="recruit-right">
+                            <span class="recruit-count">{{ $contrat->personnel->service ?: '—' }}</span>
+                        </div>
                     </div>
+                    @empty
+                    <p class="empty-inline">Aucun contrat à surveiller.</p>
+                    @endforelse
                 </div>
-                @endforeach
             </div>
-        </div>
 
-        {{-- Alertes RH --}}
-        <div class="dash-card card-mini">
-            <div class="card-header">
-                <h3>Alertes RH</h3>
-                <span class="badge badge-danger">3</span>
-            </div>
-            <div class="alert-rh-list">
-                <div class="alert-rh-item alert-rh-red">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                    <span>2 contrats expirent dans 15 jours</span>
+            <div class="dash-card card-mini">
+                <div class="card-header">
+                    <h3>Personnel en congé</h3>
+                    <span class="badge badge-blue">{{ is_object($enConge) ? $enConge->count() : $enConge }}</span>
                 </div>
-                <div class="alert-rh-item alert-rh-amber">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    <span>Formation obligatoire non effectuée — 8 agents</span>
-                </div>
-                <div class="alert-rh-item alert-rh-amber">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    <span>Solde congés critique — 5 employés</span>
+                <div class="alert-rh-list">
+                    @forelse(is_object($enConge) ? $enConge : collect() as $conge)
+                    <div class="alert-rh-item alert-rh-amber">
+                        <span>{{ $conge->personnel->nom_complet }}</span>
+                    </div>
+                    @empty
+                    <p class="empty-inline">Aucun agent en congé actuellement.</p>
+                    @endforelse
                 </div>
             </div>
         </div>
-
-    </div>
-</div>
-
-{{-- Répartition Hommes / Femmes --}}
-<div class="dash-card">
-    <div class="card-header">
-        <h3>Parité Hommes / Femmes par département</h3>
-    </div>
-    <div class="parite-grid">
-        @php
-        $parite = [
-            ['dept' => 'Opérations',    'h' => 62, 'f' => 38],
-            ['dept' => 'Finance',       'h' => 45, 'f' => 55],
-            ['dept' => 'RH',            'h' => 25, 'f' => 75],
-            ['dept' => 'Commercial',    'h' => 58, 'f' => 42],
-            ['dept' => 'Informatique',  'h' => 75, 'f' => 25],
-            ['dept' => 'Direction',     'h' => 53, 'f' => 47],
-        ];
-        @endphp
-        @foreach($parite as $p)
-        <div class="parite-item">
-            <div class="parite-label">{{ $p['dept'] }}</div>
-            <div class="parite-bar">
-                <div class="parite-h" style="width: {{ $p['h'] }}%">{{ $p['h'] }}%</div>
-                <div class="parite-f" style="width: {{ $p['f'] }}%">{{ $p['f'] }}%</div>
-            </div>
-            <div class="parite-legend">
-                <span class="leg-h">H {{ $p['h'] }}%</span>
-                <span class="leg-f">F {{ $p['f'] }}%</span>
-            </div>
-        </div>
-        @endforeach
     </div>
 </div>
 
@@ -196,5 +144,30 @@
 .selector-form { display: flex; align-items: center; gap: 0.75rem; }
 .selector-form label { font-size: 0.85rem; font-weight: 600; color: #374151; white-space: nowrap; }
 .selector-form select { min-width: 250px; }
+.centre-banner { display:flex; align-items:center; gap:0.75rem; padding:0.75rem 1rem; background:linear-gradient(135deg, rgba(26,92,69,0.06), rgba(26,92,69,0.02)); border:1px solid rgba(26,92,69,0.12); border-radius:12px; margin-bottom:1.25rem; color:var(--col-primary, #1a5c45); font-weight:600; }
+.centre-banner-icon { opacity:0.7; }
+.dashboard-centre .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; }
+.dashboard-centre .kpi-card { background:#fff; border-radius:16px; padding:1.1rem; display:flex; align-items:flex-start; gap:0.8rem; box-shadow:0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); border:1px solid #f0f0f0; }
+.dashboard-centre .kpi-value { font-size:1.6rem; font-weight:700; line-height:1; }
+.dashboard-centre .kpi-label { font-size:0.8rem; color:#6b7280; margin-top:0.25rem; }
+.dashboard-centre .kpi-trend { font-size:0.72rem; margin-left:auto; color:#6b7280; }
+.dashboard-centre .kpi-blue .kpi-icon { color:#2563eb; background:rgba(37,99,235,0.1); }
+.dashboard-centre .kpi-green .kpi-icon { color:#16a34a; background:rgba(22,163,74,0.1); }
+.dashboard-centre .kpi-amber .kpi-icon { color:#d97706; background:rgba(217,119,6,0.1); }
+.dashboard-centre .kpi-purple .kpi-icon { color:#8b5cf6; background:rgba(139,92,246,0.1); }
+.dashboard-centre .dash-two-col { display:grid; grid-template-columns:1.3fr 0.9fr; gap:1rem; margin-top:1rem; }
+.dashboard-centre .dash-card { background:#fff; border-radius:16px; padding:1rem 1.1rem; border:1px solid #f0f0f0; }
+.dashboard-centre .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; }
+.dashboard-centre .dept-row { display:grid; grid-template-columns:1.4fr 2fr 40px; gap:0.75rem; align-items:center; margin-bottom:0.65rem; font-size:0.85rem; }
+.dashboard-centre .dept-bar-wrap { height:8px; background:#f3f4f6; border-radius:999px; overflow:hidden; }
+.dashboard-centre .dept-bar { height:100%; border-radius:999px; }
+.dashboard-centre .recruit-list { display:flex; flex-direction:column; gap:0.75rem; }
+.dashboard-centre .recruit-item { display:flex; justify-content:space-between; gap:0.75rem; align-items:center; padding:0.7rem 0; border-bottom:1px solid #f3f4f6; }
+.dashboard-centre .recruit-info { display:flex; flex-direction:column; gap:0.2rem; }
+.dashboard-centre .recruit-poste { font-weight:600; color:#111827; }
+.dashboard-centre .recruit-dept { font-size:0.8rem; color:#6b7280; }
+.dashboard-centre .recruit-count { font-size:0.78rem; color:#6b7280; }
+.dashboard-centre .empty-inline { margin:0; color:#6b7280; font-size:0.9rem; }
+@media (max-width: 900px) { .dashboard-centre .dash-two-col { grid-template-columns:1fr; } }
 </style>
 @endpush

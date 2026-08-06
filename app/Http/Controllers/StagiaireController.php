@@ -92,7 +92,17 @@ class StagiaireController extends Controller
                 ->store('photos/stagiaires', 'public');
         }
 
-        Stagiaire::create($data);
+        $stagiaire = Stagiaire::create($data);
+
+        if ($stagiaire->centre_id) {
+            \App\Models\Notification::create([
+                'centre_id'         => $stagiaire->centre_id,
+                'type'              => 'affectation',
+                'titre'             => 'Nouveau stagiaire affecté',
+                'message'           => "Le stagiaire {$stagiaire->nom_complet} a été affecté à votre centre.",
+                'date_notification' => now(),
+            ]);
+        }
 
         return redirect()->route('stagiaires.index')
             ->with('success', 'Stagiaire ajouté avec succès.');
