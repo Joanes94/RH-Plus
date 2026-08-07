@@ -128,7 +128,7 @@ class DemandeController extends Controller
         if ($request->hasFile('signature')) {
             $signPath = $this->doc->sauvegarderSignature($request->file('signature'));
         } else {
-            $signPath = ConfigRh::get('drh_signature_path');
+            $signPath = Auth::user()->signature_path ?: ConfigRh::get('drh_signature_path', null, Auth::user());
         }
 
         $demande->update([
@@ -163,12 +163,14 @@ class DemandeController extends Controller
     {
         abort_if($demande->statut !== 'approuve', 403, 'Document disponible uniquement après approbation.');
         $demande->load('personnel');
+        $demande->load('approuvePar');
+        $approuvePar = $demande->approuvePar;
 
         $p        = $demande->personnel;
         $estFemme = $p->sexe === 'F';
 
         // Signature en base64 pour garantir l'affichage à l'impression
-        $signPath = $demande->signature_path ?: ConfigRh::get('drh_signature_path');
+        $signPath = $demande->signature_path ?: ($approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar));
         $signUrl  = null;
         if ($signPath) {
             $fullPath = Storage::disk('public')->path($signPath);
@@ -187,8 +189,8 @@ class DemandeController extends Controller
             'du_de_la'      => $estFemme ? 'de la' : 'du',
             'nomme_e'       => $estFemme ? 'nommée' : 'nommé',
             'employe_e'     => $estFemme ? 'employée' : 'employé',
-            'drh_nom'       => ConfigRh::get('drh_nom',   'Nom du DRH'),
-            'drh_titre'     => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
+            'drh_nom'       => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', 'Nom du DRH', $approuvePar),
+            'drh_titre'     => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
             'organisation'  => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
             'ville'         => ConfigRh::get('ville', 'Cotonou'),
             'signature_url' => $signUrl,

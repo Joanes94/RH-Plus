@@ -37,9 +37,9 @@ class DocumentService
      * Résout le chemin de signature : priorité au chemin du document,
      * sinon utilise la signature globale du DRH.
      */
-    private function resolveSignature(?string $docPath): ?string
+    private function resolveSignature(?string $docPath, ?\App\Models\User $approver = null): ?string
     {
-        $path = $docPath ?: ConfigRh::get('drh_signature_path');
+        $path = $docPath ?: ConfigRh::get('drh_signature_path', null, $approver);
         return $this->signatureToBase64($path);
     }
 
@@ -91,7 +91,7 @@ class DocumentService
             'drh_titre'       => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
             'organisation'    => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
             'ville'           => ConfigRh::get('ville', 'Cotonou'),
-            'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($conge->signature_path),
+            'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($conge->signature_path, $approuvePar),
             'centre_logo'     => $c?->logo_url,
             'entete_texte'    => $c?->entete_texte,
             'pied_page_texte' => $c?->pied_page_texte,
@@ -119,7 +119,7 @@ class DocumentService
             'drh_titre'       => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
             'organisation'    => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
             'ville'           => ConfigRh::get('ville', 'Cotonou'),
-            'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($absence->signature_path),
+            'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($absence->signature_path, $approuvePar),
             'centre_logo'     => $c?->logo_url,
             'entete_texte'    => $c?->entete_texte,
             'pied_page_texte' => $c?->pied_page_texte,

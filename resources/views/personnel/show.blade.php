@@ -62,7 +62,7 @@
      @if($personnel->photo_url)
         <img src="{{ $personnel->photo_url }}" alt="{{ $personnel->nom_complet }}" class="fiche-avatar-photo">
      @else
-        <div class="fiche-avatar">{{ $personnel->initiales }}</div>
+        <img src="{{ $personnel->avatar_url }}" alt="{{ $personnel->initiales }}" class="fiche-avatar-photo">
      @endif
     <div class="fiche-hero-info">
         <h2>{{ $personnel->nom_complet }}</h2>

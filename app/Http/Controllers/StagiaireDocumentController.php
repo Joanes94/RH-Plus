@@ -18,9 +18,9 @@ class StagiaireDocumentController extends Controller
     /**
      * Données communes à tous les documents stagiaires.
      */
-    private function baseData(Stagiaire $stagiaire): array
+    private function baseData(Stagiaire $stagiaire, ?\App\Models\User $approuvePar = null): array
     {
-        $signPath = ConfigRh::get('drh_signature_path');
+        $signPath = $approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar);
         $signUrl  = null;
         if ($signPath) {
             $full = Storage::disk('public')->path($signPath);
@@ -32,8 +32,8 @@ class StagiaireDocumentController extends Controller
 
         return [
             'stagiaire'    => $stagiaire,
-            'drh_nom'      => ConfigRh::get('drh_nom', 'Le Directeur des Ressources Humaines'),
-            'drh_titre'    => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
+            'drh_nom'      => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', 'Le Directeur des Ressources Humaines', $approuvePar),
+            'drh_titre'    => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
             'organisation' => ConfigRh::get('organisation', 'CSVH Saint Luc'),
             'ville'        => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'=> $signUrl,
@@ -409,7 +409,7 @@ class StagiaireDocumentController extends Controller
         if ($request->hasFile('signature')) {
             $signPath = $request->file('signature')->store('signatures/stagiaires', 'public');
         } else {
-            $signPath = ConfigRh::get('drh_signature_path');
+            $signPath = Auth::user()->signature_path ?: ConfigRh::get('drh_signature_path', null, Auth::user());
         }
 
         $document->update([
@@ -452,10 +452,10 @@ class StagiaireDocumentController extends Controller
         abort_if($document->stagiaire_id !== $stagiaire->id, 404);
         abort_if($document->statut !== 'approuve', 403, 'Le document doit être approuvé.');
 
-        $document->load('stagiaire');
+        $document->load('stagiaire', 'approuvePar');
 
         // Données de base
-        $base = $this->baseData($stagiaire);
+        $base = $this->baseData($stagiaire, $document->approuvePar);
         
         // Construire les segments de service
         $services_list = $document->services ?? [$stagiaire->service];

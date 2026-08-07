@@ -184,7 +184,7 @@ class AbsenceController extends Controller
         if ($request->hasFile('signature')) {
             $signPath = $this->doc->sauvegarderSignature($request->file('signature'));
         } else {
-            $signPath = \App\Models\ConfigRh::get('drh_signature_path');
+            $signPath = Auth::user()->signature_path ?: \App\Models\ConfigRh::get('drh_signature_path', null, Auth::user());
         }
 
         $absence->update([

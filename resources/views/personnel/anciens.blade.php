@@ -78,7 +78,7 @@
                         @if($p->photo_url)
                             <img src="{{ $p->photo_url }}" alt="Photo de {{ $p->nom_complet }}" class="agent-photo">
                         @else
-                            <div class="agent-avatar av-sm">{{ $p->initiales }}</div>
+                            <img src="{{ $p->avatar_url }}" alt="{{ $p->initiales }}" class="agent-photo">
                         @endif
                         <div>
                             <div class="agent-name">{{ $p->nom_complet }}</div>

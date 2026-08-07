@@ -220,11 +220,26 @@ class Personnel extends Model
 
         $cleanPath = ltrim(str_replace(['public/', 'storage/'], '', $this->photo_path), '/');
 
-        if (Storage::disk('public')->exists($cleanPath) || file_exists(storage_path('app/public/' . $cleanPath)) || file_exists(public_path('storage/' . $cleanPath))) {
+        // Vérifier si le fichier existe réellement
+        if (Storage::disk('public')->exists($cleanPath)
+            || file_exists(storage_path('app/public/' . $cleanPath))
+            || file_exists(public_path('storage/' . $cleanPath))) {
             return asset('storage/' . $cleanPath);
         }
 
         return null;
+    }
+
+    /**
+     * Avatar de substitution : génère une image avec les initiales si pas de photo.
+     * Utilisable comme fallback universel dans les vues : $personnel->photo_url ?? $personnel->avatar_url
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        $initiales = urlencode($this->initiales);
+        $colors = ['1a5c45', '3b82f6', '8b5cf6', 'f59e0b', 'ec4899', '06b6d4', '10b981', '6366f1'];
+        $bg = $colors[$this->id % count($colors)];
+        return "https://ui-avatars.com/api/?name={$initiales}&background={$bg}&color=fff&size=128&font-size=0.4&bold=true&format=svg";
     }
 
     public function isActif(): bool { return $this->statut === 'actif'; }

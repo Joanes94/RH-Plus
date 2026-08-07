@@ -15,18 +15,10 @@
     </button>
 </div>
 
-<div class="drag-hint">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
-    Glissez les cartes pour réorganiser l'ordre des centres
-</div>
-
 <div class="centres-grid" id="centresGrid">
     @foreach($centres as $centre)
     <div class="centre-card {{ $centre->actif ? '' : 'centre-inactif' }}" data-id="{{ $centre->id }}">
         <div class="centre-card-header">
-            <div class="centre-drag-handle" title="Glisser pour réorganiser">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
-            </div>
             @if($centre->logo_url)
                 <img src="{{ $centre->logo_url }}" alt="Logo {{ $centre->nom }}" class="centre-logo-img">
             @else
@@ -229,23 +221,50 @@ function openEditModal(centre) {
     document.getElementById('modalEdit').showModal();
 }
 
-// ── Drag & Drop pour réordonner les cartes ────────────────────────────────────
+function showToast(message, type = 'success') {
+    const existing = document.querySelector('.reorder-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'reorder-toast reorder-toast-' + type;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const grid = document.getElementById('centresGrid');
     if (!grid) return;
 
-    const sortable = Sortable.create(grid, {
-        animation: 180,
-        ghostClass: 'centre-card-ghost',
-        chosenClass: 'centre-card-chosen',
-        dragClass: 'centre-card-drag',
-        handle: '.centre-drag-handle',
-        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    Sortable.create(grid, {
+        animation: 250,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        forceFallback: true,
+        fallbackClass: 'sortable-fallback',
+        fallbackOnBody: true,
+        swapThreshold: 0.65,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        filter: '.btn-icon, .btn-primary, dialog, .modal',
+        preventOnFilter: false,
+        onStart: function() {
+            grid.classList.add('is-sorting');
+        },
         onEnd: function (evt) {
-            // Collecter le nouvel ordre
+            grid.classList.remove('is-sorting');
+
+            // Bounce animation on dropped item
+            const item = evt.item;
+            item.classList.add('just-dropped');
+            setTimeout(() => item.classList.remove('just-dropped'), 400);
+
             const ids = [...grid.querySelectorAll('.centre-card')].map(el => el.dataset.id);
 
-            // Envoyer au serveur
             fetch('{{ route("centres.reorder") }}', {
                 method: 'PATCH',
                 headers: {
@@ -254,8 +273,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: JSON.stringify({ ordre: ids }),
             }).then(r => {
-                if (!r.ok) console.warn('Réordonnancement non enregistré.');
-            }).catch(err => console.warn('Erreur réseau:', err));
+                if (r.ok) {
+                    showToast('Ordre mis à jour \u2713');
+                } else {
+                    showToast('Erreur lors de la sauvegarde', 'error');
+                }
+            }).catch(() => showToast('Erreur réseau', 'error'));
         },
     });
 });
@@ -264,7 +287,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 @push('styles')
 <style>
-/* ── Grille des centres ───────────────────────────────────────────────────── */
 .centres-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -272,7 +294,6 @@ document.addEventListener('DOMContentLoaded', function () {
     align-items: start;
 }
 
-/* ── Carte centre ─────────────────────────────────────────────────────────── */
 .centre-card {
     display: flex;
     flex-direction: column;
@@ -281,55 +302,94 @@ document.addEventListener('DOMContentLoaded', function () {
     border-radius: 16px;
     border: 1px solid #e5e7eb;
     overflow: hidden;
-    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                box-shadow 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                border-color 0.25s ease;
+    cursor: grab;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 0.3s ease,
+                opacity 0.3s ease;
     will-change: transform;
     user-select: none;
+    -webkit-user-select: none;
 }
 .centre-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 32px rgba(0,0,0,0.10);
     border-color: #d1d5db;
 }
+.centre-card:active { cursor: grabbing; }
 .centre-inactif { opacity: 0.55; }
 
-/* ── États Drag & Drop ────────────────────────────────────────────────────── */
-.centre-card-ghost {
-    opacity: 0.35;
-    background: #f3f4f6;
-    border: 2px dashed #9ca3af !important;
+/* Sortable states */
+.sortable-ghost {
+    opacity: 0.25;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 2px dashed var(--col-primary, #1a5c45) !important;
+    border-radius: 16px;
     box-shadow: none !important;
     transform: none !important;
 }
-.centre-card-chosen {
-    box-shadow: 0 16px 40px rgba(26, 92, 69, 0.18) !important;
+.sortable-chosen {
+    box-shadow: 0 20px 50px rgba(26, 92, 69, 0.20) !important;
     border-color: var(--col-primary, #1a5c45) !important;
-    transform: scale(1.02) !important;
-    z-index: 10;
+    transform: rotate(-1deg) scale(1.03) !important;
+    z-index: 100;
+    cursor: grabbing;
 }
-.centre-card-drag {
+.sortable-drag {
+    opacity: 0 !important;
+}
+.sortable-fallback {
+    box-shadow: 0 24px 60px rgba(26, 92, 69, 0.25) !important;
+    border-color: var(--col-primary, #1a5c45) !important;
+    transform: rotate(-1.5deg) scale(1.04) !important;
+    border-radius: 16px;
+    opacity: 0.95 !important;
     cursor: grabbing !important;
-    opacity: 0.92;
 }
 
-/* ── Poignée de glissement ────────────────────────────────────────────────── */
-.centre-drag-handle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px; height: 24px;
-    border-radius: 6px;
-    color: #d1d5db;
-    cursor: grab;
-    transition: color 0.15s, background 0.15s;
-    flex-shrink: 0;
-    margin-right: -4px;
+.is-sorting .centre-card:not(.sortable-chosen):not(.sortable-ghost) {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.centre-drag-handle:hover { color: #6b7280; background: #f3f4f6; }
-.centre-drag-handle:active { cursor: grabbing; }
 
-/* ── En-tête carte ────────────────────────────────────────────────────────── */
+@keyframes bounceIn {
+    0%   { transform: scale(0.95); }
+    50%  { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+.just-dropped {
+    animation: bounceIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Toast notification */
+.reorder-toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+}
+.reorder-toast-success {
+    background: rgba(16, 185, 129, 0.9);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+}
+.reorder-toast-error {
+    background: rgba(239, 68, 68, 0.9);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+}
+.reorder-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 .centre-card-header {
     display: flex; align-items: center; gap: 0.75rem;
     padding: 1.25rem 1.25rem 0.75rem;
@@ -339,6 +399,7 @@ document.addEventListener('DOMContentLoaded', function () {
     object-fit: contain; border-radius: 10px;
     border: 1px solid #f0f0f0; padding: 2px;
     transition: transform 0.2s ease;
+    pointer-events: none;
 }
 .centre-card:hover .centre-logo-img { transform: scale(1.05); }
 .centre-icon {
@@ -349,6 +410,7 @@ document.addEventListener('DOMContentLoaded', function () {
     font-size: 0.75rem; font-weight: 700;
     flex-shrink: 0;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    pointer-events: none;
 }
 .centre-card:hover .centre-icon {
     transform: scale(1.08);
@@ -368,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function () {
 }
 .btn-icon:hover { background: #f3f4f6; color: #111827; border-color: #d1d5db; }
 
-/* ── Corps carte ──────────────────────────────────────────────────────────── */
 .centre-card-body { padding: 0 1.25rem 1.25rem; }
 
 .centre-stat { text-align: center; padding: 0.75rem 0; }
@@ -385,7 +446,6 @@ document.addEventListener('DOMContentLoaded', function () {
 .badge-actif  { background: rgba(16,185,129,0.1); color: #047857; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; }
 .badge-inactif { background: rgba(239,68,68,0.1); color: #b91c1c; font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; }
 
-/* ── Modal ────────────────────────────────────────────────────────────────── */
 .modal { border: none; border-radius: 20px; padding: 0; max-width: 620px; width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
 .modal::backdrop { background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f0f0f0; }
@@ -398,13 +458,5 @@ document.addEventListener('DOMContentLoaded', function () {
 .full-width { grid-column: 1 / -1; }
 .checkbox-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; }
 .form-control { width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.88rem; }
-
-/* ── Indicateur de réordonnancement ──────────────────────────────────────── */
-.drag-hint {
-    display: flex; align-items: center; gap: 0.4rem;
-    font-size: 0.72rem; color: #9ca3af;
-    margin-bottom: 0.75rem;
-    user-select: none;
-}
 </style>
 @endpush

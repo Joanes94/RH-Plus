@@ -84,7 +84,7 @@
     @if($c->personnel->photo_url)
         <img src="{{ $c->personnel->photo_url }}" alt="{{ $c->personnel->nom_complet }}" class="agent-photo">
     @else
-        <div class="agent-avatar av-sm">{{ $c->personnel->initiales }}</div>
+        <img src="{{ $c->personnel->avatar_url }}" alt="{{ $c->personnel->initiales }}" class="agent-photo">
     @endif
     <div>
         <div class="agent-name">{{ $c->personnel->nom_complet }}</div>

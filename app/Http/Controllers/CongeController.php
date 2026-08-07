@@ -214,7 +214,7 @@ class CongeController extends Controller
         if ($request->hasFile('signature')) {
             $signPath = $this->doc->sauvegarderSignature($request->file('signature'));
         } else {
-            $signPath = ConfigRh::get('drh_signature_path');
+            $signPath = Auth::user()->signature_path ?: ConfigRh::get('drh_signature_path', null, Auth::user());
         }
 
         $conge->update([
@@ -254,7 +254,8 @@ class CongeController extends Controller
         $data = $this->doc->buildCongeData($conge);
 
         // Surcharger la signature_url en base64
-        $signPath = $conge->signature_path ?: ConfigRh::get('drh_signature_path');
+        $approuvePar = $conge->approuvePar;
+        $signPath = $conge->signature_path ?: ($approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar));
         $signUrl  = null;
         if ($signPath) {
             $full = Storage::disk('public')->path($signPath);

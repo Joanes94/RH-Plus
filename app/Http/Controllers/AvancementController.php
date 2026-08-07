@@ -55,7 +55,8 @@ class AvancementController extends Controller
         $contrat = $avancement->contrat ?? $avancement->personnel->contrat_actif;
 
         // Signature électronique du DRH (même logique que pour les congés/absences).
-        $signPath = ConfigRh::get('drh_signature_path');
+        $approuvePar = $avancement->approuvePar ?? null;
+        $signPath = $avancement->signature_path ?? ($approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar));
         $signUrl  = null;
         if ($signPath) {
             $full = Storage::disk('public')->path($signPath);

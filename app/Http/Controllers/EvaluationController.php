@@ -158,7 +158,7 @@ class EvaluationController extends Controller
         if ($request->hasFile('signature')) {
             $signPath = $request->file('signature')->store('signatures/evaluations', 'public');
         } else {
-            $signPath = ConfigRh::get('drh_signature_path');
+            $signPath = Auth::user()->signature_path ?: ConfigRh::get('drh_signature_path', null, Auth::user());
         }
 
         $evaluation->update([
@@ -195,7 +195,8 @@ class EvaluationController extends Controller
     {
         abort_if($evaluation->statut !== 'approuve', 403, 'L\'évaluation doit être approuvée pour générer le document.');
 
-        $evaluation->load('stagiaire');
+        $evaluation->load('stagiaire', 'approuvePar');
+        $approuvePar = $evaluation->approuvePar;
 
         $logoPath = public_path('images/letterhead/logo_archidiocese.jpeg');
         $logoB64 = file_exists($logoPath) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath)) : null;
@@ -203,7 +204,7 @@ class EvaluationController extends Controller
         $evequePath = public_path('images/letterhead/photo_eveque.jpeg');
         $evequeB64 = file_exists($evequePath) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($evequePath)) : null;
 
-        $signaturePath = $evaluation->signature_path;
+        $signaturePath = $evaluation->signature_path ?: ($approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar));
         $signatureUrl = null;
         if ($signaturePath) {
             if (Storage::disk('public')->exists($signaturePath)) {
@@ -221,8 +222,8 @@ class EvaluationController extends Controller
             'eveque_b64' => $evequeB64,
             'date_doc' => now()->isoFormat('DD MMMM YYYY'),
             'ville' => ConfigRh::get('ville', 'Cotonou'),
-            'drh_nom' => ConfigRh::get('drh_nom', ''),
-            'drh_titre' => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines'),
+            'drh_nom' => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', '', $approuvePar),
+            'drh_titre' => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
         ]);
     }
 }
