@@ -77,7 +77,10 @@
                 <div class="dl-row"><dt>Date de fin</dt><dd>{{ $demande->date_fin->isoFormat('dddd D MMMM YYYY') }}</dd></div>
                 @endif
                 @if($demande->nb_jours)
-                <div class="dl-row"><dt>Durée</dt><dd>{{ $demande->nb_jours }} jour(s)</dd></div>
+                <div class="dl-row"><dt>Durée</dt><dd>{{ $demande->nb_jours }} jour(s) {{ $demande->type_demande === 'conge_maladie' ? 'ouvrables' : '' }}</dd></div>
+                @endif
+                @if($demande->type_demande === 'conge_maladie' && $demande->date_reprise)
+                <div class="dl-row"><dt>Date de reprise</dt><dd><strong>{{ $demande->date_reprise->isoFormat('dddd D MMMM YYYY') }}</strong></dd></div>
                 @endif
                 @if($demande->date_accouchement_prevu)
                 <div class="dl-row"><dt>Accouchement prévu</dt><dd>{{ $demande->date_accouchement_prevu->format('d/m/Y') }}</dd></div>

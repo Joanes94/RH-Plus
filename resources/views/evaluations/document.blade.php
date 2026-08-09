@@ -95,19 +95,34 @@
 <div class="doc-page">
 
     {{-- En-tête --}}
-    <div class="letterhead">
-        <img src="{{ $eveque_b64 ?? '' }}" alt="" class="lh-img-left">
-        <div class="lh-center">
-            <div class="lh-line1">ARCHIDIOCESE DE COTONOU</div>
-            <div class="lh-line2">DIRECTION DIOCESAINE DE LA SANTE</div>
-            <div class="lh-line3">CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC</div>
-            <div class="lh-line4">C.S.V.H (ex : Hôpital Saint LUC)</div>
-            <div class="lh-line5">
-                Qtier Missèkplé Ste Rita - 01 BP 3603 | Tél : 66 43 44 78 – 90 07 49 67 | hopitalsaintluc@gmail.com | Cotonou – BENIN
-            </div>
+    {{-- En-tête dynamique ou Image d'en-tête --}}
+    @if(!empty($entete_image_url))
+        <div class="letterhead-image-only" style="text-align: center; margin-bottom: 18px; border-bottom: 2.5px solid #000; padding-bottom: 8px;">
+            <img src="{{ $entete_image_url }}" alt="En-tête" style="width: 100%; height: auto; max-height: 150px; display: block; object-fit: contain;">
         </div>
-        <img src="{{ $logo_b64 ?? '' }}" alt="" class="lh-img-right">
-    </div>
+    @else
+        <div class="letterhead">
+            <img src="{{ $eveque_b64 ?? '' }}" alt="" class="lh-img-left">
+            <div class="lh-center">
+                <div class="lh-line1">ARCHIDIOCESE DE COTONOU</div>
+                <div class="lh-line2">DIRECTION DIOCESAINE DE LA SANTE</div>
+                <div class="lh-line3">{{ $centre?->nom ?? 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC' }}</div>
+                @if($centre && $centre->code !== 'ST_LUC')
+                    <div class="lh-line4">{{ $centre->reference_suffix }}</div>
+                @else
+                    <div class="lh-line4">C.S.V.H (ex : Hôpital Saint LUC)</div>
+                @endif
+                <div class="lh-line5">
+                    {!! nl2br(e($entete_texte ?? 'Qtier Missèkplé Ste Rita - 01 BP 3603 | Tél : 66 43 44 78 – 90 07 49 67 | hopitalsaintluc@gmail.com | Cotonou – BENIN')) !!}
+                </div>
+            </div>
+            @if(!empty($centre_logo))
+                <img src="{{ $centre_logo }}" alt="" class="lh-img-right" style="max-height: 76px; width: auto; object-fit: contain;">
+            @else
+                <img src="{{ $logo_b64 ?? '' }}" alt="" class="lh-img-right">
+            @endif
+        </div>
+    @endif
 
     {{-- Titre --}}
     <div class="doc-title">FICHE D'ÉVALUATION INDIVIDUELLE DES STAGIAIRES</div>

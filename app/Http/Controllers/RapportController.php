@@ -70,7 +70,15 @@ class RapportController extends Controller
 
         $user = auth()->user();
         $isGlobal = $user?->isGlobal() || $user?->isCRH();
-        $absents = $this->buildAbsentsList($date, $isGlobal ? null : $user?->centre_id);
+
+        // Déterminer le centre : global = filtre optionnel, local = forcé
+        if ($isGlobal) {
+            $centreId = $request->filled('centre_id') ? (int) $request->centre_id : null;
+        } else {
+            $centreId = $user?->centre_id;
+        }
+
+        $absents = $this->buildAbsentsList($date, $centreId);
 
         if ($request->filled('service')) {
             $absents = $absents->filter(fn ($a) => $a['personnel']->service === $request->service);
@@ -95,7 +103,9 @@ class RapportController extends Controller
             'absents'  => $absents,
             'stats'    => $stats,
             'services' => Personnel::services(),
-            'filters'  => $request->only('service', 'sexe'),
+            'centres'  => \App\Models\Centre::actifs()->orderBy('nom')->get(),
+            'filters'  => $request->only('service', 'sexe', 'centre_id'),
+            'isGlobal' => $isGlobal,
         ]);
     }
 
@@ -111,7 +121,7 @@ class RapportController extends Controller
             ->when($centreId, fn ($q) => $q->whereHas('personnel', fn ($q2) => $q2->where('centre_id', $centreId)))
             ->where('statut', 'approuve')
             ->whereDate('date_debut', '<=', $date)
-            ->whereDate('date_fin', '>=', $date)
+            ->whereDate('date_fin', '>', $date) // date_fin is the return date, so they are absent if return date is strictly after $date
             ->get()
             ->each(function (Conge $c) use ($absents) {
                 if (!$c->personnel) return;
@@ -121,7 +131,7 @@ class RapportController extends Controller
                     'type_label' => $c->getTypeCongeLabel(),
                     'date_debut' => $c->date_debut,
                     'date_fin'   => $c->date_fin,
-                    'date_reprise'  => $c->date_fin ? Carbon::parse($c->date_fin)->copy()->addDay() : null,
+                    'date_reprise'  => $c->date_fin, // In Conge, date_fin is already the return date
                     'route_show' => route('conges.show', $c),
                 ]);
             });
@@ -140,7 +150,7 @@ class RapportController extends Controller
                     'type_label' => $a->getTypeLabel(),
                     'date_debut' => $a->date_debut,
                     'date_fin'   => $a->date_fin,
-                    'date_reprise'  => $a->date_fin ? Carbon::parse($a->date_fin)->copy()->addDay() : null,
+                    'date_reprise'  => $a->date_reprise, // Uses holiday-aware accessor
                     'route_show' => route('absences.show', $a),
                 ]);
             });
@@ -160,7 +170,7 @@ class RapportController extends Controller
                     'type_label' => $d->type_label,
                     'date_debut' => $d->date_debut,
                     'date_fin'   => $d->date_fin,
-                    'date_reprise'  => $d->date_fin ? Carbon::parse($d->date_fin)->copy()->addDay() : null,
+                    'date_reprise'  => $d->date_reprise, // Uses holiday-aware accessor
                     'route_show' => route('demandes.show', $d),
                 ]);
             });
@@ -251,18 +261,30 @@ class RapportController extends Controller
         ]);
         $request->merge(['annee' => $request->input('annee', now()->year)]);
 
+        $user = auth()->user();
+        $isGlobal = $user?->isGlobal() || $user?->isCRH();
+
+        // Déterminer le centre : global = filtre optionnel, local = forcé
+        if ($isGlobal) {
+            $centreId = $request->filled('centre_id') ? (int) $request->centre_id : null;
+        } else {
+            $centreId = $user?->centre_id;
+        }
+
         [$debut, $fin] = $this->periode($request);
-        $contrats = $this->buildHistoriqueQuery($request, $debut, $fin)->get();
+        $contrats = $this->buildHistoriqueQuery($request, $debut, $fin, $centreId)->get();
 
         return view('rapports.historique', [
-            'services'  => Personnel::services(),
+            'services'      => Personnel::services(),
             'contratsTypes' => Personnel::typesContrat(),
-            'filters'   => $request->only('annee', 'mois', 'service', 'type_contrat'),
-            'annee'     => (int) $request->annee,
-            'mois'      => $request->filled('mois') ? (int) $request->mois : null,
+            'centres'       => \App\Models\Centre::actifs()->orderBy('nom')->get(),
+            'filters'       => $request->only('annee', 'mois', 'service', 'type_contrat', 'centre_id'),
+            'annee'         => (int) $request->annee,
+            'mois'          => $request->filled('mois') ? (int) $request->mois : null,
             'periode_label' => $this->periodeLabel($request, $debut, $fin),
-            'contrats'  => $contrats,
-            'stats'     => $this->statsHistorique($contrats),
+            'contrats'      => $contrats,
+            'stats'         => $this->statsHistorique($contrats),
+            'isGlobal'      => $isGlobal,
         ]);
     }
 
@@ -274,8 +296,17 @@ class RapportController extends Controller
         ]);
         $request->merge(['annee' => $request->input('annee', now()->year)]);
 
+        $user = auth()->user();
+        $isGlobal = $user?->isGlobal() || $user?->isCRH();
+
+        if ($isGlobal) {
+            $centreId = $request->filled('centre_id') ? (int) $request->centre_id : null;
+        } else {
+            $centreId = $user?->centre_id;
+        }
+
         [$debut, $fin] = $this->periode($request);
-        $contrats = $this->buildHistoriqueQuery($request, $debut, $fin)->get();
+        $contrats = $this->buildHistoriqueQuery($request, $debut, $fin, $centreId)->get();
 
         $logoPath  = public_path('images/letterhead/logo_archidiocese.jpeg');
         $evePath   = public_path('images/letterhead/photo_eveque.jpeg');
@@ -286,7 +317,7 @@ class RapportController extends Controller
             'contrats'      => $contrats,
             'stats'         => $this->statsHistorique($contrats),
             'periode_label' => $this->periodeLabel($request, $debut, $fin),
-            'filters'       => $request->only('annee', 'mois', 'service', 'type_contrat'),
+            'filters'       => $request->only('annee', 'mois', 'service', 'type_contrat', 'centre_id'),
             'date_rapport'  => now()->isoFormat('D MMMM YYYY'),
             'organisation'  => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
             'ville'         => ConfigRh::get('ville', 'Cotonou'),

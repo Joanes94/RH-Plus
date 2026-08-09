@@ -29,10 +29,15 @@ class CentreController extends Controller
             'pied_page_texte'  => 'nullable|string',
             'reference_suffix' => 'nullable|string|max:100',
             'logo'             => 'nullable|image|max:2048|mimes:jpg,jpeg,png',
+            'entete_image'     => 'nullable|image|max:2048|mimes:jpg,jpeg,png',
         ]);
 
         if ($request->hasFile('logo')) {
             $validated['logo_path'] = $request->file('logo')->store('logos/centres', 'public');
+        }
+
+        if ($request->hasFile('entete_image')) {
+            $validated['entete_image_path'] = $request->file('entete_image')->store('entetes/centres', 'public');
         }
 
         Centre::create($validated);
@@ -52,6 +57,7 @@ class CentreController extends Controller
             'pied_page_texte'  => 'nullable|string',
             'reference_suffix' => 'nullable|string|max:100',
             'logo'             => 'nullable|image|max:2048|mimes:jpg,jpeg,png',
+            'entete_image'     => 'nullable|image|max:2048|mimes:jpg,jpeg,png',
         ]);
 
         if ($request->hasFile('logo')) {
@@ -61,9 +67,53 @@ class CentreController extends Controller
             $validated['logo_path'] = $request->file('logo')->store('logos/centres', 'public');
         }
 
+        if ($request->hasFile('entete_image')) {
+            if ($centre->entete_image_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($centre->entete_image_path);
+            }
+            $validated['entete_image_path'] = $request->file('entete_image')->store('entetes/centres', 'public');
+        }
+
         $centre->update($validated);
 
         return back()->with('success', 'Centre mis à jour avec succès.');
+    }
+
+    public function toggleStatus(Centre $centre)
+    {
+        $centre->update(['actif' => !$centre->actif]);
+        $status = $centre->actif ? 'activé' : 'désactivé';
+        return back()->with('success', "Le centre « {$centre->nom} » a été {$status}.");
+    }
+
+    public function move(Request $request, Centre $centre, string $direction)
+    {
+        $allCentres = Centre::orderByRaw('ordre IS NULL, ordre ASC, nom ASC')->get();
+        $currentIndex = $allCentres->search(fn($c) => $c->id === $centre->id);
+
+        if ($currentIndex === false) {
+            return back();
+        }
+
+        $targetIndex = $direction === 'up' ? $currentIndex - 1 : $currentIndex + 1;
+
+        if ($targetIndex >= 0 && $targetIndex < $allCentres->count()) {
+            $adjacentCentre = $allCentres[$targetIndex];
+
+            // Inverser les ordres
+            $tempOrder = $centre->ordre ?: ($currentIndex + 1);
+            $adjacentOrder = $adjacentCentre->ordre ?: ($targetIndex + 1);
+
+            if ($tempOrder == $adjacentOrder) {
+                $tempOrder = $currentIndex + 1;
+                $adjacentOrder = $targetIndex + 1;
+            }
+
+            $centre->update(['ordre' => $adjacentOrder]);
+            $adjacentCentre->update(['ordre' => $tempOrder]);
+        }
+
+        return back()->with('success', "L'ordre du centre « {$centre->nom} » a été mis à jour.");
     }
 
     /**
@@ -79,7 +129,6 @@ class CentreController extends Controller
                 Centre::where('id', $id)->update(['ordre' => $position + 1]);
             }
         } catch (\Exception $e) {
-            // La colonne `ordre` n'existe peut-être pas encore — on l'ignore silencieusement.
             return response()->json(['ok' => false, 'message' => $e->getMessage()], 200);
         }
 

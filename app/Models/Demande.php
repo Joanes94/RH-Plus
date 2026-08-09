@@ -128,6 +128,25 @@ class Demande extends Model
         return in_array($this->statut, ['brouillon', 'soumis']);
     }
 
+    public function getDateRepriseAttribute(): ?\Carbon\Carbon
+    {
+        if (!$this->date_fin) {
+            return null;
+        }
+
+        $feries = array_merge(
+            JourFerie::pourAnnee($this->date_fin->year),
+            JourFerie::pourAnnee($this->date_fin->year + 1)
+        );
+
+        $reprise = $this->date_fin->copy()->addDay();
+        while ($reprise->isWeekend() || in_array($reprise->format('Y-m-d'), $feries)) {
+            $reprise->addDay();
+        }
+
+        return $reprise;
+    }
+
     // ── Relations ─────────────────────────────────────────────────────────────
 
     public function personnel()

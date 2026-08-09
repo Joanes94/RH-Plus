@@ -51,7 +51,11 @@
             <tr>
                 <td>
                     <div class="agent-cell">
-                        <div class="agent-avatar av-sm">{{ strtoupper(substr($item['agent'], 0, 2)) }}</div>
+                        @if($item['photo_url'])
+                            <img src="{{ $item['photo_url'] }}" alt="" class="agent-photo">
+                        @else
+                            <img src="{{ $item['avatar_url'] }}" alt="{{ $item['initiales'] }}" class="agent-photo">
+                        @endif
                         <div>
                             <div class="agent-name">{{ $item['agent'] }}</div>
                             <div class="agent-meta">{{ $item['service'] ?: '—' }}</div>

@@ -28,7 +28,8 @@
         <img src="{{ $stagiaire->photo_url }}" alt="Photo"
              style="width:64px;height:64px;object-fit:cover;border-radius:50%;border:2px solid var(--col-border-lg);flex-shrink:0">
     @else
-        <div class="fiche-avatar">{{ $stagiaire->initiales }}</div>
+        <img src="{{ $stagiaire->avatar_url }}" alt="{{ $stagiaire->initiales }}"
+             style="width:64px;height:64px;object-fit:cover;border-radius:50%;border:2px solid var(--col-border-lg);flex-shrink:0">
     @endif
     <div class="fiche-hero-info">
         <h2>{{ $stagiaire->nom_complet }}</h2>

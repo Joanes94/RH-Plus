@@ -81,18 +81,32 @@
     $restants    = $document->nb_jours_restants ?? ($acquis - $dejaFalques - $accordes);
 @endphp
 
-    {{-- LETTERHEAD --}}
-    <div class="lh">
-        <img src="{{ $evequB64 }}" alt="" class="lh-img-left">
-        <div class="lh-center">
-            <div class="lh-l1">ARCHIDIOCESE DE COTONOU</div>
-            <div class="lh-l2">DIRECTION DIOCESAINE DE LA SANTE</div>
-            <div class="lh-l3">CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC</div>
-            <div class="lh-l4">C.S.V.H (ex : H&ocirc;pital Saint LUC)</div>
-            <div class="lh-l5">Qtier Miss&egrave;kpl&eacute; Ste Rita - 01 BP 3603 &nbsp;|&nbsp; T&eacute;l : 66 43 44 78 &ndash; 90 07 49 67 &nbsp;|&nbsp; hopitalsaintluc@gmail.com &nbsp;|&nbsp; Cotonou &ndash; BENIN</div>
+    {{-- LETTERHEAD DYNAMIQUE OU IMAGE D'EN-TÊTE --}}
+    @if(!empty($entete_image_url))
+        <div class="lh-image-only" style="text-align: center; margin-bottom: 16px; border-bottom: 2px solid #000; padding-bottom: 10px;">
+            <img src="{{ $entete_image_url }}" alt="En-tête" style="width: 100%; height: auto; max-height: 150px; display: block; object-fit: contain;">
         </div>
-        <img src="{{ $logoB64 }}" alt="" class="lh-img-right">
-    </div>
+    @else
+        <div class="lh">
+            <img src="{{ $evequB64 }}" alt="" class="lh-img-left">
+            <div class="lh-center">
+                <div class="lh-l1">ARCHIDIOCESE DE COTONOU</div>
+                <div class="lh-l2">DIRECTION DIOCESAINE DE LA SANTE</div>
+                <div class="lh-l3">{{ $centre?->nom ?? 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC' }}</div>
+                @if($centre && $centre->code !== 'ST_LUC')
+                    <div class="lh-l4">{{ $centre->reference_suffix }}</div>
+                @else
+                    <div class="lh-l4">C.S.V.H (ex : H&ocirc;pital Saint LUC)</div>
+                @endif
+                <div class="lh-l5">{!! nl2br(e($entete_texte ?? 'Qtier Missèkplé Ste Rita - 01 BP 3603 | Tél : 66 43 44 78 – 90 07 49 67 | hopitalsaintluc@gmail.com | Cotonou – BENIN')) !!}</div>
+            </div>
+            @if(!empty($centre_logo))
+                <img src="{{ $centre_logo }}" alt="" class="lh-img-right" style="max-height: 70px; width: auto; object-fit: contain;">
+            @else
+                <img src="{{ $logoB64 }}" alt="" class="lh-img-right">
+            @endif
+        </div>
+    @endif
 
     {{-- Date + Référence --}}
     <div class="doc-date">{{ $ville }}, le {{ $date_doc }}</div>

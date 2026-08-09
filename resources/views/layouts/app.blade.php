@@ -158,15 +158,42 @@
 
             @if(auth()->user()->isCRH())
             <div class="nav-section">
-                <span class="nav-label">CRH</span>
-                <a href="{{ route('centres.index') }}" class="nav-item {{ request()->routeIs('centres.*') ? 'active' : '' }}">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                    Centres
-                </a>
+                <span class="nav-label">Gestion CRH</span>
                 <a href="{{ route('users.index') }}" class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
                     Gestion utilisateurs
                 </a>
+            </div>
+
+            <div class="nav-section nav-section-centres">
+                <div class="nav-section-header">
+                    <span class="nav-label">Centres de Santé</span>
+                    @if(isset($sidebarCentres) && $sidebarCentres->count() > 0)
+                        <span class="nav-section-badge">{{ $sidebarCentres->count() }}</span>
+                    @endif
+                </div>
+
+                <a href="{{ route('centres.index') }}" class="nav-item nav-item-main {{ request()->routeIs('centres.*') ? 'active' : '' }}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span>Gérer les centres</span>
+                </a>
+
+                @if(isset($sidebarCentres) && $sidebarCentres->count() > 0)
+                <div class="sidebar-sublist">
+                    @foreach($sidebarCentres as $sc)
+                        @php
+                            $isCurrentCentre = request()->routeIs('dashboard.centre') && request()->get('centre_id') == $sc->id;
+                        @endphp
+                        <a href="{{ route('dashboard.centre', ['centre_id' => $sc->id]) }}" 
+                           class="sidebar-subitem {{ $isCurrentCentre ? 'active' : '' }} {{ !$sc->actif ? 'subitem-inactif' : '' }}"
+                           title="{{ $sc->nom }} ({{ $sc->effectif_actif }} agents)">
+                            <span class="subitem-dot" style="background: {{ $sc->actif ? ['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ec4899','#06b6d4'][$loop->index % 6] : '#9ca3af' }}"></span>
+                            <span class="subitem-name">{{ $sc->nom }}</span>
+                            <span class="subitem-count">{{ $sc->effectif_actif }}</span>
+                        </a>
+                    @endforeach
+                </div>
+                @endif
             </div>
             @endif
 

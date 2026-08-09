@@ -46,6 +46,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [CentreController::class, 'index'])->name('index');
         Route::post('/', [CentreController::class, 'store'])->name('store');
         Route::patch('/reorder', [CentreController::class, 'reorder'])->name('reorder');
+        Route::patch('/{centre}/toggle-status', [CentreController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{centre}/move/{direction}', [CentreController::class, 'move'])->name('move');
         Route::put('/{centre}', [CentreController::class, 'update'])->name('update');
     });
 
@@ -176,6 +178,7 @@ Route::middleware('auth')->group(function () {
 
     // ── Absences ──────────────────────────────────────────────────────────────
     Route::get('/absences',                               [AbsenceController::class, 'index'])->name('absences.index');
+    Route::get('/absences/calcul-details',                 [AbsenceController::class, 'calculDetails'])->name('absences.calcul-details');
     Route::get('/absences/create',                        [AbsenceController::class, 'create'])->name('absences.create');
     Route::post('/absences',                              [AbsenceController::class, 'store'])->name('absences.store');
     Route::get('/absences/{absence}',                     [AbsenceController::class, 'show'])->name('absences.show');

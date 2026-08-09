@@ -43,7 +43,7 @@
             @foreach($groupe['types'] as $slug => $meta)
             <label class="type-picker-item {{ old('type_demande', $typePreselect ?? '') === $slug ? 'selected' : '' }}"
                    data-slug="{{ $slug }}"
-                   data-catalogue="{{ json_encode($meta['champs'] ?? []) }}">
+                   data-champs="{{ json_encode($meta['champs'] ?? []) }}">
                 <input type="radio" name="type_demande" value="{{ $slug }}"
                        {{ old('type_demande', $typePreselect ?? '') === $slug ? 'checked' : '' }}
                        class="type-radio-hidden">
@@ -96,16 +96,24 @@
                 <h3>Période</h3>
             </div>
             <div class="form-grid">
-                <div class="form-group fg-3">
+                <div class="form-group fg-2">
                     <label>Date de début</label>
                     <div class="input-wrapper">
                         <input type="date" name="date_debut" id="dateDebutDem" value="{{ old('date_debut') }}">
                     </div>
                 </div>
-                <div class="form-group fg-3">
+                <div class="form-group fg-2">
                     <label>Date de fin</label>
                     <div class="input-wrapper">
                         <input type="date" name="date_fin" id="dateFinDem" value="{{ old('date_fin') }}">
+                    </div>
+                </div>
+                <div class="form-group fg-2" id="dateRepriseDemGroup" style="display:none">
+                    <label>Date de reprise (calculée)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="dateRepriseDem" readonly
+                               placeholder="Saisir les dates"
+                               style="background:var(--col-bg);color:var(--col-text-2)">
                     </div>
                 </div>
             </div>
@@ -288,6 +296,7 @@ const selectedItem = document.querySelector('.type-picker-item.selected');
 if (selectedItem) {
     const champs = JSON.parse(selectedItem.dataset.champs || '[]');
     afficherChamps(champs);
+    checkTypeChange(selectedItem.dataset.slug);
 }
 
 // Clic sur un type
@@ -298,20 +307,71 @@ document.querySelectorAll('.type-picker-item').forEach(item => {
         this.querySelector('input[type=radio]').checked = true;
         const champs = JSON.parse(this.dataset.champs || '[]');
         afficherChamps(champs);
+        checkTypeChange(this.dataset.slug);
+        updateDuree();
     });
 });
 
-// Calcul durée
+function checkTypeChange(slug) {
+    const repriseGroup = document.getElementById('dateRepriseDemGroup');
+    if (slug === 'conge_maladie') {
+        repriseGroup.style.display = 'block';
+    } else {
+        repriseGroup.style.display = 'none';
+    }
+}
+
+// Calcul durée et date de reprise
 const dateDebut = document.getElementById('dateDebutDem');
 const dateFin   = document.getElementById('dateFinDem');
+const dateReprise = document.getElementById('dateRepriseDem');
+const dureeDisplay = document.getElementById('dureeDisplay');
+const dureeText = document.getElementById('dureeText');
+
 function updateDuree() {
-    if (!dateDebut.value || !dateFin.value) { document.getElementById('dureeDisplay').style.display = 'none'; return; }
-    const d1   = new Date(dateDebut.value), d2 = new Date(dateFin.value);
-    const days = Math.floor((d2 - d1) / 86400000) + 1;
-    if (days < 1) { document.getElementById('dureeDisplay').style.display = 'none'; return; }
-    document.getElementById('dureeText').textContent = days + ' jour(s)';
-    document.getElementById('dureeDisplay').style.display = 'flex';
+    const debut = dateDebut.value;
+    const fin = dateFin.value;
+    const selected = document.querySelector('.type-picker-item.selected');
+    const slug = selected ? selected.dataset.slug : '';
+
+    if (!debut || !fin) {
+        dureeDisplay.style.display = 'none';
+        dateReprise.value = '';
+        return;
+    }
+
+    if (slug === 'conge_maladie') {
+        const url = `/absences/calcul-details?type_absence=deductible&date_debut=${debut}&date_fin=${fin}`;
+        fetch(url)
+            .then(r => r.json())
+            .then(d => {
+                if (d.error) {
+                    dureeDisplay.style.display = 'none';
+                    dateReprise.value = '';
+                    return;
+                }
+                dureeText.textContent = d.nb_jours + ' jour(s) ouvrable(s)';
+                dureeDisplay.style.display = 'flex';
+                dateReprise.value = d.date_reprise_fr || '';
+            })
+            .catch(() => {});
+    } else {
+        const d1 = new Date(debut), d2 = new Date(fin);
+        const days = Math.floor((d2 - d1) / 86400000) + 1;
+        if (days < 1) {
+            dureeDisplay.style.display = 'none';
+            dateReprise.value = '';
+            return;
+        }
+        dureeText.textContent = days + ' jour(s)';
+        dureeDisplay.style.display = 'flex';
+        dateReprise.value = '';
+    }
 }
-if (dateDebut) { dateDebut.addEventListener('change', updateDuree); dateFin.addEventListener('change', updateDuree); }
+
+if (dateDebut) {
+    dateDebut.addEventListener('change', updateDuree);
+    dateFin.addEventListener('change', updateDuree);
+}
 </script>
 @endpush

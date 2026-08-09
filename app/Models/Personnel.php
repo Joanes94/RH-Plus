@@ -218,16 +218,10 @@ class Personnel extends Model
             return null;
         }
 
-        $cleanPath = ltrim(str_replace(['public/', 'storage/'], '', $this->photo_path), '/');
+        $cleanPath = ltrim(str_replace(['public/', 'storage/', 'public\\', 'storage\\'], '', $this->photo_path), '/\\');
+        $cleanPath = str_replace('\\', '/', $cleanPath);
 
-        // Vérifier si le fichier existe réellement
-        if (Storage::disk('public')->exists($cleanPath)
-            || file_exists(storage_path('app/public/' . $cleanPath))
-            || file_exists(public_path('storage/' . $cleanPath))) {
-            return asset('storage/' . $cleanPath);
-        }
-
-        return null;
+        return asset('storage/' . $cleanPath);
     }
 
     /**

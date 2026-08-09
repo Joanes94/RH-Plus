@@ -133,10 +133,21 @@ class Absence extends Model
      */
     public function getDateRepriseAttribute(): ?Carbon
     {
-        if (!$this->date_debut || !$this->nb_jours) {
+        if (!$this->date_fin) {
             return null;
         }
-        return $this->calculerDateReprise($this->date_debut, $this->nb_jours);
+
+        $feries = array_merge(
+            JourFerie::pourAnnee($this->date_fin->year),
+            JourFerie::pourAnnee($this->date_fin->year + 1)
+        );
+
+        $reprise = $this->date_fin->copy()->addDay();
+        while ($reprise->isWeekend() || in_array($reprise->format('Y-m-d'), $feries)) {
+            $reprise->addDay();
+        }
+
+        return $reprise;
     }
 
     public function personnel()   { return $this->belongsTo(Personnel::class); }

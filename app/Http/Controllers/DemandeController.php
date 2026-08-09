@@ -59,7 +59,17 @@ class DemandeController extends Controller
         }
 
         $personnels    = $personnelsQuery->get();
-        $catalogue     = Demande::catalogue();
+        
+        $catalogue = array_map(function($groupe) {
+            $types = [];
+            foreach ($groupe['types'] as $slug => $meta) {
+                $meta['champs'] = Demande::typeChamps($slug);
+                $types[$slug] = $meta;
+            }
+            $groupe['types'] = $types;
+            return $groupe;
+        }, Demande::catalogue());
+
         $typePreselect = $request->get('type');
 
         return view('demandes.create', compact('personnels', 'catalogue', 'typePreselect'));
@@ -71,6 +81,13 @@ class DemandeController extends Controller
         $data = $this->validerDemande($request);
         $data['cree_par'] = Auth::id();
         $data['statut']   = $request->input('action') === 'soumettre' ? 'soumis' : 'brouillon';
+
+        if (!empty($data['date_debut']) && !empty($data['date_fin'])) {
+            $data['nb_jours'] = (new \App\Services\CalendrierService)->compterJoursOuvrables(
+                \Carbon\Carbon::parse($data['date_debut']),
+                \Carbon\Carbon::parse($data['date_fin'])
+            );
+        }
 
         $demande = Demande::create($data);
 
@@ -104,6 +121,13 @@ class DemandeController extends Controller
 
         $data = $this->validerDemande($request, $demande);
         $data['statut'] = $request->input('action') === 'soumettre' ? 'soumis' : 'brouillon';
+
+        if (!empty($data['date_debut']) && !empty($data['date_fin'])) {
+            $data['nb_jours'] = (new \App\Services\CalendrierService)->compterJoursOuvrables(
+                \Carbon\Carbon::parse($data['date_debut']),
+                \Carbon\Carbon::parse($data['date_fin'])
+            );
+        }
 
         $demande->update($data);
 
@@ -162,39 +186,39 @@ class DemandeController extends Controller
     public function document(Demande $demande)
     {
         abort_if($demande->statut !== 'approuve', 403, 'Document disponible uniquement après approbation.');
-        $demande->load('personnel');
-        $demande->load('approuvePar');
+        $demande->load(['personnel.centre', 'approuvePar']);
         $approuvePar = $demande->approuvePar;
 
         $p        = $demande->personnel;
+        $c        = $p?->centre;
         $estFemme = $p->sexe === 'F';
 
-        // Signature en base64 pour garantir l'affichage à l'impression
+        $docService = new \App\Services\DocumentService();
+
+        // Signature en base64
         $signPath = $demande->signature_path ?: ($approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar));
-        $signUrl  = null;
-        if ($signPath) {
-            $fullPath = Storage::disk('public')->path($signPath);
-            if (file_exists($fullPath)) {
-                $mime    = mime_content_type($fullPath) ?: 'image/png';
-                $signUrl = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($fullPath));
-            }
-        }
+        $signUrl  = $docService->imageToBase64($signPath);
 
         $data = [
-            'demande'       => $demande,
-            'personnel'     => $p,
-            'est_femme'     => $estFemme,
-            'civilite'      => $estFemme ? 'Madame' : 'Monsieur',
-            'le_la'         => $estFemme ? 'la' : 'le',
-            'du_de_la'      => $estFemme ? 'de la' : 'du',
-            'nomme_e'       => $estFemme ? 'nommée' : 'nommé',
-            'employe_e'     => $estFemme ? 'employée' : 'employé',
-            'drh_nom'       => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', 'Nom du DRH', $approuvePar),
-            'drh_titre'     => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
-            'organisation'  => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
-            'ville'         => ConfigRh::get('ville', 'Cotonou'),
-            'signature_url' => $signUrl,
-            'date_doc'      => $demande->approuve_le
+            'demande'          => $demande,
+            'personnel'        => $p,
+            'centre'           => $c,
+            'est_femme'        => $estFemme,
+            'civilite'         => $estFemme ? 'Madame' : 'Monsieur',
+            'le_la'            => $estFemme ? 'la' : 'le',
+            'du_de_la'         => $estFemme ? 'de la' : 'du',
+            'nomme_e'          => $estFemme ? 'nommée' : 'nommé',
+            'employe_e'        => $estFemme ? 'employée' : 'employé',
+            'drh_nom'          => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', 'Nom du DRH', $approuvePar),
+            'drh_titre'        => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
+            'organisation'     => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
+            'ville'            => ConfigRh::get('ville', 'Cotonou'),
+            'signature_url'    => $signUrl,
+            'centre_logo'      => $docService->imageToBase64($c?->logo_path),
+            'entete_image_url' => $docService->imageToBase64($c?->entete_image_path),
+            'entete_texte'     => $c?->entete_texte,
+            'pied_page_texte'  => $c?->pied_page_texte,
+            'date_doc'         => $demande->approuve_le
                 ? $demande->approuve_le->isoFormat('D MMMM YYYY')
                 : now()->isoFormat('D MMMM YYYY'),
         ];

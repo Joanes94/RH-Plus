@@ -14,11 +14,9 @@ class DocumentService
     private const DEFAULT_REFERENCE_SUFFIX = 'AC/DDIS/CSVHHSL/DIR/DRH/ARH';
 
     /**
-     * Convertit un chemin de signature en data URI base64.
-     * Cela garantit que la signature s'affiche à l'impression
-     * quelle que soit la configuration du serveur / Laragon.
+     * Convertit un chemin d'image en data URI base64.
      */
-    private function signatureToBase64(?string $storagePath): ?string
+    public function imageToBase64(?string $storagePath): ?string
     {
         if (!$storagePath) return null;
 
@@ -31,6 +29,11 @@ class DocumentService
         $encoded = base64_encode(file_get_contents($fullPath));
 
         return "data:{$mime};base64,{$encoded}";
+    }
+
+    private function signatureToBase64(?string $storagePath): ?string
+    {
+        return $this->imageToBase64($storagePath);
     }
 
     /**
@@ -92,7 +95,8 @@ class DocumentService
             'organisation'    => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
             'ville'           => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($conge->signature_path, $approuvePar),
-            'centre_logo'     => $c?->logo_url,
+            'centre_logo'     => $this->imageToBase64($c?->logo_path),
+            'entete_image_url'=> $this->imageToBase64($c?->entete_image_path),
             'entete_texte'    => $c?->entete_texte,
             'pied_page_texte' => $c?->pied_page_texte,
             'date_doc'        => $conge->approuve_le
@@ -120,7 +124,8 @@ class DocumentService
             'organisation'    => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
             'ville'           => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($absence->signature_path, $approuvePar),
-            'centre_logo'     => $c?->logo_url,
+            'centre_logo'     => $this->imageToBase64($c?->logo_path),
+            'entete_image_url'=> $this->imageToBase64($c?->entete_image_path),
             'entete_texte'    => $c?->entete_texte,
             'pied_page_texte' => $c?->pied_page_texte,
             'date_doc'        => $absence->approuve_le

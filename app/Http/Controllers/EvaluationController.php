@@ -195,8 +195,12 @@ class EvaluationController extends Controller
     {
         abort_if($evaluation->statut !== 'approuve', 403, 'L\'évaluation doit être approuvée pour générer le document.');
 
-        $evaluation->load('stagiaire', 'approuvePar');
+        $evaluation->load(['stagiaire.centre', 'approuvePar']);
         $approuvePar = $evaluation->approuvePar;
+        $stagiaire = $evaluation->stagiaire;
+        $c = $stagiaire?->centre;
+
+        $docService = new \App\Services\DocumentService();
 
         $logoPath = public_path('images/letterhead/logo_archidiocese.jpeg');
         $logoB64 = file_exists($logoPath) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath)) : null;
@@ -205,25 +209,23 @@ class EvaluationController extends Controller
         $evequeB64 = file_exists($evequePath) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($evequePath)) : null;
 
         $signaturePath = $evaluation->signature_path ?: ($approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar));
-        $signatureUrl = null;
-        if ($signaturePath) {
-            if (Storage::disk('public')->exists($signaturePath)) {
-                $signatureUrl = Storage::url($signaturePath);
-            } elseif (filter_var($signaturePath, FILTER_VALIDATE_URL)) {
-                $signatureUrl = $signaturePath;
-            }
-        }
+        $signatureUrl  = $docService->imageToBase64($signaturePath);
 
         return view('evaluations.document', [
-            'evaluation' => $evaluation,
-            'stagiaire' => $evaluation->stagiaire,
-            'signature_url' => $signatureUrl,
-            'logo_b64' => $logoB64,
-            'eveque_b64' => $evequeB64,
-            'date_doc' => now()->isoFormat('DD MMMM YYYY'),
-            'ville' => ConfigRh::get('ville', 'Cotonou'),
-            'drh_nom' => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', '', $approuvePar),
-            'drh_titre' => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
+            'evaluation'       => $evaluation,
+            'stagiaire'        => $stagiaire,
+            'centre'           => $c,
+            'signature_url'    => $signatureUrl,
+            'logo_b64'         => $logoB64,
+            'eveque_b64'       => $evequeB64,
+            'centre_logo'      => $docService->imageToBase64($c?->logo_path),
+            'entete_image_url' => $docService->imageToBase64($c?->entete_image_path),
+            'entete_texte'     => $c?->entete_texte,
+            'pied_page_texte'  => $c?->pied_page_texte,
+            'date_doc'         => now()->isoFormat('DD MMMM YYYY'),
+            'ville'            => ConfigRh::get('ville', 'Cotonou'),
+            'drh_nom'          => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', '', $approuvePar),
+            'drh_titre'        => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
         ]);
     }
 }

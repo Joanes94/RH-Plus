@@ -84,12 +84,12 @@ class AbsenceController extends Controller
         $deductible  = $meta['deductible'];
         $dateDebut   = Carbon::parse($data['date_debut']);
         $dateFin     = Carbon::parse($data['date_fin']);
-        $nbJours     = $dateDebut->diffInDays($dateFin) + 1;
 
-        // Pour les types non déductibles, les jours sont fixés
         if (!$deductible && $meta['jours']) {
             $nbJours = $meta['jours'];
-            $dateFin = $dateDebut->copy()->addDays($nbJours - 1);
+            $dateFin = $this->cal->calculerDernierJourConge($dateDebut, $nbJours);
+        } else {
+            $nbJours = $this->cal->compterJoursOuvrables($dateDebut, $dateFin);
         }
 
         $absence = Absence::create([
@@ -146,11 +146,12 @@ class AbsenceController extends Controller
         $deductible = $meta['deductible'];
         $dateDebut  = Carbon::parse($data['date_debut']);
         $dateFin    = Carbon::parse($data['date_fin']);
-        $nbJours    = $dateDebut->diffInDays($dateFin) + 1;
 
         if (!$deductible && $meta['jours']) {
             $nbJours = $meta['jours'];
-            $dateFin = $dateDebut->copy()->addDays($nbJours - 1);
+            $dateFin = $this->cal->calculerDernierJourConge($dateDebut, $nbJours);
+        } else {
+            $nbJours = $this->cal->compterJoursOuvrables($dateDebut, $dateFin);
         }
 
         $absence->update([
@@ -221,5 +222,65 @@ class AbsenceController extends Controller
         $absence->load('personnel');
         $data = $this->doc->buildAbsenceData($absence);
         return view('absences.document', $data);
+    }
+
+    // ── Calcul dynamique (AJAX) ────────────────────────────────────────────────
+    public function calculDetails(Request $request)
+    {
+        $request->validate([
+            'date_debut'   => 'required|date',
+            'date_fin'     => 'nullable|date',
+            'type_absence' => 'required|string',
+        ]);
+
+        $dateDebut = Carbon::parse($request->date_debut);
+        $types     = Absence::typesDisponibles();
+        $meta      = $types[$request->type_absence] ?? null;
+        
+        if (!$meta) {
+            return response()->json(['error' => 'Type d\'absence invalide'], 422);
+        }
+
+        $deductible = $meta['deductible'];
+
+        if (!$deductible && $meta['jours']) {
+            $nbJours = $meta['jours'];
+            $dateFin = $this->cal->calculerDernierJourConge($dateDebut, $nbJours);
+        } else {
+            $dateFin = $request->filled('date_fin') ? Carbon::parse($request->date_fin) : null;
+            if ($dateFin) {
+                if ($dateFin->lt($dateDebut)) {
+                    return response()->json(['error' => 'La date de fin doit être après la date de début'], 422);
+                }
+                $nbJours = $this->cal->compterJoursOuvrables($dateDebut, $dateFin);
+            } else {
+                $nbJours = 0;
+            }
+        }
+
+        // Calcul de la date de reprise (prochain jour ouvrable après dateFin)
+        $dateReprise = null;
+        $dateRepriseFr = null;
+        if ($dateFin) {
+            $feries = array_merge(
+                \App\Models\JourFerie::pourAnnee($dateFin->year),
+                \App\Models\JourFerie::pourAnnee($dateFin->year + 1)
+            );
+
+            $reprise = $dateFin->copy()->addDay();
+            while ($reprise->isWeekend() || in_array($reprise->format('Y-m-d'), $feries)) {
+                $reprise->addDay();
+            }
+            $dateReprise = $reprise->format('Y-m-d');
+            $dateRepriseFr = $reprise->isoFormat('dddd D MMMM YYYY');
+        }
+
+        return response()->json([
+            'nb_jours'        => $nbJours,
+            'date_fin'        => $dateFin ? $dateFin->format('Y-m-d') : null,
+            'date_fin_fr'     => $dateFin ? $dateFin->isoFormat('dddd D MMMM YYYY') : null,
+            'date_reprise'    => $dateReprise,
+            'date_reprise_fr' => $dateRepriseFr,
+        ]);
     }
 }

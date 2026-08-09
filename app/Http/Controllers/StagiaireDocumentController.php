@@ -20,24 +20,27 @@ class StagiaireDocumentController extends Controller
      */
     private function baseData(Stagiaire $stagiaire, ?\App\Models\User $approuvePar = null): array
     {
+        $stagiaire->loadMissing('centre');
+        $c = $stagiaire->centre;
+
+        $docService = new \App\Services\DocumentService();
+
         $signPath = $approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar);
-        $signUrl  = null;
-        if ($signPath) {
-            $full = Storage::disk('public')->path($signPath);
-            if (file_exists($full)) {
-                $mime    = mime_content_type($full) ?: 'image/png';
-                $signUrl = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($full));
-            }
-        }
+        $signUrl  = $docService->imageToBase64($signPath);
 
         return [
-            'stagiaire'    => $stagiaire,
-            'drh_nom'      => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', 'Le Directeur des Ressources Humaines', $approuvePar),
-            'drh_titre'    => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
-            'organisation' => ConfigRh::get('organisation', 'CSVH Saint Luc'),
-            'ville'        => ConfigRh::get('ville', 'Cotonou'),
-            'signature_url'=> $signUrl,
-            'date_doc'     => now()->isoFormat('D MMMM YYYY'),
+            'stagiaire'        => $stagiaire,
+            'centre'           => $c,
+            'drh_nom'          => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', 'Le Directeur des Ressources Humaines', $approuvePar),
+            'drh_titre'        => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
+            'organisation'     => $c?->nom ?: ConfigRh::get('organisation', 'CSVH Saint Luc'),
+            'ville'            => ConfigRh::get('ville', 'Cotonou'),
+            'signature_url'    => $signUrl,
+            'centre_logo'      => $docService->imageToBase64($c?->logo_path),
+            'entete_image_url' => $docService->imageToBase64($c?->entete_image_path),
+            'entete_texte'     => $c?->entete_texte,
+            'pied_page_texte'  => $c?->pied_page_texte,
+            'date_doc'         => now()->isoFormat('D MMMM YYYY'),
         ];
     }
 

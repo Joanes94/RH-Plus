@@ -91,7 +91,7 @@
         <div id="typeInfo" class="type-info-box" style="display:none"></div>
 
         <div class="form-grid" style="margin-top:14px">
-            <div class="form-group fg-3">
+            <div class="form-group fg-2">
                 <label>Date de début <span class="req">*</span></label>
                 <div class="input-wrapper">
                     <input type="date" name="date_debut" id="dateDebutAbs"
@@ -99,13 +99,21 @@
                 </div>
                 @error('date_debut') <span class="field-error">{{ $message }}</span> @enderror
             </div>
-            <div class="form-group fg-3" id="dateFinGroup">
+            <div class="form-group fg-2" id="dateFinGroup">
                 <label>Date de fin <span class="req">*</span></label>
                 <div class="input-wrapper">
                     <input type="date" name="date_fin" id="dateFinAbs"
                            value="{{ old('date_fin') }}" required>
                 </div>
                 @error('date_fin') <span class="field-error">{{ $message }}</span> @enderror
+            </div>
+            <div class="form-group fg-2" id="dateRepriseGroup">
+                <label>Date de reprise (calculée)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="dateRepriseAbs" readonly
+                           placeholder="Saisir les dates"
+                           style="background:var(--col-bg);color:var(--col-text-2)">
+                </div>
             </div>
         </div>
 
@@ -180,6 +188,7 @@
 const typeSelect  = document.getElementById('typeAbsenceSelect');
 const dateDebut   = document.getElementById('dateDebutAbs');
 const dateFin     = document.getElementById('dateFinAbs');
+const dateReprise = document.getElementById('dateRepriseAbs');
 const typeInfo    = document.getElementById('typeInfo');
 const dureeInfo   = document.getElementById('dureeInfo');
 
@@ -191,42 +200,59 @@ typeSelect.addEventListener('change', function() {
     const deductible= opt.dataset.deductible === '1';
 
     if (jours) {
-        typeInfo.innerHTML = `<div class="ti-badge ti-green">Durée réglementaire : <strong>${jours} jours calendaires</strong></div>`;
-        // Auto-remplir date fin
-        if (dateDebut.value) {
-            const d = new Date(dateDebut.value);
-            d.setDate(d.getDate() + parseInt(jours) - 1);
-            dateFin.value = d.toISOString().slice(0,10);
-            dateFin.readOnly = true;
-            updateDuree();
-        }
+        typeInfo.innerHTML = `<div class="ti-badge ti-green">Durée réglementaire : <strong>${jours} jours ouvrables</strong></div>`;
+        dateFin.readOnly = true;
     } else {
         typeInfo.innerHTML = `<div class="ti-badge ti-amber">Absence déductible : les jours seront déduits du solde de congés de l'agent.</div>`;
         dateFin.readOnly = false;
     }
     typeInfo.style.display = 'block';
+    updateDetails();
 });
 
-dateDebut.addEventListener('change', function() {
-    const opt   = typeSelect.options[typeSelect.selectedIndex];
-    const jours = opt?.dataset?.jours;
-    if (jours) {
-        const d = new Date(this.value);
-        d.setDate(d.getDate() + parseInt(jours) - 1);
-        dateFin.value = d.toISOString().slice(0,10);
+dateDebut.addEventListener('change', updateDetails);
+dateFin.addEventListener('change', updateDetails);
+
+function updateDetails() {
+    const type = typeSelect.value;
+    const debut = dateDebut.value;
+    const fin = dateFin.value;
+
+    if (!type || !debut) {
+        dureeInfo.style.display = 'none';
+        dateReprise.value = '';
+        return;
     }
-    updateDuree();
-});
 
-dateFin.addEventListener('change', updateDuree);
+    let url = `{{ route('absences.calcul-details') }}?type_absence=${type}&date_debut=${debut}`;
+    if (fin) {
+        url += `&date_fin=${fin}`;
+    }
 
-function updateDuree() {
-    if (!dateDebut.value || !dateFin.value) { dureeInfo.style.display = 'none'; return; }
-    const d1 = new Date(dateDebut.value), d2 = new Date(dateFin.value);
-    if (d2 < d1) { dureeInfo.style.display = 'none'; return; }
-    const days = Math.floor((d2 - d1) / (86400000)) + 1;
-    document.getElementById('dureeVal').textContent = days + ' jour(s) calendaire(s)';
-    dureeInfo.style.display = 'flex';
+    fetch(url)
+        .then(r => r.json())
+        .then(d => {
+            if (d.error) {
+                dureeInfo.style.display = 'none';
+                dateReprise.value = '';
+                return;
+            }
+            if (d.date_fin && dateFin.readOnly) {
+                dateFin.value = d.date_fin;
+            }
+            if (d.nb_jours > 0) {
+                document.getElementById('dureeVal').textContent = d.nb_jours + ' jour(s) ouvrable(s)';
+                dureeInfo.style.display = 'flex';
+            } else {
+                dureeInfo.style.display = 'none';
+            }
+            if (d.date_reprise_fr) {
+                dateReprise.value = d.date_reprise_fr;
+            } else {
+                dateReprise.value = '';
+            }
+        })
+        .catch(() => {});
 }
 </script>
 @endpush

@@ -74,18 +74,27 @@
         </div>
 
         <div class="form-grid" style="margin-top:14px">
-            <div class="form-group fg-3">
+            <div class="form-group fg-2">
                 <label>Date de début <span class="req">*</span></label>
                 <div class="input-wrapper">
                     <input type="date" name="date_debut" id="dateDebutAbs"
                            value="{{ old('date_debut', $absence->date_debut->format('Y-m-d')) }}" required>
                 </div>
             </div>
-            <div class="form-group fg-3">
+            <div class="form-group fg-2" id="dateFinGroup">
                 <label>Date de fin <span class="req">*</span></label>
                 <div class="input-wrapper">
                     <input type="date" name="date_fin" id="dateFinAbs"
                            value="{{ old('date_fin', $absence->date_fin->format('Y-m-d')) }}" required>
+                </div>
+            </div>
+            <div class="form-group fg-2" id="dateRepriseGroup">
+                <label>Date de reprise (calculée)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="dateRepriseAbs" readonly
+                           value="{{ $absence->date_reprise ? $absence->date_reprise->isoFormat('dddd D MMMM YYYY') : '' }}"
+                           placeholder="Saisir les dates"
+                           style="background:var(--col-bg);color:var(--col-text-2)">
                 </div>
             </div>
         </div>
@@ -156,42 +165,80 @@
 
 @push('scripts')
 <script>
-const typeSelect = document.getElementById('typeAbsenceSelect');
-const dateDebut  = document.getElementById('dateDebutAbs');
-const dateFin    = document.getElementById('dateFinAbs');
+const typeSelect  = document.getElementById('typeAbsenceSelect');
+const dateDebut   = document.getElementById('dateDebutAbs');
+const dateFin     = document.getElementById('dateFinAbs');
+const dateReprise = document.getElementById('dateRepriseAbs');
+const dureeInfo   = document.getElementById('dureeInfo');
+const dureeVal    = document.getElementById('dureeVal');
 
 typeSelect.addEventListener('change', function() {
-    const opt   = this.options[this.selectedIndex];
-    const jours = opt?.dataset?.jours;
-    if (jours && dateDebut.value) {
-        const d = new Date(dateDebut.value);
-        d.setDate(d.getDate() + parseInt(jours) - 1);
-        dateFin.value = d.toISOString().slice(0,10);
+    const opt = this.options[this.selectedIndex];
+    if (!opt.value) return;
+
+    const jours     = opt.dataset.jours;
+    const deductible= opt.dataset.deductible === '1';
+
+    if (jours) {
         dateFin.readOnly = true;
     } else {
         dateFin.readOnly = false;
     }
-    updateDuree();
+    updateDetails();
 });
 
-dateDebut.addEventListener('change', function() {
-    const opt   = typeSelect.options[typeSelect.selectedIndex];
-    const jours = opt?.dataset?.jours;
-    if (jours) {
-        const d = new Date(this.value);
-        d.setDate(d.getDate() + parseInt(jours) - 1);
-        dateFin.value = d.toISOString().slice(0,10);
+dateDebut.addEventListener('change', updateDetails);
+dateFin.addEventListener('change', updateDetails);
+
+// Run initially to set readonly and fetch correct initial values
+if (typeSelect.value) {
+    const opt = typeSelect.options[typeSelect.selectedIndex];
+    if (opt && opt.dataset.jours) {
+        dateFin.readOnly = true;
     }
-    updateDuree();
-});
-dateFin.addEventListener('change', updateDuree);
+    updateDetails();
+}
 
-function updateDuree() {
-    if (!dateDebut.value || !dateFin.value) return;
-    const d1   = new Date(dateDebut.value), d2 = new Date(dateFin.value);
-    const days = Math.floor((d2 - d1) / 86400000) + 1;
-    document.getElementById('dureeVal').textContent = days + ' jour(s) calendaire(s)';
-    document.getElementById('dureeInfo').style.display = 'flex';
+function updateDetails() {
+    const type = typeSelect.value;
+    const debut = dateDebut.value;
+    const fin = dateFin.value;
+
+    if (!type || !debut) {
+        dureeInfo.style.display = 'none';
+        dateReprise.value = '';
+        return;
+    }
+
+    let url = `{{ route('absences.calcul-details') }}?type_absence=${type}&date_debut=${debut}`;
+    if (fin) {
+        url += `&date_fin=${fin}`;
+    }
+
+    fetch(url)
+        .then(r => r.json())
+        .then(d => {
+            if (d.error) {
+                dureeInfo.style.display = 'none';
+                dateReprise.value = '';
+                return;
+            }
+            if (d.date_fin && dateFin.readOnly) {
+                dateFin.value = d.date_fin;
+            }
+            if (d.nb_jours > 0) {
+                dureeVal.textContent = d.nb_jours + ' jour(s) ouvrable(s)';
+                dureeInfo.style.display = 'flex';
+            } else {
+                dureeInfo.style.display = 'none';
+            }
+            if (d.date_reprise_fr) {
+                dateReprise.value = d.date_reprise_fr;
+            } else {
+                dateReprise.value = '';
+            }
+        })
+        .catch(() => {});
 }
 </script>
 @endpush

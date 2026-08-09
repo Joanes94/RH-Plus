@@ -28,5 +28,15 @@ class AppServiceProvider extends ServiceProvider
         // Cloche de notifications (avancements/bonifications), disponible sur
         // toutes les pages via le layout principal.
         \Illuminate\Support\Facades\View::composer('partials.notifications_bell', \App\View\Composers\NotificationComposer::class);
+
+        // Liste des centres ordonnée pour la barre latérale (CRH / Global)
+        \Illuminate\Support\Facades\View::composer('layouts.app', function ($view) {
+            if (auth()->check()) {
+                $sidebarCentres = \App\Models\Centre::withCount([
+                    'personnels as effectif_actif' => fn($q) => $q->whereNotIn('statut', ['ancien', 'retraite']),
+                ])->orderByRaw('ordre IS NULL, ordre ASC, nom ASC')->get();
+                $view->with('sidebarCentres', $sidebarCentres);
+            }
+        });
     }
 }

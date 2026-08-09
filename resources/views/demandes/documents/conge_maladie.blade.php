@@ -49,9 +49,15 @@ Congé maladie
         à compter du <strong>{{ $demande->date_debut->isoFormat('DD MMMM YYYY') }}</strong>
     @endif
     @if($dureeJours > 0)
-        pour une durée de <strong>{{ $dureeTexte }} ({{ $dureeJours }}) jours</strong>
+        pour une durée de <strong>{{ $dureeTexte }} ({{ $dureeJours }}) jours ouvrables</strong>
     @endif.
 </p>
+
+@if($demande->date_reprise)
+<p class="indent-first">
+    Vous reprendrez service le <strong>{{ $demande->date_reprise->isoFormat('dddd DD MMMM YYYY') }}</strong>.
+</p>
+@endif
 
 <p>
     Veuillez agréer, {{ $civilite }}, l’expression de nos salutations distinguées.
