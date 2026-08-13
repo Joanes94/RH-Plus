@@ -107,7 +107,11 @@ class Stagiaire extends Model
         $cleanPath = ltrim(str_replace(['public/', 'storage/', 'public\\', 'storage\\'], '', $this->photo_path), '/\\');
         $cleanPath = str_replace('\\', '/', $cleanPath);
 
-        return asset('storage/' . $cleanPath);
+        if (file_exists(public_path('storage/' . $cleanPath)) || file_exists(storage_path('app/public/' . $cleanPath))) {
+            return asset('storage/' . $cleanPath);
+        }
+
+        return null;
     }
 
     /**

@@ -22,6 +22,8 @@ class CentreController extends Controller
             'nom'              => 'required|string|max:200',
             'code'             => 'required|string|max:30|unique:centres,code',
             'email'            => 'nullable|email|max:150',
+            'ifu'              => 'nullable|string|max:50',
+            'numero_cnss'      => 'nullable|string|max:50',
             'adresse'          => 'nullable|string|max:300',
             'telephone'        => 'nullable|string|max:30',
             'a_drh_dedie'      => 'boolean',
@@ -50,6 +52,8 @@ class CentreController extends Controller
         $validated = $request->validate([
             'nom'              => 'required|string|max:200',
             'email'            => 'nullable|email|max:150',
+            'ifu'              => 'nullable|string|max:50',
+            'numero_cnss'      => 'nullable|string|max:50',
             'adresse'          => 'nullable|string|max:300',
             'telephone'        => 'nullable|string|max:30',
             'a_drh_dedie'      => 'boolean',

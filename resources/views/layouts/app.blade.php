@@ -156,6 +156,18 @@
             </div>
             @endif
 
+            <div class="nav-section">
+                <span class="nav-label">Paie & Rémunérations</span>
+                <a href="{{ route('pay-periods.index') }}" class="nav-item {{ request()->routeIs('pay-periods.*') || request()->routeIs('pay-slips.*') ? 'active' : '' }}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                    Calcul de la Paie
+                </a>
+                <a href="{{ route('pay-adjustments.index') }}" class="nav-item {{ request()->routeIs('pay-adjustments.*') ? 'active' : '' }}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Avances & Ajustements
+                </a>
+            </div>
+
             @if(auth()->user()->isCRH())
             <div class="nav-section">
                 <span class="nav-label">Gestion CRH</span>

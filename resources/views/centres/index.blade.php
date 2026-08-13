@@ -319,6 +319,14 @@
                         <label for="telephone">Téléphone</label>
                         <input type="text" name="telephone" id="telephone" class="form-control" placeholder="+229 ...">
                     </div>
+                    <div class="form-group">
+                        <label for="ifu">N° IFU du centre</label>
+                        <input type="text" name="ifu" id="ifu" class="form-control" placeholder="1234567890">
+                    </div>
+                    <div class="form-group">
+                        <label for="numero_cnss">N° CNSS Employeur</label>
+                        <input type="text" name="numero_cnss" id="numero_cnss" class="form-control" placeholder="98765-43">
+                    </div>
                     <div class="form-group full-width">
                         <label for="adresse">Adresse géographique complète</label>
                         <input type="text" name="adresse" id="adresse" class="form-control" placeholder="Quartier, Ville, Commune...">
@@ -391,6 +399,14 @@
                         <input type="text" name="telephone" id="edit_telephone" class="form-control">
                     </div>
                     <div class="form-group">
+                        <label for="edit_ifu">N° IFU du centre</label>
+                        <input type="text" name="ifu" id="edit_ifu" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_numero_cnss">N° CNSS Employeur</label>
+                        <input type="text" name="numero_cnss" id="edit_numero_cnss" class="form-control">
+                    </div>
+                    <div class="form-group">
                         <label for="edit_reference_suffix">Suffixe de référence officiel</label>
                         <input type="text" name="reference_suffix" id="edit_reference_suffix" class="form-control">
                     </div>
@@ -445,6 +461,8 @@ function openEditModal(centre) {
     document.getElementById('edit_nom').value = centre.nom || '';
     document.getElementById('edit_email').value = centre.email || '';
     document.getElementById('edit_telephone').value = centre.telephone || '';
+    document.getElementById('edit_ifu').value = centre.ifu || '';
+    document.getElementById('edit_numero_cnss').value = centre.numero_cnss || '';
     document.getElementById('edit_reference_suffix').value = centre.reference_suffix || '';
     document.getElementById('edit_adresse').value = centre.adresse || '';
     document.getElementById('edit_entete_texte').value = centre.entete_texte || '';

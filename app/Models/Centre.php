@@ -9,6 +9,7 @@ class Centre extends Model
     protected $fillable = [
         'nom', 'code', 'email', 'adresse', 'telephone', 'a_drh_dedie', 'actif',
         'logo_path', 'entete_image_path', 'entete_texte', 'pied_page_texte', 'reference_suffix',
+        'ifu', 'numero_cnss',
     ];
 
     protected $casts = [

@@ -19,6 +19,9 @@ use App\Http\Controllers\RapportController;
 use App\Http\Controllers\EvaluationController; // 👈 AJOUTÉ
 use App\Http\Controllers\CentreController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\PayPeriodController;
+use App\Http\Controllers\PaySlipController;
+use App\Http\Controllers\PayAdjustmentController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Routes publiques ────────────────────────────────────────────────────────
@@ -233,6 +236,34 @@ Route::middleware('auth')->group(function () {
 
     // ── Signature pad (DRH) ───────────────────────────────────────────────────
     Route::post('/config-rh/signature-pad',               [ConfigRhController::class, 'saveSignaturePad'])->name('config-rh.signature-pad')->middleware('role:drh,drh_centre,crh,directeur_centre');
+
+    // ── Gestion de la paie ────────────────────────────────────────────────────
+    Route::prefix('paie')->group(function () {
+        // Périodes de paie
+        Route::get('/periodes',                           [PayPeriodController::class, 'index'])->name('pay-periods.index');
+        Route::post('/periodes',                          [PayPeriodController::class, 'store'])->name('pay-periods.store');
+        Route::get('/periodes/{payPeriod}',               [PayPeriodController::class, 'show'])->name('pay-periods.show');
+        Route::post('/periodes/{payPeriod}/cloturer',      [PayPeriodController::class, 'cloture'])->name('pay-periods.cloturer');
+
+        // Exports globaux de la période
+        Route::get('/periodes/{payPeriod}/centres/{centre}/livre',      [PayPeriodController::class, 'livreDePaie'])->name('pay-periods.livre');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/registre',   [PayPeriodController::class, 'registreDePaie'])->name('pay-periods.registre');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/virements',  [PayPeriodController::class, 'virements'])->name('pay-periods.virements');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/cnss',       [PayPeriodController::class, 'declarationCnss'])->name('pay-periods.cnss');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/its',        [PayPeriodController::class, 'declarationIts'])->name('pay-periods.its');
+
+        // Bulletins individuels
+        Route::get('/bulletins/{paySlip}',                [PaySlipController::class, 'show'])->name('pay-slips.show');
+        Route::put('/bulletins/{paySlip}',                [PaySlipController::class, 'update'])->name('pay-slips.update');
+        Route::get('/bulletins/{paySlip}/pdf',            [PaySlipController::class, 'bulletin'])->name('pay-slips.pdf');
+        Route::get('/bulletins/{paySlip}/solde-tout-compte', [PaySlipController::class, 'soldeToutCompte'])->name('pay-slips.solde-tout-compte');
+
+        // Ajustements / Échéanciers salariaux
+        Route::get('/ajustements',                        [PayAdjustmentController::class, 'index'])->name('pay-adjustments.index');
+        Route::post('/ajustements',                       [PayAdjustmentController::class, 'store'])->name('pay-adjustments.store');
+        Route::patch('/ajustements/{payAdjustment}/toggle',[PayAdjustmentController::class, 'toggleStatus'])->name('pay-adjustments.toggle');
+        Route::delete('/ajustements/{payAdjustment}',     [PayAdjustmentController::class, 'destroy'])->name('pay-adjustments.destroy');
+    });
 });
 
 // ── Fallback Media Storage pour Windows (Servir les photos et uploads si storage:link n'est pas créé)
