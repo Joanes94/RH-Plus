@@ -129,6 +129,10 @@
     </style>
 </head>
 <body>
+@php
+    $centre = $personnel->centre ?? null;
+    $pied_page_texte = $centre->pied_page_texte ?? null;
+@endphp
 
 <div class="no-print">
     <button class="btn-print" onclick="window.print()">🖨️ Imprimer / Sauvegarder en PDF</button>
@@ -143,9 +147,13 @@
         <div class="lh-center">
             <div class="lh-l1">ARCHIDIOCESE DE COTONOU</div>
             <div class="lh-l2">DIRECTION DIOCESAINE DE LA SANTE</div>
-            <div class="lh-l3">{{ strtoupper($organisation ?? 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC') }}</div>
-            <div class="lh-l4">C.S.V.H (ex : Hôpital Saint LUC)</div>
-            <div class="lh-l5">Qtier Missèkplé Ste Rita - 01 BP 3603 | Tél : 66 43 44 78 – 90 07 49 67 | hopitalsaintluc@gmail.com | Cotonou – BENIN</div>
+            <div class="lh-l3">{{ $centre?->nom ?? 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC' }}</div>
+            @if(!empty($centre) && $centre->code !== 'ST_LUC')
+                <div class="lh-l4">{{ $centre->reference_suffix }}</div>
+            @else
+                <div class="lh-l4">C.S.V.H (ex : Hôpital Saint LUC)</div>
+            @endif
+            <div class="lh-l5">{!! nl2br(e($entete_texte ?? '')) !!}</div>
         </div>
         <img src="{{ $logo_b64 ?? '' }}" alt="Logo" class="lh-img-right">
     </div>
@@ -349,10 +357,22 @@
 
     {{-- FOOTER --}}
     <div class="doc-footer">
-        <div>NOUVELLE AUTORISATION MINISTERIELLE N°071/MS/DC/SGM/CJ/DNSP/SRS/SA/063SGG20 DU 02/07/2020</div>
-        <div class="ft2">
-            <span>N°INSAE : 2988511276715</span>
-            <span>N° IFU 3200800472415</span>
+        @if(!empty($pied_page_texte))
+            <div>{{ $pied_page_texte }}</div>
+        @else
+            <div>AUTORISATION  DU MINISTERE  N071/MS/DC/SGMCJ/DNSP/SRS/SA/063SGG20 DU 02/07/2020</div>
+        @endif
+        <div class="ft-line2">
+            @if(!empty($centre) && !empty($centre->numero_cnss))
+                <span>N&deg;CNSS : {{ $centre->numero_cnss }}</span>
+            @else
+                <span>N&deg;INSAE : 2988511276715</span>
+            @endif
+            @if(!empty($centre) && !empty($centre->ifu))
+                <span>N&deg; IFU : {{ $centre->ifu }}</span>
+            @else
+                <span>N&deg; IFU 3200800472415</span>
+            @endif
         </div>
     </div>
 

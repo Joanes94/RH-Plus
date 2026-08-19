@@ -261,11 +261,27 @@ class ContratController extends Controller
         $logoPath = public_path('images/letterhead/logo_archidiocese.jpeg');
         $evePath  = public_path('images/letterhead/photo_eveque.jpeg');
 
+        // Branding dynamique du centre du personnel
+        $centre = $personnel->centre;
+        $centreLogo = null;
+        if ($centre && $centre->logo_path) {
+            $lPath = \Illuminate\Support\Facades\Storage::disk('public')->path($centre->logo_path);
+            if (file_exists($lPath)) {
+                $ext  = strtolower(pathinfo($lPath, PATHINFO_EXTENSION));
+                $mime = $ext === 'png' ? 'image/png' : 'image/jpeg';
+                $centreLogo = "data:{$mime};base64," . base64_encode(file_get_contents($lPath));
+            }
+        }
+
         $data = [
-            'personnel'     => $personnel,
-            'contrat'       => $contrat,
-            'organisation'  => ConfigRh::get('organisation', "L'Archidiocèse de Cotonou"),
-            'ville'         => ConfigRh::get('ville', 'Cotonou'),
+            'personnel'       => $personnel,
+            'contrat'         => $contrat,
+            'centre'          => $centre,
+            'entete_texte'    => $centre?->entete_texte,
+            'centre_logo'     => $centreLogo,
+            'pied_page_texte' => $centre?->pied_page_texte,
+            'organisation'    => ConfigRh::get('organisation', "L'Archidiocèse de Cotonou"),
+            'ville'           => ConfigRh::get('ville', 'Cotonou'),
             'employeur_nom'       => ConfigRh::get('contrat_employeur_nom', "L'ARCHIDIOCÈSE DE COTONOU"),
             'employeur_adresse'   => ConfigRh::get('contrat_employeur_adresse',
                 "sis au lot 624-B, lieudit Awhouanlèko, (Cadjèhoun), 12ème Arrondissement, Commune de Cotonou, IFU: 6201000203005, 01 BP: 491; Tél: 21 30 01 45"),

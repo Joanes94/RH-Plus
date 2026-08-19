@@ -159,27 +159,7 @@
             <img src="{{ $entete_image_url }}" alt="En-tête" style="width: 100%; height: auto; max-height: 150px; display: block; object-fit: contain;">
         </div>
     @else
-        <div class="letterhead">
-            <img src="data:image/jpeg;base64,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" alt="" class="letterhead-logo-left">
-            <div class="lh-center">
-                <div class="lh-line1">ARCHIDIOCESE DE COTONOU</div>
-                <div class="lh-line2">DIRECTION DIOCESAINE DE LA SANTE</div>
-                <div class="lh-line3">{{ $centre?->nom ?? 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC' }}</div>
-                @if($centre && $centre->code !== 'ST_LUC')
-                    <div class="lh-line4">{{ $centre->reference_suffix }}</div>
-                @else
-                    <div class="lh-line4">C.S.V.H (ex : Hôpital Saint LUC)</div>
-                @endif
-                <div class="lh-line5">
-                    {!! nl2br(e($entete_texte ?? 'Qtier Missèkplé Ste Rita - 01 BP 3603 Tél : 66 43 44 78 – 90 07 49 67 / Email : hopitalsaintluc@gmail.com / Cotonou – BENIN')) !!}
-                </div>
-            </div>
-            @if(!empty($centre_logo))
-                <img src="{{ $centre_logo }}" alt="" class="letterhead-logo-right" style="max-height: 70px; width: auto; object-fit: contain;">
-            @else
-                <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA3ADcAAD/2wBDAAIBAQEBAQIBAQECAgICAgQDAgICAgUEBAMEBgUGBgYFBgYGBwkIBgcJBwYGCAsICQoKCgoKBggLDAsKDAkKCgr/2wBDAQICAgICAgUDAwUKBwYHCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgr/wAARCAC3ALcDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKGkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9/KKKKACiiigAooooAKKKf/Z" alt="" class="letterhead-logo-right">
-            @endif
-        </div>
+        @include('partials._letterhead')
     @endif
 {{-- ═══ DATE / LIEU EN HAUT (pour lettres avec en-tête à droite) ═══ --}}
     @hasSection('doc-date-top')
@@ -233,14 +213,8 @@
         <div class="sig-name">{{ $drh_nom }}</div>
     </div>
 
-    {{-- ═══ PIED DE PAGE ═══ --}}
-    <div class="doc-footer">
-        <div class="ft-line1">{{ $autorisationFooter ?? 'AUTORISATION  DU MINISTERE  N071/MS/DC/SGMCJ/DNSP/SRS/SA/063SGG20 DU 02/07/2020' }}</div>
-        <div class="ft-line2">
-            <span>N°INSAE : 2988511276715</span>
-            <span>N° IFU 3200800472415</span>
-        </div>
-    </div>
+    {{-- ═══ PIED DE PAGE DYNAMIQUE ═══ --}}
+    @include('partials._footer')
 
 </div>
 </body>

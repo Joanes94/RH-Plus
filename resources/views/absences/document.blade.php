@@ -80,27 +80,7 @@
             <img src="{{ $entete_image_url }}" alt="En-tête" style="width: 100%; height: auto; max-height: 150px; display: block; object-fit: contain;">
         </div>
     @else
-        <div class="letterhead">
-            <img src="{{ $eveque_b64 ?? '' }}" alt="" class="letterhead-logo-left">
-            <div class="lh-center">
-                <div class="lh-line1">ARCHIDIOCESE DE COTONOU</div>
-                <div class="lh-line2">DIRECTION DIOCESAINE DE LA SANTE</div>
-                <div class="lh-line3">{{ $centre?->nom ?? 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC' }}</div>
-                @if($centre && $centre->code !== 'ST_LUC')
-                    <div class="lh-line4">{{ $centre->reference_suffix }}</div>
-                @else
-                    <div class="lh-line4">C.S.V.H (ex : Hôpital Saint LUC)</div>
-                @endif
-                <div class="lh-line5">
-                    {!! nl2br(e($entete_texte ?? 'Qtier Missèkplé Ste Rita - 01 BP 3603 Tél : 66 43 44 78 – 90 07 49 67 / Email : hopitalsaintluc@gmail.com / Cotonou – BENIN')) !!}
-                </div>
-            </div>
-            @if(!empty($centre_logo))
-                <img src="{{ $centre_logo }}" alt="" class="letterhead-logo-right" style="max-height: 70px; width: auto; object-fit: contain;">
-            @else
-                <img src="{{ $logo_b64 ?? '' }}" alt="" class="letterhead-logo-right">
-            @endif
-        </div>
+        @include('partials._letterhead')
     @endif
 {{-- Date / lieu --}}
     <div class="doc-date-lieu">{{ $ville }}, le {{ $date_doc }}</div>
@@ -205,14 +185,8 @@
         <div class="sig-name">{{ $drh_nom }}</div>
     </div>
 
-    {{-- Pied de page --}}
-    <div class="doc-footer">
-        <div>AUTORISATION  DU MINISTERE  N071/MS/DC/SGMCJ/DNSP/SRS/SA/063SGG20 DU 02/07/2020</div>
-        <div class="ft-line2">
-            <span>N°INSAE : 2988511276715</span>
-            <span>N° IFU 3200800472415</span>
-        </div>
-    </div>
+    {{-- Pied de page DYNAMIQUE --}}
+    @include('partials._footer')
 
 </div>
 </body>

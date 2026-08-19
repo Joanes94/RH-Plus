@@ -60,6 +60,10 @@
     </style>
 </head>
 <body>
+@php
+    $centre = $personnel->centre ?? null;
+    $pied_page_texte = $centre->pied_page_texte ?? null;
+@endphp
 
 <div class="no-print">
     <button class="btn-print" onclick="window.print()">Imprimer / Sauvegarder en PDF</button>
@@ -75,7 +79,7 @@
             <div class="lh-line2">DIRECTION DIOCESAINE DE LA SANTE</div>
             <div class="lh-line3">{{ strtoupper($contrat->centre ?: 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC') }}</div>
             <div class="lh-line4">C.S.V.H (ex : Hôpital Saint LUC)</div>
-            <div class="lh-line5">Qtier Missèkplé Ste Rita - 01 BP 3603 | Tél : 66 43 44 78 – 90 07 49 67 | hopitalsaintluc@gmail.com | Cotonou – BENIN</div>
+            <div class="lh-line5">{!! nl2br(e($entete_texte ?? '')) !!}</div>
         </div>
         <img src="{{ $logo_b64 ?? '' }}" alt="Logo" class="lh-img-right">
     </div>

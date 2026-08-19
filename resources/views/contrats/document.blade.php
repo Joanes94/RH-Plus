@@ -75,6 +75,10 @@
     </style>
 </head>
 <body>
+@php
+    $centre = $personnel->centre ?? null;
+    $pied_page_texte = $centre->pied_page_texte ?? null;
+@endphp
 
 <div class="no-print">
     <button class="btn-print" onclick="window.print()">Imprimer / Sauvegarder en PDF</button>
@@ -83,17 +87,7 @@
 
 <div class="doc-page">
 
-    <div class="letterhead">
-        <img src="{{ $eveque_b64 ?? $logo_b64 ?? '' }}" alt="Évêque" class="lh-img-left">
-        <div class="lh-center">
-            <div class="lh-line1">ARCHIDIOCESE DE COTONOU</div>
-            <div class="lh-line2">DIRECTION DIOCESAINE DE LA SANTE</div>
-            <div class="lh-line3">{{ strtoupper($contrat->centre ?: 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC') }}</div>
-            <div class="lh-line4">C.S.V.H (ex : Hôpital Saint LUC)</div>
-            <div class="lh-line5">Qtier Missèkplé Ste Rita - 01 BP 3603 | Tél : 66 43 44 78 – 90 07 49 67 | hopitalsaintluc@gmail.com | Cotonou – BENIN</div>
-        </div>
-        <img src="{{ $logo_b64 ?? '' }}" alt="Logo" class="lh-img-right">
-    </div>
+    @include('partials._letterhead')
 
     <div class="doc-title">
         <div class="t1">CONTRAT DE TRAVAIL A DUREE {{ $estCdd ? 'DETERMINEE' : 'INDETERMINEE' }}</div>
@@ -186,6 +180,7 @@
         <div>{{ $directrice_travail }}</div>
     </div>
 
+    @include('partials._footer')
 </div>
 </body>
 </html>

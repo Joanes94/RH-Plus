@@ -80,25 +80,7 @@
             <img src="{{ $entete_image_url }}" alt="En-tête" style="width: 100%; height: auto; max-height: 150px; display: block; object-fit: contain;">
         </div>
     @else
-        <div class="lh">
-            <img src="{{ $evequB64 }}" alt="" class="lh-img-left">
-            <div class="lh-center">
-                <div class="lh-l1">ARCHIDIOCESE DE COTONOU</div>
-                <div class="lh-l2">DIRECTION DIOCESAINE DE LA SANTE</div>
-                <div class="lh-l3">{{ $centre?->nom ?? 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC' }}</div>
-                @if($centre && $centre->code !== 'ST_LUC')
-                    <div class="lh-l4">{{ $centre->reference_suffix }}</div>
-                @else
-                    <div class="lh-l4">C.S.V.H (ex : H&ocirc;pital Saint LUC)</div>
-                @endif
-                <div class="lh-l5">{!! nl2br(e($entete_texte ?? 'Qtier Missèkplé Ste Rita - 01 BP 3603 | Tél : 66 43 44 78 – 90 07 49 67 | hopitalsaintluc@gmail.com | Cotonou – BENIN')) !!}</div>
-            </div>
-            @if(!empty($centre_logo))
-                <img src="{{ $centre_logo }}" alt="" class="lh-img-right" style="max-height: 70px; width: auto; object-fit: contain;">
-            @else
-                <img src="{{ $logoB64 }}" alt="" class="lh-img-right">
-            @endif
-        </div>
+        @include('partials._letterhead')
     @endif
 
     {{-- CONTENU --}}
@@ -116,13 +98,7 @@
     </div>
 
     {{-- FOOTER --}}
-    <div class="doc-footer">
-        <div>NOUVELLE AUTORISATION MINISTERIELLE N&deg;071/MS/DC/SGM/CJ/DNSP/SRS/SA/063SGG20 DU 02/07/2020</div>
-        <div class="ft2">
-            <span>N&deg;INSAE : 2988511276715</span>
-            <span>N&deg; IFU 3200800472415</span>
-        </div>
-    </div>
+    @include('partials._footer')
 
 </div>
 </body>
