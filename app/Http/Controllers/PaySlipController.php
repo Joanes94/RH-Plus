@@ -50,6 +50,7 @@ class PaySlipController extends Controller
             'prime_risque'           => 'nullable|numeric|min:0',
             'prime_responsabilite'   => 'nullable|numeric|min:0',
             'prime_garde'            => 'nullable|numeric|min:0',
+            'prime_specialite'       => 'nullable|numeric|min:0',
             'autre_prime'            => 'nullable|numeric|min:0',
 
             'trop_percu_brut'        => 'nullable|numeric|min:0',
@@ -57,6 +58,11 @@ class PaySlipController extends Controller
             'frais_medicaux'         => 'nullable|numeric|min:0',
             'avance_salaire'         => 'nullable|numeric|min:0',
             'trop_percu_net'         => 'nullable|numeric|min:0',
+            'delegation_saisie'      => 'nullable|numeric|min:0',
+            'pret_long_terme'        => 'nullable|numeric|min:0',
+            'retenue_compte_tiers'   => 'nullable|numeric|min:0',
+            'pret_ecobank'           => 'nullable|numeric|min:0',
+            'assurance_ascoma'       => 'nullable|numeric|min:0',
             'moins_percu_rembourse'  => 'nullable|numeric|min:0',
 
             'banque'                 => 'required|string|max:100',
@@ -105,7 +111,8 @@ class PaySlipController extends Controller
             $dioceseLogoBase64 = $this->imageToBase64(public_path('images/logo.png'));
         }
 
-        return view('pay_slips.bulletin', compact('paySlip', 'logoBase64', 'enteteBase64', 'dioceseLogoBase64'));
+        $viewName = ($centre && $centre->code === 'ST_JEAN') ? 'pay_slips.bulletin_st_jean' : 'pay_slips.bulletin';
+        return view($viewName, compact('paySlip', 'centre', 'logoBase64', 'enteteBase64', 'dioceseLogoBase64'));
     }
 
     /**

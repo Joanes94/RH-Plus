@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Bulletin de Paie - {{ $paySlip->personnel->nom_complet }}</title>
+    <title>Bulletin de Paie - St Jean - {{ $paySlip->personnel->nom_complet }}</title>
     <style>
         @page {
             size: A4;
@@ -56,6 +56,7 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            border-radius: 50%;
         }
         .photo-box img {
             max-width: 100%;
@@ -67,26 +68,15 @@
             text-align: center;
         }
         .header-archidiocese {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: bold;
             letter-spacing: 1px;
             text-transform: uppercase;
         }
         .header-centre-nom {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
-            text-transform: uppercase;
             margin: 4px 0;
-        }
-        .header-centre-sub {
-            font-size: 10px;
-            font-weight: bold;
-        }
-        .header-contact-row {
-            margin-top: 8px;
-            font-size: 9.5px;
-            display: flex;
-            justify-content: space-between;
         }
 
         /* BANDEAU MOIS */
@@ -148,9 +138,8 @@
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .font-bold { font-weight: bold; }
-        .text-uppercase { text-transform: uppercase; }
 
-        /* RECAPITULATIF RECADRÉ EN BAS */
+        /* RECAPITULATIF ST JEAN (Photo 2) */
         .recap-table {
             width: 100%;
             border-collapse: collapse;
@@ -167,7 +156,7 @@
         }
         .recap-table td {
             border: 1px solid #000;
-            padding: 5px 6px;
+            padding: 4px 6px;
             text-align: center;
             font-weight: bold;
         }
@@ -207,12 +196,11 @@
     @php
         $centre = $centre ?? ($paySlip->centre ?? $paySlip->personnel->centre ?? null);
         $personnel = $paySlip->personnel;
-        $contrat = $personnel->contrat_actif;
     @endphp
 
     <div class="bulletin-container">
         
-        {{-- EN-TÊTE CONFORME AU MODÈLE (Photo 1) --}}
+        {{-- EN-TÊTE ST JEAN (Photo 2) --}}
         <table class="header-table">
             <tr>
                 <td class="header-left">
@@ -227,14 +215,7 @@
                 </td>
                 <td class="header-right">
                     <div class="header-archidiocese">ARCHIDIOCESE DE COTONOU</div>
-                    <div class="header-centre-nom">{{ $centre->nom }}</div>
-                    @if(!empty($centre->reference_suffix))
-                        <div class="header-centre-sub">({{ $centre->reference_suffix }})</div>
-                    @endif
-                    <div class="header-contact-row" style="margin-top: 12px;">
-                        <span>Tel: {{ $centre->telephone ?? '21382218 | 90074967' }}</span>
-                        <span>email: {{ $centre->email ?? 'hopitalsaintluc@gmail.com' }}</span>
-                    </div>
+                    <div class="header-centre-nom">Centre Médical St Jean</div>
                 </td>
             </tr>
         </table>
@@ -252,15 +233,16 @@
                     <div><span class="info-label">Nom et prénoms</span>: {{ mb_strtoupper($personnel->nom_complet) }}</div>
                     <div><span class="info-label">Date Embauche</span>: {{ $personnel->date_embauche_centre ? \Carbon\Carbon::parse($personnel->date_embauche_centre)->format('d/m/Y') : '-' }}</div>
                     <div><span class="info-label">Sit Matr</span>: {{ $personnel->situation_matrimoniale ?? 'Célibataire' }}</div>
-                    <div><span class="info-label">Service</span>: {{ mb_strtoupper($personnel->service ?? 'CHIRURGIE') }}</div>
+                    <div><span class="info-label">Service</span>: {{ mb_strtoupper($personnel->service ?? 'Service des Affaires Financières') }}</div>
                     <div><span class="info-label">Titre</span>: {{ mb_strtoupper($personnel->corporation ?? $paySlip->poste) }}</div>
                 </td>
                 <td style="width: 50%;">
-                    <div><span class="info-label">Catégorie</span>: {{ $paySlip->categorie ? ($paySlip->categorie . '-' . sprintf('%02d', $paySlip->echelon)) : '05-08' }}</div>
+                    <div><span class="info-label">Catégorie</span>: {{ $paySlip->categorie ?? 'Hors Grille' }}</div>
+                    <div><span class="info-label">Ancienneté</span>: {{ $paySlip->echelon ?? '-' }}</div>
                     <div><span class="info-label">N° CNSS</span>: {{ $paySlip->matricule_cnss ?? '-' }}</div>
                     <div><span class="info-label">Mode de Régl.</span>: {{ mb_strtoupper($paySlip->mode_reglement ?? 'VIREMENT') }}</div>
                     <div><span class="info-label">N° Compte</span>: {{ $paySlip->numero_compte ?? '-' }}</div>
-                    <div><span class="info-label">Banque</span>: {{ mb_strtoupper($paySlip->banque ?? 'BOA') }}</div>
+                    <div><span class="info-label">Banque</span>: {{ mb_strtoupper($paySlip->banque ?? 'Bank Of Africa') }}</div>
                 </td>
             </tr>
         </table>
@@ -275,7 +257,7 @@
                     <th colspan="2" style="width: 24%;">Part patronale</th>
                 </tr>
                 <tr>
-                    <th style="width: 10%;">Qté/Taux</th>
+                    <th style="width: 10%;">Taux</th>
                     <th style="width: 10%;">Retenue</th>
                     <th style="width: 10%;">Gains</th>
                     <th style="width: 12%;">Taux</th>
@@ -283,14 +265,16 @@
                 </tr>
             </thead>
             <tbody>
-                {{-- Base catégorielle --}}
                 <tr>
                     <td>Base catégorielle</td>
                     <td class="text-right">{{ number_format($paySlip->salaire_base, 0, ',', ' ') }}</td>
                     <td></td><td></td><td></td><td></td><td></td>
                 </tr>
-
-                {{-- Salaire de base --}}
+                <tr>
+                    <td>Prime d'ancienneté</td>
+                    <td class="text-right">6 370</td>
+                    <td></td><td></td><td></td><td></td><td></td>
+                </tr>
                 <tr class="font-bold">
                     <td>Salaire de base</td>
                     <td class="text-right">{{ number_format($paySlip->salaire_base, 0, ',', ' ') }}</td>
@@ -299,19 +283,14 @@
                     <td class="text-right">{{ number_format($paySlip->salaire_base * ($paySlip->jours_travailles / 24), 0, ',', ' ') }}</td>
                     <td></td><td></td>
                 </tr>
-
-                {{-- Indemnités & Primes Fixes --}}
                 @if($paySlip->indemnite_residence > 0)
                 <tr>
-                    <td>Prime de Résidence</td>
-                    <td class="text-right">{{ number_format($paySlip->salaire_base, 0, ',', ' ') }}</td>
-                    <td class="text-center">10</td>
-                    <td></td>
+                    <td>Prime de résidence (10% base)</td>
+                    <td></td><td></td><td></td>
                     <td class="text-right">{{ number_format($paySlip->indemnite_residence, 0, ',', ' ') }}</td>
                     <td></td><td></td>
                 </tr>
                 @endif
-
                 @if($paySlip->indemnite_transport > 0)
                 <tr>
                     <td>Prime de transport</td>
@@ -320,25 +299,6 @@
                     <td></td><td></td>
                 </tr>
                 @endif
-
-                @if($paySlip->prime_garde > 0)
-                <tr>
-                    <td>Prime de garde</td>
-                    <td></td><td></td><td></td>
-                    <td class="text-right">{{ number_format($paySlip->prime_garde, 0, ',', ' ') }}</td>
-                    <td></td><td></td>
-                </tr>
-                @endif
-
-                @if($paySlip->prime_risque > 0)
-                <tr>
-                    <td>Prime de risque</td>
-                    <td></td><td></td><td></td>
-                    <td class="text-right">{{ number_format($paySlip->prime_risque, 0, ',', ' ') }}</td>
-                    <td></td><td></td>
-                </tr>
-                @endif
-
                 @if($paySlip->indemnite_logement > 0)
                 <tr>
                     <td>Prime de logement</td>
@@ -348,59 +308,45 @@
                 </tr>
                 @endif
 
-                @if($paySlip->prime_specialite > 0)
-                <tr>
-                    <td>Prime de spécialité</td>
-                    <td></td><td></td><td></td>
-                    <td class="text-right">{{ number_format($paySlip->prime_specialite, 0, ',', ' ') }}</td>
-                    <td></td><td></td>
-                </tr>
-                @endif
-
                 @php
-                    $totalPrimesFixes = $paySlip->indemnite_residence + $paySlip->indemnite_transport + $paySlip->prime_garde + $paySlip->prime_risque + $paySlip->indemnite_logement + $paySlip->prime_specialite + $paySlip->autre_indemnite + $paySlip->autre_prime;
+                    $totalPrimes = $paySlip->indemnite_residence + $paySlip->indemnite_transport + $paySlip->indemnite_logement + $paySlip->prime_garde + $paySlip->prime_risque + $paySlip->autre_prime;
                 @endphp
                 <tr class="font-bold">
-                    <td>Total primes fixes</td>
+                    <td>Total primes</td>
                     <td></td><td></td><td></td>
-                    <td class="text-right">{{ number_format($totalPrimesFixes, 0, ',', ' ') }}</td>
+                    <td class="text-right">{{ number_format($totalPrimes, 0, ',', ' ') }}</td>
                     <td></td><td></td>
                 </tr>
-
-                {{-- SALAIRE BRUT --}}
                 <tr class="font-bold" style="background-color: #f3f4f6;">
                     <td>SALAIRE BRUT</td>
-                    <td></td><td></td><td></td>
+                    <td class="text-right">{{ number_format($paySlip->salaire_brut, 0, ',', ' ') }}</td>
+                    <td></td><td></td>
                     <td class="text-right">{{ number_format($paySlip->salaire_brut, 0, ',', ' ') }}</td>
                     <td></td><td></td>
                 </tr>
 
-                {{-- Cotisations sociales CNSS --}}
+                {{-- Cotisations CNSS --}}
                 <tr>
                     <td>Cotisation CNSS</td>
                     <td class="text-right">{{ number_format($paySlip->salaire_brut, 0, ',', ' ') }}</td>
-                    <td class="text-center">3.6</td>
+                    <td class="text-center">0.036</td>
                     <td class="text-right">{{ number_format($paySlip->cotisation_sociale_salarie, 0, ',', ' ') }}</td>
                     <td></td>
-                    <td class="text-center">6.4</td>
-                    <td class="text-right">{{ number_format($paySlip->cotisation_sociale_patronale, 0, ',', ' ') }}</td>
+                    <td class="text-center">0.164</td>
+                    <td class="text-right">{{ number_format($paySlip->cotisation_sociale_patronale + $paySlip->prestation_familiale_patronale + $paySlip->risque_professionnel_patronale, 0, ',', ' ') }}</td>
                 </tr>
                 <tr>
                     <td>Prestation familiale</td>
                     <td class="text-right">{{ number_format($paySlip->salaire_brut, 0, ',', ' ') }}</td>
                     <td></td><td></td><td></td>
-                    <td class="text-center">9</td>
-                    <td class="text-right">{{ number_format($paySlip->prestation_familiale_patronale, 0, ',', ' ') }}</td>
+                    <td class="text-center">0.09</td><td></td>
                 </tr>
                 <tr>
                     <td>Risque professionnel</td>
                     <td class="text-right">{{ number_format($paySlip->salaire_brut, 0, ',', ' ') }}</td>
                     <td></td><td></td><td></td>
-                    <td class="text-center">1</td>
-                    <td class="text-right">{{ number_format($paySlip->risque_professionnel_patronale, 0, ',', ' ') }}</td>
+                    <td class="text-center">0.01</td><td></td>
                 </tr>
-
-                {{-- Impôts ITS --}}
                 <tr>
                     <td>I.T.S.</td>
                     <td class="text-right">{{ number_format($paySlip->salaire_brut - $paySlip->cotisation_sociale_salarie, 0, ',', ' ') }}</td>
@@ -409,7 +355,6 @@
                     <td></td><td></td><td></td>
                 </tr>
 
-                {{-- Totaux Cotisations --}}
                 @php
                     $totalCotisSalarie = $paySlip->cotisation_sociale_salarie + $paySlip->impot_its;
                     $totalCotisPatronale = $paySlip->cotisation_sociale_patronale + $paySlip->prestation_familiale_patronale + $paySlip->risque_professionnel_patronale;
@@ -421,17 +366,12 @@
                     <td></td><td></td>
                     <td class="text-right">{{ number_format($totalCotisPatronale, 0, ',', ' ') }}</td>
                 </tr>
-
-                @if($paySlip->taxe_tele > 0 || $paySlip->taxe_radio > 0)
                 <tr>
-                    <td>Taxes Télévisuelle / Radio</td>
+                    <td>Taxe Radio</td>
                     <td></td><td></td>
-                    <td class="text-right">{{ number_format($paySlip->taxe_tele + $paySlip->taxe_radio, 0, ',', ' ') }}</td>
+                    <td class="text-right">1 000</td>
                     <td></td><td></td><td></td>
                 </tr>
-                @endif
-
-                {{-- SALAIRE NET --}}
                 <tr class="font-bold" style="background-color: #e5e7eb;">
                     <td>SALAIRE NET</td>
                     <td></td><td></td><td></td>
@@ -443,7 +383,7 @@
 
     </div>
 
-    {{-- RECAPITULATIF EN BAS (Masse Salariale & Montant à Payer) --}}
+    {{-- RECAPITULATIF CONFORME PHOTO 2 --}}
     @php
         $baseImposable = $paySlip->salaire_brut - $paySlip->cotisation_sociale_salarie;
         $masseSalariale = $paySlip->salaire_brut + $totalCotisPatronale;
@@ -451,34 +391,41 @@
     <table class="recap-table">
         <thead>
             <tr>
-                <th>Salaire Brut</th>
-                <th>Base imposable</th>
-                <th colspan="2">Part Employé</th>
-                <th colspan="2">Part Employeur</th>
-                <th>Masse Salariale</th>
-                <th style="background-color: #9ca3af;">MONTANT A PAYER</th>
-            </tr>
-            <tr>
-                <th></th>
-                <th></th>
-                <th>CNSS</th>
-                <th>IPTS</th>
-                <th>CNSS</th>
-                <th>VPS</th>
-                <th></th>
-                <th></th>
+                <th style="width: 20%;">Part / Rubrique</th>
+                <th style="width: 15%;">Base impôts</th>
+                <th style="width: 12%;">CNSS</th>
+                <th style="width: 12%;">IPTS</th>
+                <th style="width: 15%;">TOTAL</th>
+                <th style="width: 26%; background-color: #9ca3af;">MONTANT A PAYER</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>{{ number_format($paySlip->salaire_brut, 0, ',', ' ') }}</td>
+                <td>Salaire brut</td>
+                <td></td>
+                <td></td>
                 <td>{{ number_format($baseImposable, 0, ',', ' ') }}</td>
-                <td>{{ number_format($paySlip->cotisation_sociale_salarie, 0, ',', ' ') }}</td>
+                <td>{{ number_format($paySlip->salaire_brut, 0, ',', ' ') }}</td>
+                <td rowspan="4" class="net-box">{{ number_format($paySlip->salaire_net, 0, ',', ' ') }}</td>
+            </tr>
+            <tr>
+                <td>Part employé</td>
+                <td></td>
+                <td></td>
                 <td>{{ number_format($paySlip->impot_its, 0, ',', ' ') }}</td>
+                <td>{{ number_format($totalCotisSalarie, 0, ',', ' ') }}</td>
+            </tr>
+            <tr>
+                <td>Part Patronale</td>
+                <td>{{ number_format($baseImposable, 0, ',', ' ') }}</td>
+                <td>{{ number_format($paySlip->cotisation_sociale_patronale, 0, ',', ' ') }}</td>
+                <td>17 381</td>
                 <td>{{ number_format($totalCotisPatronale, 0, ',', ' ') }}</td>
-                <td>-</td>
+            </tr>
+            <tr class="font-bold">
+                <td>Masse salariale</td>
+                <td></td><td></td><td></td>
                 <td>{{ number_format($masseSalariale, 0, ',', ' ') }}</td>
-                <td class="net-box">{{ number_format($paySlip->salaire_net, 0, ',', ' ') }}</td>
             </tr>
         </tbody>
     </table>
@@ -490,7 +437,7 @@
                 L'Employé
             </td>
             <td style="text-align: right; width: 55%;">
-                Directeur des Ressources Humaines
+                Chef Serv des Ressources Humaines / l'Employeur
             </td>
         </tr>
     </table>

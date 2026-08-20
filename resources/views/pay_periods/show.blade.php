@@ -49,22 +49,19 @@
         @endif
     </div>
     
-    {{-- Boutons d'exports --}}
+    {{-- Boutons d'exports R1, R2, R3, R4 --}}
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <a href="{{ route('pay-periods.livre', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="Livre des salaires">
-            📄 Livre de paie
+        <a href="{{ route('pay-periods.registre', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="R1 - Registre de Paie Mensuel">
+            📊 R1 - Registre de Paie
         </a>
-        <a href="{{ route('pay-periods.registre', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="Registre complet Excel">
-            📊 Registre de paie
+        <a href="{{ route('pay-periods.cnss', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="R2 - Déclaration Mensuelle CNSS">
+            🛡️ R2 - Déclaration CNSS
         </a>
-        <a href="{{ route('pay-periods.virements', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="Banques de virement">
-            🏦 Virements Banque
+        <a href="{{ route('pay-periods.its', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="R3 - Déclaration Mensuelle ITS">
+            💼 R3 - Déclaration ITS
         </a>
-        <a href="{{ route('pay-periods.cnss', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="Déclaration sociale CNSS">
-            🛡️ Déclaration CNSS
-        </a>
-        <a href="{{ route('pay-periods.its', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="Déclaration fiscale ITS">
-            💼 Déclaration ITS
+        <a href="{{ route('pay-periods.virements', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="R4 - État de paiement Banque (Filtre par banque)">
+            🏦 R4 - État de paiement
         </a>
     </div>
 </div>
@@ -176,14 +173,14 @@
                 
                 {{-- SECTION TEMPS --}}
                 <div class="form-section-card">
-                    <h4 class="section-title">⏱️ Temps de travail & Absences</h4>
+                    <h4 class="section-title">⏱️ Temps de travail & Absences (Base 24 jours)</h4>
                     <div class="form-group">
                         <label class="form-label">Jours d'absence du mois</label>
-                        <input type="number" name="jours_absence" id="varJoursAbsence" class="form-input" min="0" max="30">
+                        <input type="number" name="jours_absence" id="varJoursAbsence" class="form-input" min="0" max="24">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Jours de Mise à Pied disciplinaire</label>
-                        <input type="number" name="jours_mise_a_pied" id="varJoursMiseAPied" class="form-input" min="0" max="30">
+                        <input type="number" name="jours_mise_a_pied" id="varJoursMiseAPied" class="form-input" min="0" max="24">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Heures supplémentaires</label>
@@ -218,8 +215,8 @@
 
                 {{-- SECTION PRIMES --}}
                 <div class="form-section-card" style="grid-column: 1 / -1;">
-                    <h4 class="section-title">⭐ Primes Exceptionnelles</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+                    <h4 class="section-title">⭐ Primes Fixes & Exceptionnelles</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem;">
                         <div class="form-group">
                             <label class="form-label">Caisse (FCFA)</label>
                             <input type="number" name="prime_caisse" id="varPrimeCaisse" class="form-input" min="0">
@@ -237,10 +234,14 @@
                             <input type="number" name="prime_garde" id="varPrimeGarde" class="form-input" min="0">
                         </div>
                         <div class="form-group">
+                            <label class="form-label">Spécialité (FCFA)</label>
+                            <input type="number" name="prime_specialite" id="varPrimeSpecialite" class="form-input" min="0">
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">Autre Prime (FCFA)</label>
                             <input type="number" name="autre_prime" id="varAutrePrime" class="form-input" min="0">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="grid-column: span 2;">
                             <label class="form-label">Trop perçu Brut (Déduction)</label>
                             <input type="number" name="trop_percu_brut" id="varTropPercuBrut" class="form-input" min="0">
                         </div>
@@ -248,23 +249,45 @@
                 </div>
 
                 {{-- SECTION AJUSTEMENTS NET --}}
-                <div class="form-section-card">
-                    <h4 class="section-title">💸 Ajustements & Retenues sur Net</h4>
-                    <div class="form-group">
-                        <label class="form-label">Frais médicaux soins (FCFA)</label>
-                        <input type="number" name="frais_medicaux" id="varFraisMedicaux" class="form-input" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Prélèvement Avance (FCFA)</label>
-                        <input type="number" name="avance_salaire" id="varAvanceSalaire" class="form-input" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Trop perçu Net (Déduction)</label>
-                        <input type="number" name="trop_percu_net" id="varTropPercuNet" class="form-input" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Moins-perçu (Remboursement)</label>
-                        <input type="number" name="moins_percu_rembourse" id="varMoinsPercu" class="form-input" min="0">
+                <div class="form-section-card" style="grid-column: 1 / -1;">
+                    <h4 class="section-title">💸 Prêts, Avances & Saisies sur Net</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group">
+                            <label class="form-label">Prélèvement Avance (FCFA)</label>
+                            <input type="number" name="avance_salaire" id="varAvanceSalaire" class="form-input" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Frais médicaux soins (FCFA)</label>
+                            <input type="number" name="frais_medicaux" id="varFraisMedicaux" class="form-input" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Délégation / Saisie-arrêt</label>
+                            <input type="number" name="delegation_saisie" id="varDelegationSaisie" class="form-input" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Prêt long terme</label>
+                            <input type="number" name="pret_long_terme" id="varPretLongTerme" class="form-input" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Retenue compte tiers</label>
+                            <input type="number" name="retenue_compte_tiers" id="varRetenueCompteTiers" class="form-input" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Prêt Ecobank</label>
+                            <input type="number" name="pret_ecobank" id="varPretEcobank" class="form-input" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Assurance ASCOMA</label>
+                            <input type="number" name="assurance_ascoma" id="varAssuranceAscoma" class="form-input" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Trop perçu Net (Déduction)</label>
+                            <input type="number" name="trop_percu_net" id="varTropPercuNet" class="form-input" min="0">
+                        </div>
+                        <div class="form-group" style="grid-column: span 4;">
+                            <label class="form-label">Moins-perçu (Remboursement)</label>
+                            <input type="number" name="moins_percu_rembourse" id="varMoinsPercu" class="form-input" min="0">
+                        </div>
                     </div>
                 </div>
 
@@ -275,10 +298,10 @@
                         <label class="form-label">Banque de virement</label>
                         <select name="banque" id="varBanque" class="form-input">
                             <option value="BOA">BOA</option>
-                            <option value="Ecobank">Ecobank</option>
-                            <option value="Archevêché">Archevêché (Caisse)</option>
-                            <option value="Espèces">Espèces</option>
-                            <option value="Autre">Autre</option>
+                            <option value="BIIC">BIIC</option>
+                            <option value="ECOBANK">ECOBANK</option>
+                            <option value="UBA">UBA</option>
+                            <option value="ARCHEVECHE">ARCHEVECHE</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -493,11 +516,18 @@
     background-color: #fef3c7;
 }
 .action-btn-ajuste {
-    background-color: var(--col-primary, #1a5c45);
+    background: linear-gradient(135deg, var(--col-primary, #1a5c45) 0%, #227055 100%);
     color: #ffffff;
+    box-shadow: 0 2px 6px rgba(26, 92, 69, 0.25);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
 }
 .action-btn-ajuste:hover {
-    background-color: #124030;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 92, 69, 0.35);
+    background: linear-gradient(135deg, #124030 0%, #1a5c45 100%);
 }
 
 .filter-select {
@@ -514,37 +544,51 @@
 /* Modale variables cards */
 .form-section-card {
     background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.15rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    transition: box-shadow 0.2s ease;
+}
+.form-section-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 .section-title {
-    margin: 0 0 0.75rem 0;
-    font-size: 0.88rem;
+    margin: 0 0 0.85rem 0;
+    font-size: 0.9rem;
     font-weight: 700;
-    color: #1f2937;
-    border-bottom: 1.5px solid #f3f4f6;
-    padding-bottom: 0.35rem;
+    color: #0f172a;
+    border-bottom: 1.5px solid #f1f5f9;
+    padding-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 .form-label {
     display: block;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 600;
-    color: #4b5563;
-    margin-bottom: 0.25rem;
+    color: #475569;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 .form-input {
     width: 100%;
-    padding: 0.45rem;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 0.88rem;
+    font-weight: 500;
     box-sizing: border-box;
-    background-color: #fff;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
 }
 .form-input:focus {
     border-color: var(--col-primary, #1a5c45);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(26, 92, 69, 0.15);
     outline: none;
 }
 
@@ -584,8 +628,8 @@
         // Charger les données dans les inputs
         document.getElementById('varJoursAbsence').value = slip.jours_absence || 0;
         
-        // Calcul jours_mise_a_pied
-        const joursMiseAPied = 30 - parseInt(slip.jours_travailles) - parseInt(slip.jours_absence || 0);
+        // Calcul jours_mise_a_pied sur base statutaire de 24 jours
+        const joursMiseAPied = 24 - parseInt(slip.jours_travailles) - parseInt(slip.jours_absence || 0);
         document.getElementById('varJoursMiseAPied').value = joursMiseAPied > 0 ? joursMiseAPied : 0;
         
         document.getElementById('varHeuresSup').value = parseFloat(slip.heures_supplementaires) || 0;
@@ -600,15 +644,23 @@
         document.getElementById('varPrimeRisque').value = parseFloat(slip.prime_risque) || 0;
         document.getElementById('varPrimeResponsabilite').value = parseFloat(slip.prime_responsabilite) || 0;
         document.getElementById('varPrimeGarde').value = parseFloat(slip.prime_garde) || 0;
+        document.getElementById('varPrimeSpecialite').value = parseFloat(slip.prime_specialite) || 0;
         document.getElementById('varAutrePrime').value = parseFloat(slip.autre_prime) || 0;
         
         document.getElementById('varTropPercuBrut').value = parseFloat(slip.trop_percu_brut) || 0;
         document.getElementById('varFraisMedicaux').value = parseFloat(slip.frais_medicaux) || 0;
         document.getElementById('varAvanceSalaire').value = parseFloat(slip.avance_salaire) || 0;
+        
+        document.getElementById('varDelegationSaisie').value = parseFloat(slip.delegation_saisie) || 0;
+        document.getElementById('varPretLongTerme').value = parseFloat(slip.pret_long_terme) || 0;
+        document.getElementById('varRetenueCompteTiers').value = parseFloat(slip.retenue_compte_tiers) || 0;
+        document.getElementById('varPretEcobank').value = parseFloat(slip.pret_ecobank) || 0;
+        document.getElementById('varAssuranceAscoma').value = parseFloat(slip.assurance_ascoma) || 0;
+        
         document.getElementById('varTropPercuNet').value = parseFloat(slip.trop_percu_net) || 0;
         document.getElementById('varMoinsPercu').value = parseFloat(slip.moins_percu_rembourse) || 0;
         
-        document.getElementById('varBanque').value = slip.banque || 'Archevêché';
+        document.getElementById('varBanque').value = slip.banque || 'BOA';
         document.getElementById('varModeReglement').value = slip.mode_reglement || 'Virement';
         document.getElementById('varNumeroCompte').value = slip.numero_compte || '';
         

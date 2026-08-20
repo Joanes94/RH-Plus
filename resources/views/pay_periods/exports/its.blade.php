@@ -2,105 +2,124 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Déclaration ITS - {{ $payPeriod->label }} - {{ $centre->nom }}</title>
+    <title>Déclaration Mensuelle ITS - {{ $payPeriod->label }} - {{ $centre->nom }}</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 10px;
-            color: #333;
-            margin: 20px;
+        @page {
+            size: A4 portrait;
+            margin: 8mm;
         }
-        table {
+        body {
+            font-family: 'Courier New', Courier, 'DejaVu Sans Mono', monospace, Arial, sans-serif;
+            font-size: 10px;
+            color: #000;
+            margin: 0;
+            padding: 10px;
+            background-color: #fff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .header-centre {
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .header-title {
+            font-size: 15px;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        .table-its {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            font-size: 9.5px;
         }
-        th, td {
+        .table-its th, .table-its td {
             border: 1px solid #000;
-            padding: 5px;
-            text-align: left;
+            padding: 4px 6px;
         }
-        th {
-            background-color: #f2f2f2;
+        .table-its th {
+            background-color: #d1d5db;
+            text-align: center;
+            font-weight: bold;
             text-transform: uppercase;
         }
-        .text-right {
-            text-align: right;
-        }
-        .total-row {
-            font-weight: bold;
-            background-color: #e5e5e5;
-        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: bold; }
+
         @media print {
             .no-print { display: none; }
+            body { padding: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div class="no-print" style="margin-bottom: 20px; text-align: right;">
-        <button onclick="window.print()" style="padding: 8px 16px; background-color: #1a5c45; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
-            Imprimer la Déclaration ITS
+    <div class="no-print" style="margin-bottom: 12px; text-align: right;">
+        <button onclick="window.print()" style="padding: 7px 16px; background-color: #1a5c45; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px;">
+            🖨️ Imprimer Déclaration ITS
         </button>
     </div>
 
-    <h2>DÉCLARATION MENSUELLE DES TRAITEMENTS ET SALAIRES (ITS)</h2>
-    <div><strong>Établissement :</strong> {{ $centre->nom }}</div>
-    <div><strong>N° IFU :</strong> {{ $centre->ifu ?? 'Non configuré' }}</div>
-    <div><strong>Mois de déclaration :</strong> {{ $payPeriod->label }}</div>
+    <div class="header">
+        <div class="header-centre">{{ $centre->nom }}</div>
+        <div class="header-title">DECLARATION MENSUELLE ITS de {{ mb_strtoupper($payPeriod->label) }}</div>
+    </div>
 
-    <table>
+    <table class="table-its">
         <thead>
             <tr>
-                <th>Nom & Prénoms du Salarié</th>
-                <th>Fonction</th>
-                <th class="text-right">Salaire Brut</th>
-                <th class="text-right">Cotisation Sociale (3.6%)</th>
-                <th class="text-right">Base Imposable (ITS)</th>
-                <th class="text-right">Impôt ITS retenu</th>
+                <th style="width: 14%;">N° S.S.</th>
+                <th style="width: 10%;">Date d'embauch.</th>
+                <th style="width: 10%;">Date de sortie</th>
+                <th style="width: 20%;">Service</th>
+                <th style="width: 11%;">Salaire de base</th>
+                <th style="width: 11%;">Salaire brut</th>
+                <th style="width: 8%;">Total CNSS</th>
+                <th style="width: 8%;">I.T.S.</th>
+                <th style="width: 8%;">Salaire net</th>
             </tr>
         </thead>
         <tbody>
             @php
-                $totBrut = 0; $totCnss = 0; $totBase = 0; $totIts = 0;
+                $totBase = 0; $totBrut = 0; $totCnss = 0; $totIts = 0; $totNet = 0;
             @endphp
             @foreach($slips as $slip)
                 @php
-                    $baseImposable = $slip->salaire_brut - $slip->cotisation_sociale_salarie;
-                    
+                    $p = $slip->personnel;
+                    $totBase += $slip->salaire_base;
                     $totBrut += $slip->salaire_brut;
                     $totCnss += $slip->cotisation_sociale_salarie;
-                    $totBase += $baseImposable;
                     $totIts += $slip->impot_its;
+                    $totNet += $slip->salaire_net;
                 @endphp
                 <tr>
-                    <td><strong>{{ $slip->personnel->nom_complet }}</strong></td>
-                    <td>{{ $slip->poste }}</td>
-                    <td class="text-right">{{ number_format($slip->salaire_brut, 0, ',', ' ') }} F</td>
-                    <td class="text-right">{{ number_format($slip->cotisation_sociale_salarie, 0, ',', ' ') }} F</td>
-                    <td class="text-right">{{ number_format($baseImposable, 0, ',', ' ') }} F</td>
-                    <td class="text-right" style="font-weight: 600; color: #ef4444;">{{ number_format($slip->impot_its, 0, ',', ' ') }} F</td>
+                    <td class="text-center font-bold">{{ $slip->matricule_cnss ?? '-' }}</td>
+                    <td class="text-center">{{ $p->date_embauche_centre ? \Carbon\Carbon::parse($p->date_embauche_centre)->format('d/m/Y') : '' }}</td>
+                    <td class="text-center">{{ $p->date_debauchage ? \Carbon\Carbon::parse($p->date_debauchage)->format('d/m/Y') : '' }}</td>
+                    <td>{{ mb_strtoupper($p->service ?? 'MEDECINE GENERALE') }}</td>
+                    <td class="text-right">{{ number_format($slip->salaire_base, 0, ',', ' ') }}</td>
+                    <td class="text-right">{{ number_format($slip->salaire_brut, 0, ',', ' ') }}</td>
+                    <td class="text-right">{{ number_format($slip->cotisation_sociale_salarie, 0, ',', ' ') }}</td>
+                    <td class="text-right font-bold">{{ number_format($slip->impot_its, 0, ',', ' ') }}</td>
+                    <td class="text-right font-bold">{{ number_format($slip->salaire_net, 0, ',', ' ') }}</td>
                 </tr>
             @endforeach
-            <tr class="total-row">
-                <td colspan="2">TOTAUX</td>
-                <td class="text-right">{{ number_format($totBrut, 0, ',', ' ') }} F</td>
-                <td class="text-right">{{ number_format($totCnss, 0, ',', ' ') }} F</td>
-                <td class="text-right">{{ number_format($totBase, 0, ',', ' ') }} F</td>
-                <td class="text-right" style="font-size: 11px; color: #ef4444;">{{ number_format($totIts, 0, ',', ' ') }} F</td>
-            </tr>
         </tbody>
+        <tfoot>
+            <tr class="font-bold" style="background-color: #e5e7eb;">
+                <td colspan="4" class="text-center">TOTAUX GENERAL</td>
+                <td class="text-right">{{ number_format($totBase, 0, ',', ' ') }}</td>
+                <td class="text-right">{{ number_format($totBrut, 0, ',', ' ') }}</td>
+                <td class="text-right">{{ number_format($totCnss, 0, ',', ' ') }}</td>
+                <td class="text-right">{{ number_format($totIts, 0, ',', ' ') }}</td>
+                <td class="text-right">{{ number_format($totNet, 0, ',', ' ') }}</td>
+            </tr>
+        </tfoot>
     </table>
-
-    <div style="margin-top: 40px; display: flex; justify-content: space-between;">
-        <div>
-            <strong>Date :</strong> {{ date('d/m/Y') }}
-        </div>
-        <div style="text-align: center; width: 250px;">
-            <strong>Le Directeur du Centre</strong>
-            <div style="margin-top: 60px; border-top: 1px dashed #333; padding-top: 5px;">Cachet et Signature</div>
-        </div>
-    </div>
 
 </body>
 </html>

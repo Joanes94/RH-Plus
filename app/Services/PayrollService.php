@@ -66,23 +66,23 @@ class PayrollService
             }
         }
 
-        // 2. Traitement des jours travaillés
+        // 2. Traitement des jours travaillés (Base statutaire de 24 jours par mois)
         $joursAbsence = isset($variables['jours_absence']) ? (int) $variables['jours_absence'] : 0;
         $joursMiseAPied = isset($variables['jours_mise_a_pied']) ? (int) $variables['jours_mise_a_pied'] : 0;
         
-        $joursTravailles = 30 - $joursAbsence - $joursMiseAPied;
+        $joursTravailles = 24 - $joursAbsence - $joursMiseAPied;
         if ($joursTravailles < 0) {
             $joursTravailles = 0;
         }
 
-        // Prorata du salaire de base
-        $salaireBaseProrate = ($salaireBaseOriginal / 30) * $joursTravailles;
+        // Prorata du salaire de base sur 24 jours
+        $salaireBaseProrate = ($salaireBaseOriginal / 24) * $joursTravailles;
 
-        // 3. Indemnités
-        // Résidence = 10% du salaire de base proratisé
-        $indemniteResidence = round($salaireBaseProrate * 0.10);
+        // 3. Indemnités & Primes Fixes
+        $indemniteResidence = isset($variables['indemnite_residence']) ? (float) $variables['indemnite_residence'] : 0;
         $indemniteLogement = isset($variables['indemnite_logement']) ? (float) $variables['indemnite_logement'] : 0;
-        $indemniteTransport = isset($variables['indemnite_transport']) ? (float) $variables['indemnite_transport'] : 0;
+        // Prime de transport = 10% du salaire de base par défaut si non spécifié
+        $indemniteTransport = isset($variables['indemnite_transport']) ? (float) $variables['indemnite_transport'] : round($salaireBaseOriginal * 0.10);
         $autreIndemnite = isset($variables['autre_indemnite']) ? (float) $variables['autre_indemnite'] : 0;
         $ecart = isset($variables['ecart']) ? (float) $variables['ecart'] : 0;
 
@@ -91,24 +91,32 @@ class PayrollService
         $primeRisque = isset($variables['prime_risque']) ? (float) $variables['prime_risque'] : 0;
         $primeResponsabilite = isset($variables['prime_responsabilite']) ? (float) $variables['prime_responsabilite'] : 0;
         $primeGarde = isset($variables['prime_garde']) ? (float) $variables['prime_garde'] : 0;
+        $primeSpecialite = isset($variables['prime_specialite']) ? (float) $variables['prime_specialite'] : 0;
         $autrePrime = isset($variables['autre_prime']) ? (float) $variables['autre_prime'] : 0;
+
+        // Heures Supplémentaires
+        $heuresSup12  = isset($variables['heures_sup_12']) ? (float) $variables['heures_sup_12'] : 0;
+        $heuresSup35  = isset($variables['heures_sup_35']) ? (float) $variables['heures_sup_35'] : 0;
+        $heuresSup50  = isset($variables['heures_sup_50']) ? (float) $variables['heures_sup_50'] : 0;
+        $heuresSup100 = isset($variables['heures_sup_100']) ? (float) $variables['heures_sup_100'] : 0;
+        $montantHeuresSup = $heuresSup12 + $heuresSup35 + $heuresSup50 + $heuresSup100;
 
         // 5. Retenues sur brut
         $tropPercuBrut = isset($variables['trop_percu_brut']) ? (float) $variables['trop_percu_brut'] : 0;
 
         // Calcul du salaire brut (Sb)
         $salaireBrut = $salaireBaseProrate + $indemniteResidence + $indemniteLogement + $indemniteTransport + $autreIndemnite + $ecart
-                     + $primeCaisse + $primeRisque + $primeResponsabilite + $primeGarde + $autrePrime
-                     - $tropPercuBrut;
+                     + $primeCaisse + $primeRisque + $primeResponsabilite + $primeGarde + $primeSpecialite + $autrePrime
+                     + $montantHeuresSup - $tropPercuBrut;
 
         if ($salaireBrut < 0) {
             $salaireBrut = 0;
         }
 
-        // 6. Cotisation Sociale (Employé 3.6%)
+        // 6. Cotisation Sociale (Part Salariale CNSS 3.6%)
         $cotisationSalarie = round($salaireBrut * 0.036);
 
-        // 7. Impôts (ITS sur base Salaire Brut - Cotisation Sociale)
+        // 7. Impôts (ITS sur base imposable)
         $baseImposable = $salaireBrut - $cotisationSalarie;
         $impotIts = $this->calculerITS($baseImposable);
 
@@ -117,33 +125,39 @@ class PayrollService
         $prestationFamiliale = round($salaireBrut * 0.09);
         $risqueProfessionnel = round($salaireBrut * 0.01);
 
-        // 9. Retenues sur Net
-        // Redevances fiscales annuelles obligatoires (Radio en Mars, Télé en Juin)
+        // 9. Retenues sur Net & Déductions
         $month = substr($moisCode, 5, 2);
         $taxeRadio = ($month === '03') ? 1000.0 : 0.0;
         $taxeTele = ($month === '06') ? 3000.0 : 0.0;
 
-        // Récupérer les échéances actives automatiques si non fournies
         $fraisMedicaux = isset($variables['frais_medicaux']) ? (float) $variables['frais_medicaux'] : $this->getAdjustmentAmount($personnel->id, 'frais_medicaux');
         $avanceSalaire = isset($variables['avance_salaire']) ? (float) $variables['avance_salaire'] : $this->getAdjustmentAmount($personnel->id, 'avance_salaire');
         $tropPercuNet = isset($variables['trop_percu_net']) ? (float) $variables['trop_percu_net'] : 0;
 
-        // Mise à pied : retenue équivalente aux jours de mise à pied
-        $miseAPied = isset($variables['mise_a_pied']) ? (float) $variables['mise_a_pied'] : (($salaireBaseOriginal / 30) * $joursMiseAPied);
+        $delegationSaisie   = isset($variables['delegation_saisie']) ? (float) $variables['delegation_saisie'] : 0;
+        $pretLongTerme      = isset($variables['pret_long_terme']) ? (float) $variables['pret_long_terme'] : 0;
+        $retenueCompteTiers = isset($variables['retenue_compte_tiers']) ? (float) $variables['retenue_compte_tiers'] : 0;
+        $pretEcobank        = isset($variables['pret_ecobank']) ? (float) $variables['pret_ecobank'] : 0;
+        $assuranceAscoma    = isset($variables['assurance_ascoma']) ? (float) $variables['assurance_ascoma'] : 0;
+
+        // Mise à pied : retenue équivalente aux jours de mise à pied sur base 24 jours
+        $miseAPied = isset($variables['mise_a_pied']) ? (float) $variables['mise_a_pied'] : (($salaireBaseOriginal / 24) * $joursMiseAPied);
 
         // 10. Remboursements (Moins-Perçus)
         $moinsPercuRembourse = isset($variables['moins_percu_rembourse']) ? (float) $variables['moins_percu_rembourse'] : $this->getAdjustmentAmount($personnel->id, 'moins_percu');
 
         // Calcul du salaire net (Sn)
-        // Sn = Brut - CotisationSalarie - ITS - Taxes - Retenues - MiseAPied + Remboursements
-        $salaireNet = $salaireBrut - $cotisationSalarie - $impotIts - $taxeRadio - $taxeTele - $fraisMedicaux - $avanceSalaire - $tropPercuNet - $miseAPied + $moinsPercuRembourse;
+        $totalDeductionsNet = $cotisationSalarie + $impotIts + $taxeRadio + $taxeTele + $fraisMedicaux + $avanceSalaire + $tropPercuNet + $miseAPied 
+                            + $delegationSaisie + $pretLongTerme + $retenueCompteTiers + $pretEcobank + $assuranceAscoma;
+
+        $salaireNet = $salaireBrut - $totalDeductionsNet + $moinsPercuRembourse;
 
         if ($salaireNet < 0) {
             $salaireNet = 0;
         }
 
         // Règlement par défaut basé sur le contrat actif
-        $banque = isset($variables['banque']) ? $variables['banque'] : ($contrat->banque ?? 'Archevêché');
+        $banque = isset($variables['banque']) ? $variables['banque'] : ($contrat->banque ?? 'BOA');
         $modeReglement = isset($variables['mode_reglement']) ? $variables['mode_reglement'] : 'Virement';
         $numeroCompte = isset($variables['numero_compte']) ? $variables['numero_compte'] : ($contrat->numero_compte ?? null);
 
@@ -174,6 +188,7 @@ class PayrollService
             'prime_risque'               => $primeRisque,
             'prime_responsabilite'       => $primeResponsabilite,
             'prime_garde'                => $primeGarde,
+            'prime_specialite'           => $primeSpecialite,
             'autre_prime'                => $autrePrime,
 
             'trop_percu_brut'            => $tropPercuBrut,
@@ -192,6 +207,12 @@ class PayrollService
             'avance_salaire'             => $avanceSalaire,
             'trop_percu_net'             => $tropPercuNet,
             'mise_a_pied'                => $miseAPied,
+
+            'delegation_saisie'          => $delegationSaisie,
+            'pret_long_terme'            => $pretLongTerme,
+            'retenue_compte_tiers'       => $retenueCompteTiers,
+            'pret_ecobank'               => $pretEcobank,
+            'assurance_ascoma'           => $assuranceAscoma,
 
             'moins_percu_rembourse'      => $moinsPercuRembourse,
             'salaire_net'                => $salaireNet,
