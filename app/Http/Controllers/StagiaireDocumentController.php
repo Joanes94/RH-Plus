@@ -31,8 +31,8 @@ class StagiaireDocumentController extends Controller
         return [
             'stagiaire'        => $stagiaire,
             'centre'           => $c,
-            'drh_nom'          => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', 'Le Directeur des Ressources Humaines', $approuvePar),
-            'drh_titre'        => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
+            'drh_nom'          => ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar?->nom_complet ?: 'Le Directeur des Ressources Humaines'),
+            'drh_titre'        => ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar?->titre_effectif ?: 'Directeur des Ressources Humaines'),
             'organisation'     => $c?->nom ?: ConfigRh::get('organisation', 'CSVH Saint Luc'),
             'ville'            => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'    => $signUrl,

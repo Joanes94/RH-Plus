@@ -106,13 +106,24 @@ class PaySlipController extends Controller
         }
 
         // Logo Diocèse
-        $dioceseLogoBase64 = $this->imageToBase64(public_path('images/diocese-logo.png'));
-        if (!$dioceseLogoBase64) {
-            $dioceseLogoBase64 = $this->imageToBase64(public_path('images/logo.png'));
+        $dioceseLogoBase64 = $this->imageToBase64(public_path('images/diocese-logo.png')) 
+            ?: $this->imageToBase64(public_path('images/logo.png'));
+
+        // Photo de l'Évêque (pour St Luc et tous les autres centres)
+        $evequePhotoBase64 = $this->imageToBase64(public_path('images/letterhead/photo_eveque.jpeg'));
+        
+        // Photo de Saint Jean (pour St Jean de Cotonou)
+        $stJeanPhotoBase64 = $this->imageToBase64(public_path('images/letterhead/photo_st_jean.png'))
+            ?: $this->imageToBase64(public_path('storage/letterhead/logo_st_jean_maria_gleta.png'));
+
+        // Photo du personnel si disponible
+        $personnelPhotoBase64 = null;
+        if ($paySlip->personnel && $paySlip->personnel->photo_path) {
+            $personnelPhotoBase64 = $this->imageToBase64(public_path('storage/' . $paySlip->personnel->photo_path));
         }
 
         $viewName = ($centre && $centre->code === 'ST_JEAN') ? 'pay_slips.bulletin_st_jean' : 'pay_slips.bulletin';
-        return view($viewName, compact('paySlip', 'centre', 'logoBase64', 'enteteBase64', 'dioceseLogoBase64'));
+        return view($viewName, compact('paySlip', 'centre', 'logoBase64', 'enteteBase64', 'dioceseLogoBase64', 'evequePhotoBase64', 'stJeanPhotoBase64', 'personnelPhotoBase64'));
     }
 
     /**

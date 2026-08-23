@@ -14,8 +14,8 @@ ATTESTATION DE VALIDITE DE TRAVAIL
 
 @section('doc-body')
 <p class="indent-first">
-    Je soussigné <strong>{{ $drh_nom }}</strong>, Directeur des Ressources Humaines
-    du Centre de Santé à Vocation Humanitaire Saint Luc de Cotonou, atteste que
+    Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
+    du {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }}, atteste que
     <strong>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }},
     né{{ $est_femme ? 'e' : '' }} le
     {{ $personnel->date_naissance ? $personnel->date_naissance->isoFormat('DD MMMM YYYY') : '____________' }},

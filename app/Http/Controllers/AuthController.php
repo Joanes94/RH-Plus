@@ -72,13 +72,31 @@ class AuthController extends Controller
             'password.required' => 'Le mot de passe est obligatoire.',
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        // Clé unique de rate-limiting (Email + IP)
+        $throttleKey = \Illuminate\Support\Str::transliterate(
+            \Illuminate\Support\Str::lower($request->input('email')) . '|' . $request->ip()
+        );
+
+        // Limiter à maximum 6 tentatives
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 6)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            return back()->withErrors([
+                'email' => 'Nombre maximal de tentatives atteint (6/6). Votre accès est temporairement suspendu. Veuillez réessayer dans ' . $seconds . ' secondes.',
+            ])->onlyInput('email');
+        }
+
+        if (Auth::attempt($credentials, $request->boolean('remember', true))) {
+            \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
             return redirect()->route('dashboard');
         }
 
+        // Incrémenter le compteur d'échecs (Lockout de 60 secondes si 6 échecs atteints)
+        \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 60);
+        $remaining = \Illuminate\Support\Facades\RateLimiter::remaining($throttleKey, 6);
+
         return back()->withErrors([
-            'email' => 'Identifiants incorrects. Vérifiez votre email et mot de passe.',
+            'email' => 'Identifiants incorrects. Tentatives restantes : ' . $remaining . ' sur 6.',
         ])->onlyInput('email');
     }
 

@@ -51,30 +51,44 @@ class AvancementController extends Controller
      */
     public function document(Request $request, Avancement $avancement)
     {
-        $avancement->load('personnel.contrats');
-        $contrat = $avancement->contrat ?? $avancement->personnel->contrat_actif;
+        $avancement->load(['personnel.centre', 'validePar']);
+        $contrat = $avancement->contrat ?? $avancement->personnel?->contrat_actif;
 
-        // Signature électronique du DRH (même logique que pour les congés/absences).
-        $approuvePar = $avancement->approuvePar ?? null;
-        $signPath = $avancement->signature_path ?? ($approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar));
-        $signUrl  = null;
-        if ($signPath) {
-            $full = Storage::disk('public')->path($signPath);
-            if (file_exists($full)) {
-                $mime    = mime_content_type($full) ?: 'image/png';
-                $signUrl = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($full));
-            }
+        $validePar = $avancement->validePar;
+        $signUrl   = null;
+        $signataireNom = null;
+        $signataireTitre = null;
+
+        if ($avancement->statut === 'valide') {
+            $docService = new \App\Services\DocumentService();
+
+            // Signature DDIS spécifique du valideur
+            $signPath = ConfigRh::get('ddis_signature_path', null, $validePar)
+                ?: ($validePar?->signature_path ?: ConfigRh::get('ddis_signature_path', null));
+            $signUrl  = $docService->imageToBase64($signPath);
+
+            // Nom du valideur DDIS
+            $signataireNom = ConfigRh::get('ddis_nom', null, $validePar)
+                ?: ($validePar?->nom_complet ?: ConfigRh::get('ddis_nom', 'Signataire DDIS'));
+
+            // Titre DDIS
+            $signataireTitre = ConfigRh::get('ddis_titre', null, $validePar)
+                ?: ConfigRh::get('ddis_titre', 'Pour la Direction Diocésaine de la Santé (DDIS)');
         }
 
         $data = [
-            'avancement'   => $avancement,
-            'personnel'    => $avancement->personnel,
-            'contrat'      => $contrat,
-            'organisation' => ConfigRh::get('organisation', "Direction Diocésaine de la Santé"),
-            'ville'        => ConfigRh::get('ville', 'Cotonou'),
-            'drh_nom'      => ConfigRh::get('avancement_drh_nom', 'Abbé Wilfried KOUTOUKLOUI'),
-            'directeur_diocesain_nom' => ConfigRh::get('avancement_directeur_diocesain_nom', 'Abbé Paul HESSOU'),
-            'signature_url' => $signUrl,
+            'avancement'        => $avancement,
+            'personnel'         => $avancement->personnel,
+            'centre'            => $avancement->personnel?->centre,
+            'contrat'           => $contrat,
+            'organisation'      => 'Direction Diocésaine de la Santé',
+            'ville'             => ConfigRh::get('ville', 'Cotonou', $validePar),
+            'signataire_nom'    => $signataireNom,
+            'signataire_titre'  => $signataireTitre,
+            'drh_nom'           => $signataireNom,
+            'directeur_diocesain_nom' => ConfigRh::get('ddis_directeur_nom', 'Abbé Paul HESSOU', $validePar),
+            'signature_url'     => $signUrl,
+            'valide_par_ddis'   => $validePar,
         ];
 
         if ($avancement->type === 'bonification') {
@@ -90,14 +104,35 @@ class AvancementController extends Controller
     {
         $this->authorizeAccess();
 
+        // Calcul des totaux KPI globaux
+        $countSoumis = Avancement::where('statut', 'soumis')->count();
+        $countValide = Avancement::where('statut', 'valide')->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->count();
+        $countRejete = Avancement::where('statut', 'rejete')->count();
+
         $query = Avancement::with('personnel.centre')->orderByDesc('date_effet');
+
+        // Filtrer par centre
+        if ($request->filled('centre_id')) {
+            $query->whereHas('personnel', function ($q) use ($request) {
+                $q->where('centre_id', $request->centre_id);
+            });
+        }
+
+        // Filtrer par mois (format YYYY-MM)
+        if ($request->filled('mois')) {
+            $parts = explode('-', $request->mois);
+            if (count($parts) === 2) {
+                $query->whereYear('date_effet', $parts[0])
+                      ->whereMonth('date_effet', (int) $parts[1]);
+            }
+        }
 
         // Filtrer par type (bonification/echelon)
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
-        // Filtrer par statut (soumis/approuve/rejete)
+        // Filtrer par statut (soumis/valide/rejete)
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         } else {
@@ -105,29 +140,40 @@ class AvancementController extends Controller
             $query->where('statut', 'soumis');
         }
 
-        $avancements = $query->paginate(20);
+        $avancements = $query->paginate(20)->withQueryString();
+        $centres     = \App\Models\Centre::where('actif', true)->orderBy('ordre')->get();
 
-        return view('avancements.index', compact('avancements'));
+        return view('avancements.index', compact('avancements', 'centres', 'countSoumis', 'countValide', 'countRejete'));
     }
 
-    /** Approuver une bonification (DDIS uniquement). */
+    /** Approuver un avancement d'échelon ou une bonification (DDIS uniquement). */
     public function approuver(Avancement $avancement, AvancementService $service)
     {
         $this->authorizeDDIS();
 
-        $service->approuverBonification($avancement, auth()->user());
+        if ($avancement->type === 'bonification') {
+            $service->approuverBonification($avancement, auth()->user());
+        } else {
+            $service->approuverEchelon($avancement, auth()->user());
+        }
 
-        return back()->with('success', "La bonification pour {$avancement->personnel->nom_complet} a été validée et appliquée.");
+        $libelle = $avancement->type === 'bonification' ? 'La bonification' : "L'avancement d'échelon";
+        return back()->with('success', "{$libelle} pour {$avancement->personnel->nom_complet} a été validé(e) et appliqué(e) officiellement par la DDIS.");
     }
 
-    /** Rejeter une bonification (DDIS uniquement). */
+    /** Rejeter un avancement d'échelon ou une bonification (DDIS uniquement). */
     public function rejeter(Avancement $avancement, AvancementService $service)
     {
         $this->authorizeDDIS();
 
-        $service->rejeterBonification($avancement, auth()->user());
+        if ($avancement->type === 'bonification') {
+            $service->rejeterBonification($avancement, auth()->user());
+        } else {
+            $service->rejeterEchelon($avancement, auth()->user());
+        }
 
-        return back()->with('success', "La bonification pour {$avancement->personnel->nom_complet} a été rejetée.");
+        $libelle = $avancement->type === 'bonification' ? 'La bonification' : "L'avancement d'échelon";
+        return back()->with('success', "{$libelle} pour {$avancement->personnel->nom_complet} a été rejeté(e).");
     }
 
     private function authorizeAccess()
@@ -142,7 +188,7 @@ class AvancementController extends Controller
     {
         $user = auth()->user();
         if (!$user->isDDIS()) {
-            abort(403, "Seul le DDIS peut valider les bonifications.");
+            abort(403, "Seul le DDIS peut valider les avancements et bonifications.");
         }
     }
 }

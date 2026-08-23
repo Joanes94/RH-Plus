@@ -27,7 +27,7 @@
 @section('doc-dest')
 <div class="doc-dest-a">A</div>
 <div class="doc-dest-name">{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</div>
-<div class="doc-dest-fn">Employé{{ $est_femme ? 'e' : '' }} au CSVH Saint Luc</div>
+<div class="doc-dest-fn">Employé{{ $est_femme ? 'e' : '' }} au {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }}</div>
 <div class="doc-dest-fn">{{ $ville }}</div>
 @endsection
 

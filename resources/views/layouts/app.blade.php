@@ -142,17 +142,25 @@
                 </a>
             </div>
 
-            @if(auth()->user()->canApprove())
+            @if(auth()->user()->canApprove() || auth()->user()->isDDIS())
             <div class="nav-section">
                 <span class="nav-label">{{ auth()->user()->isGlobal() ? 'Administration' : 'Direction' }}</span>
                 <a href="{{ route('drh.historique') }}" class="nav-item {{ request()->routeIs('drh.historique') ? 'active' : '' }}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
                     Mon historique
                 </a>
+
+                @if(auth()->user()->isDDIS())
+                <a href="{{ route('config-ddis.index') }}" class="nav-item {{ request()->routeIs('config-ddis.*') ? 'active' : '' }}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+                    Configuration DDIS
+                </a>
+                @else
                 <a href="{{ route('config-rh.index') }}" class="nav-item {{ request()->routeIs('config-rh.*') ? 'active' : '' }}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-                    Configuration
+                    Configuration RH
                 </a>
+                @endif
             </div>
             @endif
 

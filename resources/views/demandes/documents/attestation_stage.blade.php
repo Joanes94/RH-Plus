@@ -57,8 +57,8 @@ ATTESTATION DE STAGE
 
 @section('doc-body')
 <p class="indent-first">
-    Je soussigné <strong>{{ $drh_nom }}</strong>, Directeur des Ressources Humaines
-    du Centre de Santé à Vocation Humanitaire Saint Luc de Cotonou, atteste que
+    Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
+    du {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }}, atteste que
     <strong>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
     a effectué un stage de découverte
     @if($dureeTexte) de <strong>{{ $dureeTexte }}</strong> @endif

@@ -142,8 +142,8 @@ ATTESTATION DE PRESTATION DE SERVICES
 
 @section('doc-body')
 <p class="indent-first">
-    Je soussigné <strong>{{ $drh_nom }}</strong>, Directeur des Ressources Humaines du Centre de Santé
-    à Vocation Humanitaire Saint Luc de Cotonou, atteste que
+    Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
+    du {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }}, atteste que
     {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
     {{ $posteCorrige ?: '____________' }}
     a exercé{{ $est_femme ? 'é' : '' }} sous contrat de prestation de

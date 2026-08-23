@@ -17,7 +17,7 @@
         }
 
         /* En-tête */
-        .letterhead { position: relative; text-align: center; padding-bottom: 8px; border-bottom: 2.5px solid #000; margin-bottom: 18px; min-height: 90px; }
+        .letterhead { position: relative; text-align: center; padding-bottom: 8px; border-bottom: 2.5px solid #000; margin-bottom: 35px; min-height: 90px; }
         .letterhead-logo-left  { position: absolute; left: -4px; top: -6px; width: 70px; height: auto; }
         .letterhead-logo-right { position: absolute; right: 4px; top: -6px; width: 78px; height: auto; }
         .lh-line1 { font-size: 1.05rem; font-weight: 700; letter-spacing: .02em; margin-bottom: 1px; }

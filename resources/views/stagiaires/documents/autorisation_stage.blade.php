@@ -70,8 +70,7 @@
     <p class="indent">
         Suite &agrave; votre demande
         @if($stagiaire->created_at) du {{ $stagiaire->created_at->isoFormat('DD MMMM YYYY') }}@endif,
-        nous vous autorisons &agrave; effectuer {{ $typeInPhrase }} au Centre de Sant&eacute;
-        &agrave; Vocation Humanitaire (CSVH) Saint Luc.
+        nous vous autorisons &agrave; effectuer {{ $typeInPhrase }} au {{ $centre->nom ?? $stagiaire->centre->nom ?? 'Centre de Sant&eacute; &agrave; Vocation Humanitaire Saint Luc' }}.
     </p>
 
     <p style="margin-bottom: 6px;">Cette autorisation couvre la p&eacute;riode du</p>
@@ -102,7 +101,7 @@
     @endif,
     nous vous autorisons &agrave; effectuer {{ $typeInPhrase }}
     {{ $service_phrase }}
-    du Centre de Sant&eacute; &agrave; Vocation Humanitaire (CSVH) Saint Luc.
+    au {{ $centre->nom ?? $stagiaire->centre->nom ?? 'Centre de Sant&eacute; &agrave; Vocation Humanitaire Saint Luc' }}.
 </p>
 
     @if($stagiaire->date_debut_stage && $stagiaire->date_fin_stage)

@@ -40,7 +40,7 @@ Autorisation de stage
     @elseif($personnel->service)
         au service {{ strtolower($personnel->service) }}
     @endif
-    du Centre de Santé à Vocation Humanitaire (CSVH) Saint Luc.
+    au {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }}.
 </p>
 
 @if($demande->date_debut && $demande->date_fin)

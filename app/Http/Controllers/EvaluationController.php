@@ -224,8 +224,8 @@ class EvaluationController extends Controller
             'pied_page_texte'  => $c?->pied_page_texte,
             'date_doc'         => now()->isoFormat('DD MMMM YYYY'),
             'ville'            => ConfigRh::get('ville', 'Cotonou'),
-            'drh_nom'          => $approuvePar?->nom_complet ?: ConfigRh::get('drh_nom', '', $approuvePar),
-            'drh_titre'        => $approuvePar?->titre_effectif ?: ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $approuvePar),
+            'drh_nom'          => ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar?->nom_complet ?: 'Nom du DRH'),
+            'drh_titre'        => ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar?->titre_effectif ?: 'Directeur des Ressources Humaines'),
         ]);
     }
 }

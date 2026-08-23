@@ -43,7 +43,7 @@
             text-align: center;
             padding-bottom: 8px;
             border-bottom: 2.5px solid #000;
-            margin-bottom: 18px;
+            margin-bottom: 35px;
             min-height: 90px;
         }
         .letterhead-logo-left {

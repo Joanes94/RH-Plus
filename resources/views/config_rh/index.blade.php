@@ -11,17 +11,17 @@
 
         <div class="dash-card">
             <div class="card-header">
-                <h3>Directeur des Ressources Humaines</h3>
+                <h3>Signataire & Responsable RH du Centre</h3>
             </div>
             <p style="font-size:.83rem;color:var(--col-text-2);margin-bottom:18px">
-                Ces informations apparaissent sur tous les documents officiels générés.
+                Ces informations et votre signature numérique apparaissent sur tous les documents officiels générés pour votre centre (titres de congé, autorisations d'absence, attestations...).
             </p>
 
             <form method="POST" action="{{ route('config-rh.save') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="form-grid" style="max-width:640px">
                     <div class="form-group fg-6">
-                        <label>Nom complet du DRH <span class="req">*</span></label>
+                        <label>Nom complet du Signataire <span class="req">*</span></label>
                         <div class="input-wrapper">
                             <input type="text" name="drh_nom"
                                    value="{{ old('drh_nom', $config['drh_nom']) }}"

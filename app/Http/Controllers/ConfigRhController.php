@@ -19,11 +19,15 @@ class ConfigRhController extends Controller
         $user   = auth()->user();
 
         $config = [
-            'drh_nom'        => ConfigRh::get('drh_nom', '', $user),
-            'drh_titre'      => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $user),
-            'organisation'   => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines', $user),
-            'ville'          => ConfigRh::get('ville', 'Cotonou', $user),
-            'signature_path' => ConfigRh::get('drh_signature_path', null, $user),
+            'drh_nom'             => ConfigRh::get('drh_nom', '', $user),
+            'drh_titre'           => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $user),
+            'organisation'        => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines', $user),
+            'ville'               => ConfigRh::get('ville', 'Cotonou', $user),
+            'signature_path'      => ConfigRh::get('drh_signature_path', null, $user),
+            'ddis_nom'            => ConfigRh::get('ddis_nom', ConfigRh::get('drh_nom', '', $user), $user),
+            'ddis_titre'          => ConfigRh::get('ddis_titre', 'Directeur Diocésain de la Santé', $user),
+            'ddis_directeur_nom'  => ConfigRh::get('ddis_directeur_nom', 'Abbé Paul HESSOU', $user),
+            'ddis_signature_path' => ConfigRh::get('ddis_signature_path', ConfigRh::get('drh_signature_path', null, $user), $user),
         ];
 
         $joursFixesSuggeres = JourFerie::joursFixesBenin((int)$annee);
@@ -34,16 +38,28 @@ class ConfigRhController extends Controller
     public function saveConfig(Request $request)
     {
         $data = $request->validate([
-            'drh_nom'      => 'required|string|max:150',
-            'drh_titre'    => 'required|string|max:200',
-            'organisation' => 'nullable|string|max:200',
-            'ville'        => 'nullable|string|max:100',
+            'drh_nom'            => 'required|string|max:150',
+            'drh_titre'          => 'required|string|max:200',
+            'organisation'       => 'nullable|string|max:200',
+            'ville'              => 'nullable|string|max:100',
+            'ddis_nom'           => 'nullable|string|max:150',
+            'ddis_titre'         => 'nullable|string|max:200',
+            'ddis_directeur_nom' => 'nullable|string|max:150',
         ]);
 
         $user = auth()->user();
 
         foreach ($data as $cle => $valeur) {
             ConfigRh::set($cle, $valeur, $user);
+        }
+
+        // Si l'utilisateur est DDIS/Global, synchroniser aussi la clé ddis_nom / ddis_titre
+        if ($user->isDDIS() || $user->isGlobal()) {
+            ConfigRh::set('ddis_nom', $data['drh_nom'], $user);
+            ConfigRh::set('ddis_titre', $data['drh_titre'], $user);
+            if (!empty($request->ddis_directeur_nom)) {
+                ConfigRh::set('ddis_directeur_nom', $request->ddis_directeur_nom, $user);
+            }
         }
 
         if (isset($data['drh_titre'])) {
@@ -61,11 +77,12 @@ class ConfigRhController extends Controller
 
             $path = $this->doc->sauvegarderSignature($request->file('signature'));
             ConfigRh::set('drh_signature_path', $path, $user);
+            ConfigRh::set('ddis_signature_path', $path, $user);
             $user->update(['signature_path' => $path]);
         }
 
         return redirect()->route('config-rh.index')
-            ->with('success', 'Configuration enregistrée.');
+            ->with('success', 'Configuration enregistrée avec succès.');
     }
 
     /**
@@ -101,16 +118,17 @@ class ConfigRhController extends Controller
         }
 
         // Sauvegarder en PNG
-        $filename = 'signatures/signature_user_' . $user->id . '_' . time() . '.png';
-        Storage::disk('public')->put($filename, $decoded);
+        $path = 'signatures/' . uniqid('sig_pad_') . '.png';
+        Storage::disk('public')->put($path, $decoded);
 
-        ConfigRh::set('drh_signature_path', $filename, $user);
-        $user->update(['signature_path' => $filename]);
+        ConfigRh::set('drh_signature_path', $path, $user);
+        ConfigRh::set('ddis_signature_path', $path, $user);
+        $user->update(['signature_path' => $path]);
 
         return response()->json([
             'success' => true,
             'message' => 'Signature enregistrée avec succès.',
-            'path'    => $filename,
+            'path'    => $path,
         ]);
     }
 

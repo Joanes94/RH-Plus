@@ -227,15 +227,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/drh/tableau-de-bord',                    [DrhController::class, 'index'])->name('drh.dashboard')->middleware('role:drh,drh_centre,directeur_centre');
     Route::get('/drh/historique',                         [DrhController::class, 'historique'])->name('drh.historique')->middleware('role:drh,drh_centre,directeur_centre');
 
-    // ── Configuration RH ──────────────────────────────────────────────────────
+    // ── Configuration RH (DRH de centre, Directeurs de centre & CRH) ───────────
     Route::get('/config-rh',                              [ConfigRhController::class, 'index'])->name('config-rh.index')->middleware('role:drh,drh_centre,crh,directeur_centre');
     Route::post('/config-rh/save',                        [ConfigRhController::class, 'saveConfig'])->name('config-rh.save')->middleware('role:drh,drh_centre,crh,directeur_centre');
     Route::post('/config-rh/feries/import-fixes',         [ConfigRhController::class, 'importFixesBenin'])->name('config-rh.feries.import')->middleware('role:drh,drh_centre,crh,directeur_centre');
     Route::post('/config-rh/feries',                      [ConfigRhController::class, 'storeFerie'])->name('config-rh.feries.store')->middleware('role:drh,drh_centre,crh,directeur_centre');
     Route::delete('/config-rh/feries/{jourFerie}',        [ConfigRhController::class, 'destroyFerie'])->name('config-rh.feries.destroy')->middleware('role:drh,drh_centre,crh,directeur_centre');
-
-    // ── Signature pad (DRH) ───────────────────────────────────────────────────
     Route::post('/config-rh/signature-pad',               [ConfigRhController::class, 'saveSignaturePad'])->name('config-rh.signature-pad')->middleware('role:drh,drh_centre,crh,directeur_centre');
+
+    // ── Configuration DDIS (Exclusive DDIS) ──────────────────────────────────
+    Route::get('/config-ddis',                             [App\Http\Controllers\ConfigDdisController::class, 'index'])->name('config-ddis.index')->middleware('role:ddis,crh');
+    Route::post('/config-ddis/save',                       [App\Http\Controllers\ConfigDdisController::class, 'saveConfig'])->name('config-ddis.save')->middleware('role:ddis,crh');
+    Route::post('/config-ddis/signature-pad',              [App\Http\Controllers\ConfigDdisController::class, 'saveSignaturePad'])->name('config-ddis.signature-pad')->middleware('role:ddis,crh');
 
     // ── Gestion de la paie ────────────────────────────────────────────────────
     Route::prefix('paie')->group(function () {

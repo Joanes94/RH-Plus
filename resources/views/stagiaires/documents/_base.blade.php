@@ -8,7 +8,7 @@
         body { font-family: 'Times New Roman', Times, serif; font-size: 13px; color: #000; background: #eee; }
         .page { width: 210mm; min-height: 297mm; margin: 20px auto; background: white; padding: 12mm 18mm 22mm; box-shadow: 0 4px 24px rgba(0,0,0,.15); position: relative; }
         /* Letterhead */
-        .lh { display: flex; align-items: center; gap: 14px; padding-bottom: 10px; border-bottom: 2px solid #000; margin-bottom: 16px; }
+        .lh { display: flex; align-items: center; gap: 14px; padding-bottom: 10px; border-bottom: 2px solid #000; margin-bottom: 35px; }
         .lh-img-left  { width: 64px; height: 64px; object-fit: cover; flex-shrink: 0; }
         .lh-img-right { width: 70px; height: 70px; object-fit: contain; flex-shrink: 0; }
         .lh-center { flex: 1; text-align: center; line-height: 1.5; }

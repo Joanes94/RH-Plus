@@ -48,8 +48,7 @@
 
     <p class="indent">
         Je soussign&eacute; <strong>{{ $drh_nom ?? 'Le Directeur des Ressources Humaines' }}</strong>,
-        Directeur des Ressources Humaines du Centre de Sant&eacute; &agrave; Vocation Humanitaire
-        Saint Luc de Cotonou, atteste que
+        {{ $drh_titre ?? 'Directeur des Ressources Humaines' }} du {{ $centre->nom ?? $stagiaire->centre->nom ?? 'Centre de Sant&eacute; &agrave; Vocation Humanitaire Saint Luc' }}, atteste que
         <strong>{{ $civilite }} {{ strtoupper($stagiaire->nom) }} {{ $stagiaire->prenoms }}</strong>,
         a effectu&eacute; un stage {{ $typeLabel }}
         @if($duree) de <strong>{{ $duree }}</strong>@endif

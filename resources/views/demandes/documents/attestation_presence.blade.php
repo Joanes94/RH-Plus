@@ -87,8 +87,8 @@ ATTESTATION DE PRESENCE AU POSTE
 
 @section('doc-body')
 <p class="indent-first">
-    Je soussigné <strong>{{ $drh_nom }}</strong>, Directeur des
-    Ressources Humaines du Centre de Santé à Vocation Humanitaire Saint Luc de Cotonou,
+    Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
+    du {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }},
     atteste que {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
     né{{ $est_femme ? 'e' : '' }} le <strong>{{ $personnel->date_naissance ? $personnel->date_naissance->format('d/m/Y') : '__/__/____' }}</strong>
     est recruté{{ $est_femme ? 'e' : '' }} depuis le

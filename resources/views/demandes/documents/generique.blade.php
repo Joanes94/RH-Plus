@@ -14,8 +14,8 @@
 
 @section('doc-body')
 <p class="indent-first">
-    Je soussigné <strong>{{ $drh_nom }}</strong>, Directeur des Ressources Humaines
-    du Centre de Santé à Vocation Humanitaire Saint Luc de Cotonou, atteste ce qui suit
+    Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
+    du {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }}, atteste ce qui suit
     concernant {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
     {{ $personnel->corporation ?: '—' }}
     @if($personnel->service) au service {{ strtolower($personnel->service) }} @endif.

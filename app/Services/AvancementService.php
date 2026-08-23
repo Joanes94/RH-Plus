@@ -191,17 +191,34 @@ class AvancementService
      * avancement (ou depuis l'embauche) a atteint 24 mois, et qu'il n'est
      * pas déjà au dernier échelon de la grille.
      */
+    /**
+     * Propose un avancement d'échelon si l'ancienneté depuis l'embauche dans l'ISD
+     * (ou depuis le dernier avancement validé) a atteint 24 mois (2 ans),
+     * et que l'agent n'est pas déjà au dernier échelon de sa grille.
+     */
     public function traiterEchelon(Personnel $personnel, Contrat $contrat): ?Avancement
     {
         if ((int) $contrat->echelon >= GrilleSalariale::ECHELON_MAX) {
             return null;
         }
 
+        // Vérifier s'il y a déjà une demande d'échelon en attente de validation
+        $demandeEnAttente = $personnel->relationLoaded('avancements')
+            ? $personnel->avancements->where('type', 'echelon')->where('statut', 'soumis')->first()
+            : $personnel->avancements()->where('type', 'echelon')->where('statut', 'soumis')->first();
+
+        if ($demandeEnAttente) {
+            return null;
+        }
+
+        // Date de référence : dernier avancement validé OU date d'embauche ISD / Centre
         $dateReference = $this->dateDernierAvancementEchelon($personnel)
-            ?? $contrat->date_effet_echelon
-            ?? $personnel->date_embauche_centre;
+            ?? $personnel->date_embauche_isd
+            ?? $personnel->date_embauche_centre
+            ?? $contrat->date_effet_echelon;
+
         if (!$dateReference) {
-            return null; // pas de point de départ fiable pour calculer l'ancienneté
+            return null; // pas de point de départ fiable
         }
 
         if ($dateReference->diffInMonths(now()) < self::MOIS_ENTRE_ECHELONS) {
@@ -218,6 +235,7 @@ class AvancementService
             'personnel_id'          => $personnel->id,
             'contrat_id'            => $contrat->id,
             'type'                  => 'echelon',
+            'statut'                => 'soumis', // En attente de validation par la DDIS
             'date_effet'            => now()->toDateString(),
             'ancienne_categorie'    => $contrat->categorie,
             'ancien_echelon'        => $contrat->echelon,
@@ -229,19 +247,97 @@ class AvancementService
             'numero_reference'      => $this->genererReference('echelon'),
         ]);
 
-        $contrat->update(['echelon' => $nouvelEchelon, 'salaire_base' => $caseGrille->salaire]);
+        // On ne met PAS à jour le contrat immédiatement. Il faut la validation par la DDIS.
 
         \App\Models\Notification::create([
             'centre_id'         => $personnel->centre_id,
             'type'              => 'echelon',
-            'titre'             => "Avancement d'échelon — " . $personnel->nom_complet,
-            'message'           => "{$personnel->nom_complet} passe aujourd'hui de {$contrat->categorie}-{$avancement->ancien_echelon} à {$contrat->categorie}-{$nouvelEchelon}.",
+            'titre'             => "Avancement d'échelon soumis — " . $personnel->nom_complet,
+            'message'           => "{$personnel->nom_complet} est éligible à un avancement d'échelon ({$contrat->categorie}-{$contrat->echelon} → {$contrat->categorie}-{$nouvelEchelon}). En attente de validation par la DDIS.",
             'personnel_id'      => $personnel->id,
             'avancement_id'     => $avancement->id,
             'date_notification' => now()->toDateString(),
         ]);
 
         return $avancement;
+    }
+
+    /**
+     * Approuver un avancement d'échelon (DDIS uniquement).
+     */
+    public function approuverEchelon(Avancement $avancement, \App\Models\User $user): void
+    {
+        if ($avancement->type !== 'echelon' || !$avancement->isSoumis()) {
+            return;
+        }
+
+        $contrat = $avancement->contrat ?? $avancement->personnel->contrat_actif;
+        if ($contrat) {
+            $contrat->update([
+                'echelon'      => $avancement->nouvel_echelon,
+                'salaire_base' => $avancement->nouveau_salaire,
+            ]);
+        }
+
+        $avancement->update([
+            'statut'     => 'valide',
+            'valide_par' => $user->id,
+            'valide_le'  => now(),
+        ]);
+
+        // Historique
+        \App\Models\PersonnelHistorique::create([
+            'personnel_id'      => $avancement->personnel_id,
+            'contrat_id'        => $contrat?->id,
+            'centre_id'         => $avancement->personnel->centre_id,
+            'date_debut'        => now()->toDateString(),
+            'type_contrat'      => $contrat?->type_contrat ?? $avancement->personnel->type_contrat,
+            'categorie_echelon' => ($avancement->nouvelle_categorie ?? '') . '-' . ($avancement->nouvel_echelon ?? ''),
+            'salaire_base'      => $avancement->nouveau_salaire,
+            'corporation'       => $contrat?->fonction ?? $avancement->personnel->corporation,
+            'service'           => $contrat?->service ?? $avancement->personnel->service,
+            'centre_nom'        => $avancement->personnel->centre?->nom,
+            'type_evenement'    => 'avancement',
+            'commentaire'       => "Avancement d'échelon validé par la DDIS (Échelon {$avancement->nouvel_echelon}).",
+            'created_by'        => $user->id,
+        ]);
+
+        // Notification de retour au centre du personnel
+        \App\Models\Notification::create([
+            'centre_id'         => $avancement->personnel?->centre_id,
+            'type'              => 'echelon',
+            'titre'             => "Avancement d'échelon validé par la DDIS — " . $avancement->personnel->nom_complet,
+            'message'           => "L'avancement d'échelon de {$avancement->personnel->nom_complet} a été officiellement validé par la DDIS. Le document signé est maintenant disponible et l'avancement est effectif.",
+            'personnel_id'      => $avancement->personnel_id,
+            'avancement_id'     => $avancement->id,
+            'date_notification' => now()->toDateString(),
+        ]);
+    }
+
+    /**
+     * Rejeter un avancement d'échelon (DDIS uniquement).
+     */
+    public function rejeterEchelon(Avancement $avancement, \App\Models\User $user): void
+    {
+        if ($avancement->type !== 'echelon' || !$avancement->isSoumis()) {
+            return;
+        }
+
+        $avancement->update([
+            'statut'     => 'rejete',
+            'valide_par' => $user->id,
+            'valide_le'  => now(),
+        ]);
+
+        \App\Models\Notification::create([
+            'centre_id'         => $avancement->personnel?->centre_id,
+            'type'              => 'echelon',
+            'titre'             => "Avancement d'échelon rejeté par la DDIS — " . $avancement->personnel->nom_complet,
+            'message'           => "L'avancement d'échelon pour {$avancement->personnel->nom_complet} a été rejeté par la DDIS.",
+            'personnel_id'      => $avancement->personnel_id,
+            'avancement_id'     => $avancement->id,
+            'date_notification' => now()->toDateString(),
+        ]);
     }
 
     /**
@@ -321,8 +417,8 @@ class AvancementService
     private function dateDernierAvancementEchelon(Personnel $personnel): ?Carbon
     {
         $dernier = $personnel->relationLoaded('avancements')
-            ? $personnel->avancements->where('type', 'echelon')->sortByDesc('date_effet')->first()
-            : $personnel->avancements()->where('type', 'echelon')->orderByDesc('date_effet')->first();
+            ? $personnel->avancements->where('type', 'echelon')->where('statut', 'valide')->sortByDesc('date_effet')->first()
+            : $personnel->avancements()->where('type', 'echelon')->where('statut', 'valide')->orderByDesc('date_effet')->first();
 
         return $dernier?->date_effet;
     }

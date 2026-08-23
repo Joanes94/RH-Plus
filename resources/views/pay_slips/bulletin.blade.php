@@ -2,133 +2,140 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Bulletin de Paie - {{ $paySlip->personnel->nom_complet }}</title>
+    <title>BULLETIN DE PAIE - {{ $paySlip->personnel->nom_complet }}</title>
     <style>
         @page {
-            size: A4;
-            margin: 8mm;
+            size: A4 portrait;
+            margin: 5mm 8mm;
+        }
+        * {
+            box-sizing: border-box;
         }
         body {
-            font-family: 'Courier New', Courier, 'DejaVu Sans Mono', monospace, Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             color: #000;
-            font-size: 11px;
-            line-height: 1.25;
+            font-size: 10.5px;
+            line-height: 1.15;
             margin: 0;
-            padding: 10px;
+            padding: 2px;
             background-color: #fff;
         }
         
         .bulletin-container {
             border: 1.5px solid #000;
             padding: 0;
+            width: 100%;
             box-sizing: border-box;
         }
 
-        /* HEADER */
+        /* HEADER COMPACT */
         .header-table {
             width: 100%;
             border-collapse: collapse;
             border-bottom: 1.5px solid #000;
         }
         .header-table td {
-            padding: 6px 10px;
+            padding: 3px 6px;
             vertical-align: middle;
         }
         .header-left {
-            width: 32%;
+            width: 30%;
             border-right: 1.5px solid #000;
             text-align: center;
         }
         .header-title-left {
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
             text-align: left;
         }
         .photo-box {
-            width: 90px;
-            height: 90px;
-            border: 1px dashed #666;
+            width: 80px;
+            height: 80px;
+            border: 1px solid #000;
             margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            background-color: #fff;
         }
         .photo-box img {
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
         }
         .header-right {
-            width: 68%;
+            width: 70%;
             text-align: center;
         }
         .header-archidiocese {
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: bold;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
         }
         .header-centre-nom {
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 4px 0;
+            margin: 2px 0;
         }
         .header-centre-sub {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: bold;
+            margin-bottom: 4px;
         }
         .header-contact-row {
-            margin-top: 8px;
-            font-size: 9.5px;
+            margin-top: 6px;
+            font-size: 9px;
             display: flex;
             justify-content: space-between;
+            padding: 0 4px;
         }
 
-        /* BANDEAU MOIS */
+        /* BANDEAU MOIS DE PAIE */
         .month-banner {
             border-bottom: 1.5px solid #000;
             background-color: #e5e7eb;
             text-align: center;
             font-weight: bold;
-            font-size: 12px;
-            padding: 4px;
+            font-size: 11px;
+            padding: 3px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
-        /* INFO SALARIE TABLE */
+        /* INFO SALARIE TABLE COMPACT */
         .info-table {
             width: 100%;
             border-collapse: collapse;
             border-bottom: 1.5px solid #000;
-            font-size: 10.5px;
+            font-size: 10px;
         }
         .info-table td {
-            padding: 3px 8px;
+            padding: 2px 6px;
             vertical-align: top;
         }
         .info-label {
             font-weight: bold;
-            width: 130px;
+            width: 120px;
             display: inline-block;
         }
 
-        /* RUBRIQUES TABLE */
+        /* RUBRIQUES TABLE COMPACT */
         .rubriques-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
+            font-size: 9.5px;
         }
         .rubriques-table th {
             border-bottom: 1.5px solid #000;
             border-right: 1px solid #000;
             background-color: #d1d5db;
-            padding: 4px 6px;
+            padding: 3px 4px;
             text-align: center;
             font-weight: bold;
             text-transform: uppercase;
@@ -139,7 +146,7 @@
         .rubriques-table td {
             border-right: 1px solid #000;
             border-bottom: 1px solid #e5e7eb;
-            padding: 3px 6px;
+            padding: 2px 5px;
         }
         .rubriques-table td:last-child {
             border-right: none;
@@ -148,45 +155,45 @@
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .font-bold { font-weight: bold; }
-        .text-uppercase { text-transform: uppercase; }
 
         /* RECAPITULATIF RECADRÉ EN BAS */
         .recap-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 10px;
+            margin-top: 8px;
+            font-size: 9.5px;
             border: 1.5px solid #000;
         }
         .recap-table th {
             border: 1px solid #000;
             background-color: #d1d5db;
-            padding: 4px 6px;
+            padding: 3px 4px;
             text-align: center;
             font-weight: bold;
         }
         .recap-table td {
             border: 1px solid #000;
-            padding: 5px 6px;
+            padding: 3px 4px;
             text-align: center;
             font-weight: bold;
         }
         .net-box {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             color: #000;
         }
 
-        /* SIGNATURES */
+        /* SIGNATURES COMPACT */
         .signatures-table {
             width: 100%;
-            margin-top: 25px;
-            font-size: 11px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-size: 10.5px;
             font-weight: bold;
         }
         .signatures-table td {
             vertical-align: top;
-            padding: 0 20px;
+            padding: 0 15px;
         }
 
         @media print {
@@ -198,8 +205,8 @@
 <body>
 
     {{-- Bouton d'impression --}}
-    <div class="no-print" style="margin-bottom: 15px; text-align: right;">
-        <button onclick="window.print()" style="padding: 8px 18px; background-color: #1a5c45; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px;">
+    <div class="no-print" style="margin-bottom: 8px; text-align: right;">
+        <button onclick="window.print()" style="padding: 6px 16px; background-color: #1a5c45; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11.5px;">
             🖨️ Imprimer le bulletin
         </button>
     </div>
@@ -207,21 +214,19 @@
     @php
         $centre = $centre ?? ($paySlip->centre ?? $paySlip->personnel->centre ?? null);
         $personnel = $paySlip->personnel;
-        $contrat = $personnel->contrat_actif;
     @endphp
 
     <div class="bulletin-container">
-        
-        {{-- EN-TÊTE CONFORME AU MODÈLE (Photo 1) --}}
+        {{-- EN-TÊTE CONFORME PHOTO ST LUC (Photo de l'Évêque pour tous les centres) --}}
         <table class="header-table">
             <tr>
                 <td class="header-left">
                     <div class="header-title-left">BULLETIN DE PAIE</div>
                     <div class="photo-box">
-                        @if(!empty($personnel->photo_path))
-                            <img src="{{ asset('storage/' . $personnel->photo_path) }}" alt="Photo Personnel">
+                        @if(!empty($evequePhotoBase64))
+                            <img src="{{ $evequePhotoBase64 }}" alt="Photo Évêque">
                         @else
-                            <img src="{{ asset('images/letterhead/photo_eveque.jpeg') }}" alt="Photo">
+                            <img src="{{ asset('images/letterhead/photo_eveque.jpeg') }}" alt="Photo Évêque">
                         @endif
                     </div>
                 </td>
@@ -231,7 +236,7 @@
                     @if(!empty($centre->reference_suffix))
                         <div class="header-centre-sub">({{ $centre->reference_suffix }})</div>
                     @endif
-                    <div class="header-contact-row" style="margin-top: 12px;">
+                    <div class="header-contact-row">
                         <span>Tel: {{ $centre->telephone ?? '21382218 | 90074967' }}</span>
                         <span>email: {{ $centre->email ?? 'hopitalsaintluc@gmail.com' }}</span>
                     </div>
@@ -440,7 +445,6 @@
                 </tr>
             </tbody>
         </table>
-
     </div>
 
     {{-- RECAPITULATIF EN BAS (Masse Salariale & Montant à Payer) --}}
