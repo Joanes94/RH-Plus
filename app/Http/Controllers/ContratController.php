@@ -289,7 +289,9 @@ class ContratController extends Controller
             'representant_titre'  => ConfigRh::get('contrat_representant_titre', 'Archevêque, op.'),
             'delegataire_nom'     => ConfigRh::get('contrat_delegataire_nom', 'Abbé Théophile AKOHA'),
             'delegataire_titre'   => ConfigRh::get('contrat_delegataire_titre', 'Vicaire Général'),
-            'directrice_travail'  => ConfigRh::get('contrat_directrice_travail', 'Mireille C. LEGBA ADANKON'),
+            'directeur_travail_titre' => ConfigRh::get('directeur_travail_titre', 'La Directrice Départementale du Travail et de la Fonction Publique du Littoral'),
+            'directeur_travail_nom'   => ConfigRh::get('directeur_travail_nom', 'Mireille C. LEGBA ADANKON'),
+            'directrice_travail'      => ConfigRh::get('directeur_travail_nom', 'Mireille C. LEGBA ADANKON'),
             'logo_b64'      => file_exists($logoPath) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath)) : null,
             'eveque_b64'    => file_exists($evePath)  ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($evePath))  : null,
         ];

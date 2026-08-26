@@ -5,7 +5,7 @@
     <title>Titre de congé — {{ $personnel->nom_complet }}</title>
     <style>
         * { box-sizing:border-box; margin:0; padding:0; }
-        body { font-family: 'Calibri', 'Segoe UI', Arial, sans-serif; font-size: 14px; color:#000; background:#eee; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 14px; color:#000; background:#eee; }
         .page { width:210mm; min-height:297mm; margin:20px auto; background:white; padding:12mm 18mm 22mm; box-shadow:0 4px 24px rgba(0,0,0,.15); position:relative; }
 
         /* Letterhead */
@@ -20,14 +20,14 @@
         .lh-l5 { font-size:10px; color:#444; margin-top:3px; }
 
         /* Date + ref */
-        .doc-date   { font-weight:700; font-size:15px; margin-bottom:4px; }
-        .doc-ref    { font-style:italic; font-weight:700; font-size:14px; margin-bottom:18px; }
+        .doc-date   { font-weight:700; font-size:14px; font-family: 'Times New Roman', Times, serif; margin-bottom:4px; }
+        .doc-ref    { font-style:italic; font-weight:700; font-size:14px; font-family: 'Times New Roman', Times, serif; margin-bottom:18px; }
 
         /* Titre centré, souligné */
-        .doc-title  { text-align:center; font-size:17px; font-weight:700; text-decoration:underline; text-transform:uppercase; margin-bottom:22px; letter-spacing:.03em; }
+        .doc-title  { text-align:center; font-size:16px; font-family: 'Times New Roman', Times, serif; font-weight:700; text-decoration:underline; text-transform:uppercase; margin-bottom:22px; letter-spacing:.03em; }
 
         /* Champs avec pointillés */
-        .champ { display:flex; align-items:baseline; margin-bottom:5px; font-size:15px; line-height:1.75; }
+        .champ { display:flex; align-items:baseline; margin-bottom:5px; font-size:14px; font-family: 'Times New Roman', Times, serif; line-height:1.75; }
         .champ-bold { font-weight:700; }
         .champ-lbl  { white-space:nowrap; min-width:0; }
         .champ-fill { flex:1; border-bottom:1px dotted #888; margin:0 3px 3px; min-width:10px; }
@@ -35,7 +35,7 @@
         .champ-trail{ flex:0.6; border-bottom:1px dotted #888; margin-left:3px; min-width:10px; }
 
         /* NB */
-        .nb { font-weight:700; font-size:15px; margin-top:22px; line-height:1.65; }
+        .nb { font-weight:700; font-size:14px; font-family: 'Times New Roman', Times, serif; margin-top:22px; line-height:1.65; }
 
         /* Signature */
         .sig-wrap  { margin-top:20px; width:260px; margin-left:auto; margin-right:40px; text-align:center; }
@@ -206,14 +206,25 @@
     </div>
 
     {{-- SIGNATURE --}}
-    <div class="sig-wrap">
-        <div class="sig-titre">{{ $drh_titre ?? 'Directeur des Ressources Humaines' }}</div>
-        @if(!empty($signature_url))
-            <div class="sig-img-wrap"><img src="{{ $signature_url }}" alt="Signature" class="sig-img"></div>
+    <div class="sig-wrap" style="margin-top: 30px; width: 300px; margin-left: auto; text-align: center; font-family: 'Times New Roman', Times, serif; font-size: 14px;">
+        @if(!empty($approuvePar) && $approuvePar->isCRH())
+            <div style="font-weight: 700;">{{ $drh_titre ?? 'Le Directeur de Centre' }}</div>
+            <div style="font-weight: 700;">{{ $drh_nom }}</div>
+            <div style="font-weight: 700; margin-bottom: 4px;">P.O.</div>
+            @if(!empty($signature_url))
+                <div style="text-align: center; margin: 4px 0;"><img src="{{ $signature_url }}" alt="Signature CRH" style="height: 70px; width: auto; display: block; margin: 0 auto;"></div>
+            @endif
+            <div style="font-weight: 700; text-decoration: underline;">{{ $approuvePar->nom_complet }}</div>
+            <div style="font-size: 0.85rem; font-style: italic;">({{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }})</div>
         @else
-            <div class="sig-line"></div>
+            <div style="font-weight: 700;">{{ $drh_titre ?? 'Directeur des Ressources Humaines' }}</div>
+            @if(!empty($signature_url))
+                <div style="text-align: center; margin: 4px 0;"><img src="{{ $signature_url }}" alt="Signature" style="height: 70px; width: auto; display: block; margin: 0 auto;"></div>
+            @else
+                <div style="height: 50px;"></div>
+            @endif
+            <div style="font-weight: 700; text-decoration: underline;">{{ $drh_nom }}</div>
         @endif
-        <div class="sig-nom">{{ $drh_nom }}</div>
     </div>
 
     {{-- FOOTER DYNAMIQUE --}}

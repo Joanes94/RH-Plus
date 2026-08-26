@@ -199,6 +199,8 @@ class DemandeController extends Controller
         $signPath = $demande->signature_path ?: ($approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar));
         $signUrl  = $docService->imageToBase64($signPath);
 
+        $drhInfo = $docService->resolveDrhCentre($p, $approuvePar);
+
         $data = [
             'demande'          => $demande,
             'personnel'        => $p,
@@ -209,11 +211,13 @@ class DemandeController extends Controller
             'du_de_la'         => $estFemme ? 'de la' : 'du',
             'nomme_e'          => $estFemme ? 'nommée' : 'nommé',
             'employe_e'        => $estFemme ? 'employée' : 'employé',
-            'drh_nom'          => ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar?->nom_complet ?: 'Nom du DRH'),
-            'drh_titre'        => ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar?->titre_effectif ?: 'Directeur des Ressources Humaines'),
+            'drh_nom'          => $drhInfo['nom'],
+            'drh_titre'        => $drhInfo['titre'],
             'organisation'     => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
             'ville'            => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'    => $signUrl,
+            'approuvePar'      => $approuvePar,
+            'type_demande'     => $demande->type_demande,
             'centre_logo'      => $docService->imageToBase64($c?->logo_path),
             'entete_image_url' => $docService->imageToBase64($c?->entete_image_path),
             'entete_texte'     => $c?->entete_texte,

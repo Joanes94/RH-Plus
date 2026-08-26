@@ -215,9 +215,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/avancements/verifier',                  [AvancementController::class, 'verifier'])->name('avancements.verifier');
     Route::post('/avancements/{personnel}/verifier',       [AvancementController::class, 'verifierPersonnel'])->name('avancements.verifier-personnel');
     Route::get('/avancements/{avancement}/document',       [AvancementController::class, 'document'])->name('avancements.document');
-    Route::get('/avancements',                             [AvancementController::class, 'index'])->name('avancements.index')->middleware('role:global');
-    Route::post('/avancements/{avancement}/approuver',     [AvancementController::class, 'approuver'])->name('avancements.approuver')->middleware('role:ddis');
-    Route::post('/avancements/{avancement}/rejeter',       [AvancementController::class, 'rejeter'])->name('avancements.rejeter')->middleware('role:ddis');
+    Route::get('/avancements',                             [AvancementController::class, 'index'])->name('avancements.index');
+    Route::post('/avancements/{avancement}/valider-crh',   [AvancementController::class, 'validerCRH'])->name('avancements.valider-crh');
+    Route::post('/avancements/{avancement}/approuver',     [AvancementController::class, 'approuver'])->name('avancements.approuver');
+    Route::post('/avancements/{avancement}/rejeter',       [AvancementController::class, 'rejeter'])->name('avancements.rejeter');
+
 
     // ── Notifications ────────────────────────────────────────────────────────
     Route::post('/notifications/{notification}/lue',      [NotificationController::class, 'marquerLue'])->name('notifications.lue');
@@ -247,6 +249,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/periodes',                          [PayPeriodController::class, 'store'])->name('pay-periods.store');
         Route::get('/periodes/{payPeriod}',               [PayPeriodController::class, 'show'])->name('pay-periods.show');
         Route::post('/periodes/{payPeriod}/cloturer',      [PayPeriodController::class, 'cloture'])->name('pay-periods.cloturer');
+        Route::post('/periodes/{payPeriod}/envoyer-email', [PayPeriodController::class, 'envoyerBulletinsEmail'])->name('pay-periods.envoyer-email');
+
 
         // Exports globaux de la période
         Route::get('/periodes/{payPeriod}/centres/{centre}/livre',      [PayPeriodController::class, 'livreDePaie'])->name('pay-periods.livre');

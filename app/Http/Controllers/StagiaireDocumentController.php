@@ -28,14 +28,21 @@ class StagiaireDocumentController extends Controller
         $signPath = $approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar);
         $signUrl  = $docService->imageToBase64($signPath);
 
+        $drhInfo = $docService->resolveDrhCentre(null, $approuvePar);
+        if ($c) {
+            $fakePersonnel = new Personnel(['centre_id' => $c->id]);
+            $drhInfo = $docService->resolveDrhCentre($fakePersonnel, $approuvePar);
+        }
+
         return [
             'stagiaire'        => $stagiaire,
             'centre'           => $c,
-            'drh_nom'          => ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar?->nom_complet ?: 'Le Directeur des Ressources Humaines'),
-            'drh_titre'        => ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar?->titre_effectif ?: 'Directeur des Ressources Humaines'),
+            'drh_nom'          => $drhInfo['nom'],
+            'drh_titre'        => $drhInfo['titre'],
             'organisation'     => $c?->nom ?: ConfigRh::get('organisation', 'CSVH Saint Luc'),
             'ville'            => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'    => $signUrl,
+            'approuvePar'      => $approuvePar,
             'centre_logo'      => $docService->imageToBase64($c?->logo_path),
             'entete_image_url' => $docService->imageToBase64($c?->entete_image_path),
             'entete_texte'     => $c?->entete_texte,

@@ -24,8 +24,8 @@
     <title>@yield('doc-title', 'Document') — {{ $personnel->nom_complet }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { font-size: 13px; -webkit-font-smoothing: antialiased; }
-        body { font-family: 'Calibri', 'Segoe UI', Arial, sans-serif; font-size: 14px;
+        html { font-size: 14px; -webkit-font-smoothing: antialiased; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 14px;
             background: #f5f4f0; color: #000;
         }
          
@@ -75,10 +75,11 @@
 
         /* ── CORPS ───────────────────────────────────────────────── */
         .doc-body {
-            font-size: .98rem; line-height: 2;
+            font-size: 14px; font-family: 'Times New Roman', Times, serif; line-height: 2;
             text-align: justify;
         }
         .doc-body p {
+            font-size: 14px; font-family: 'Times New Roman', Times, serif;
             margin-bottom: 12px;
             text-align: justify;
         }
@@ -201,16 +202,28 @@
     @endif
 
     {{-- ═══ SIGNATURE ═══ --}}
-    <div class="doc-signature-block">
-        <div class="sig-title">{{ $drh_titre }}</div>
-        <div class="sig-image-wrap">
-            @if($signature_url)
-                <img src="{{ $signature_url }}" alt="Signature" class="sig-image">
-            @else
-                <div class="sig-line"></div>
+    @php
+        $estCongeMaladie = isset($type_demande) && $type_demande === 'conge_maladie';
+    @endphp
+    <div class="sig-wrap" style="margin-top: 30px; width: 300px; margin-left: auto; text-align: center; font-family: 'Times New Roman', Times, serif; font-size: 14px;">
+        @if(!$estCongeMaladie && !empty($approuvePar) && $approuvePar->isCRH())
+            <div style="font-weight: 700;">{{ $drh_titre ?? 'Le Directeur de Centre' }}</div>
+            <div style="font-weight: 700;">{{ $drh_nom }}</div>
+            <div style="font-weight: 700; margin-bottom: 4px;">P.O.</div>
+            @if(!empty($signature_url))
+                <div style="text-align: center; margin: 4px 0;"><img src="{{ $signature_url }}" alt="Signature CRH" style="height: 70px; width: auto; display: block; margin: 0 auto;"></div>
             @endif
-        </div>
-        <div class="sig-name">{{ $drh_nom }}</div>
+            <div style="font-weight: 700; text-decoration: underline;">{{ $approuvePar->nom_complet }}</div>
+            <div style="font-size: 0.85rem; font-style: italic;">({{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }})</div>
+        @else
+            <div style="font-weight: 700;">{{ $drh_titre ?? 'Directeur des Ressources Humaines' }}</div>
+            @if(!empty($signature_url))
+                <div style="text-align: center; margin: 4px 0;"><img src="{{ $signature_url }}" alt="Signature" style="height: 70px; width: auto; display: block; margin: 0 auto;"></div>
+            @else
+                <div style="height: 50px;"></div>
+            @endif
+            <div style="font-weight: 700; text-decoration: underline;">{{ $drh_nom }}</div>
+        @endif
     </div>
 
     {{-- ═══ PIED DE PAGE DYNAMIQUE ═══ --}}

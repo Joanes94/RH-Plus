@@ -618,6 +618,7 @@ class PersonnelController extends Controller
         ]);
 
         $ancienCentre = $personnel->centre;
+        $ancienCentreId = $personnel->centre_id;
         $nouveauCentre = \App\Models\Centre::find($request->centre_id);
 
         // Fermer la période dans l'ancien centre
@@ -650,7 +651,25 @@ class PersonnelController extends Controller
             $personnel->contrat_actif->update(['centre_id' => $request->centre_id, 'centre' => $nouveauCentre->nom]);
         }
 
+        // Marquer comme FICTIFS tous les bulletins existants dans l'ancien centre pour l'agent transféré
+        if ($ancienCentreId) {
+            \App\Models\PaySlip::where('personnel_id', $personnel->id)
+                ->where('centre_id', $ancienCentreId)
+                ->update(['is_fictif' => true]);
+        }
+
+        // Initialiser immédiatement la paie sous le nouveau centre pour les périodes ouvertes
+        $openPeriods = \App\Models\PayPeriod::where('statut', 'ouvert')->get();
+        if ($openPeriods->isNotEmpty()) {
+            $payrollService = app(\App\Services\PayrollService::class);
+            foreach ($openPeriods as $openPeriod) {
+                $payrollService->initialiserBulletinsPourPeriode($openPeriod->id, $openPeriod->code, $nouveauCentre->id);
+            }
+        }
+
+
         // Notification au centre de départ (Centre A)
+
         if ($ancienCentre) {
             \App\Models\Notification::create([
                 'centre_id'         => $ancienCentre->id,

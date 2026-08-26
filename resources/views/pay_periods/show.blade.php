@@ -63,8 +63,18 @@
         <a href="{{ route('pay-periods.virements', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="R4 - État de paiement Banque (Filtre par banque)">
             🏦 R4 - État de paiement
         </a>
+        @if(!auth()->user()->isReadOnly())
+        <form action="{{ route('pay-periods.envoyer-email', $payPeriod->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Confirmer l\'envoi par email des bulletins de paie de tout le personnel actif de {{ $selectedCentre->nom }} ?')">
+            @csrf
+            <input type="hidden" name="centre_id" value="{{ $selectedCentre->id }}">
+            <button type="submit" class="export-btn" style="background: #1a5c45; color: #fff; border-color: #1a5c45; font-weight: 600;" title="Envoyer le bulletin de paie par email à chaque salarié du centre">
+                📧 Envoyer Bulletins par Email
+            </button>
+        </form>
+        @endif
     </div>
 </div>
+
 
 {{-- Grille des bulletins --}}
 <div class="card premium-card">
@@ -86,6 +96,7 @@
             <tbody>
                 @forelse($slips as $slip)
                 @php
+                    $totalPrimes = (float)$slip->prime_caisse + (float)$slip->prime_risque + (float)$slip->prime_responsabilite + (float)$slip->prime_garde + (float)$slip->prime_specialite + (float)$slip->autre_prime;
                     $ajustementsNet = (float)$slip->moins_percu_rembourse 
                                     - (float)$slip->frais_medicaux 
                                     - (float)$slip->avance_salaire 
@@ -94,12 +105,19 @@
                                     - (float)$slip->taxe_tele 
                                     - (float)$slip->trop_percu_net;
                 @endphp
-                <tr>
+                <tr style="{{ $slip->is_fictif ? 'opacity: 0.65; background: #f9fafb;' : '' }}">
                     <td>
                         <div class="agent-profile">
-                            <div class="agent-avatar">{{ substr($slip->personnel->nom, 0, 1) }}{{ substr($slip->personnel->prenoms, 0, 1) }}</div>
+                            <div class="agent-avatar" style="{{ $slip->is_fictif ? 'background: #9ca3af;' : '' }}">{{ strtoupper(substr($slip->personnel->nom ?? '', 0, 1)) }}{{ strtoupper(substr($slip->personnel->prenoms ?? '', 0, 1)) }}</div>
                             <div>
-                                <div class="agent-name">{{ $slip->personnel->nom_complet }}</div>
+                                <div class="agent-name">
+                                    {{ $slip->personnel->nom_complet ?? 'N/A' }}
+                                    @if($slip->is_fictif)
+                                        <span style="background: #f3f4f6; color: #4b5563; border: 1px dashed #9ca3af; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 4px; font-style: italic;">
+                                            👻 Fictif (Transféré)
+                                        </span>
+                                    @endif
+                                </div>
                                 <div class="agent-subtext">{{ $slip->poste }}</div>
                             </div>
                         </div>
@@ -116,8 +134,19 @@
                     <td class="text-right text-deduction" style="font-size: 0.85rem;">
                         -{{ number_format($slip->cotisation_sociale_salarie + $slip->impot_its, 0, ',', ' ') }} F
                     </td>
-                    <td class="text-right font-medium" style="font-size: 0.85rem; color: {{ $ajustementsNet >= 0 ? '#059669' : '#dc2626' }};">
-                        {{ $ajustementsNet >= 0 ? '+' : '' }}{{ number_format($ajustementsNet, 0, ',', ' ') }} F
+                    <td class="text-right font-medium" style="font-size: 0.85rem;">
+                        <div style="color: {{ $ajustementsNet >= 0 ? '#059669' : '#dc2626' }}; font-weight: 700;">
+                            {{ $ajustementsNet >= 0 ? '+' : '' }}{{ number_format($ajustementsNet, 0, ',', ' ') }} F
+                        </div>
+                        @if($totalPrimes > 0)
+                            <div style="font-size: 0.71rem; color: #059669;">(Primes: +{{ number_format($totalPrimes, 0, ',', ' ') }} F)</div>
+                        @endif
+                        @if($slip->avance_salaire > 0)
+                            <div style="font-size: 0.71rem; color: #dc2626;">(Avance: -{{ number_format($slip->avance_salaire, 0, ',', ' ') }} F)</div>
+                        @endif
+                        @if($slip->frais_medicaux > 0)
+                            <div style="font-size: 0.71rem; color: #dc2626;">(Soins: -{{ number_format($slip->frais_medicaux, 0, ',', ' ') }} F)</div>
+                        @endif
                     </td>
                     <td class="text-right font-bold text-net" style="font-size: 1.05rem;">
                         {{ number_format($slip->salaire_net, 0, ',', ' ') }} FCFA
@@ -133,17 +162,25 @@
                             <a href="{{ route('pay-slips.pdf', $slip->id) }}" target="_blank" class="action-btn action-btn-pdf" title="Télécharger le bulletin">
                                 🖨️ Bulletin
                             </a>
-                            <a href="{{ route('pay-slips.solde-tout-compte', $slip->id) }}" target="_blank" class="action-btn action-btn-solde" title="Générer reçu Solde de tout compte">
-                                📄 Solde compte
-                            </a>
-                            @if($payPeriod->statut === 'ouvert' && !auth()->user()->isReadOnly())
-                                <button type="button" class="action-btn action-btn-ajuste" onclick="openVariablesModal({{ json_encode($slip) }})">
-                                    ⚙️ Ajuster
-                                </button>
+                            @if(!$slip->is_fictif)
+                                <a href="{{ route('pay-slips.solde-tout-compte', $slip->id) }}" target="_blank" class="action-btn action-btn-solde" title="Générer reçu Solde de tout compte">
+                                    📄 Solde compte
+                                </a>
+                                @if($payPeriod->statut === 'ouvert' && !auth()->user()->isReadOnly())
+                                    <button type="button" class="action-btn action-btn-ajuste" onclick="openVariablesModal({{ json_encode($slip) }})">
+                                        ⚙️ Ajuster
+                                    </button>
+                                @endif
+                            @else
+                                <span style="font-size: 0.72rem; color: #6b7280; font-style: italic; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; border: 1px dashed #d1d5db;">
+                                    🔒 Fictif (Lecture seule)
+                                </span>
                             @endif
                         </div>
                     </td>
+
                 </tr>
+
                 @empty
                 <tr>
                     <td colspan="9" style="text-align: center; color: #9ca3af; padding: 4rem;">

@@ -160,12 +160,22 @@
                     {{-- Statut --}}
                     <td style="padding: 1rem 1.25rem; vertical-align: middle; text-align: center; white-space: nowrap;">
                         @if($avancement->statut === 'soumis')
-                            <span style="display: inline-block; font-size: 0.75rem; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 99px; font-weight: 700;">
-                                ⏳ En attente DDIS
+                            @if($avancement->type === 'bonification')
+                                <span style="display: inline-block; font-size: 0.75rem; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 99px; font-weight: 700;">
+                                    ⏳ Attente validation CRH
+                                </span>
+                            @else
+                                <span style="display: inline-block; font-size: 0.75rem; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 99px; font-weight: 700;">
+                                    ⏳ Attente validation Centre
+                                </span>
+                            @endif
+                        @elseif($avancement->statut === 'valide_crh')
+                            <span style="display: inline-block; font-size: 0.75rem; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 99px; font-weight: 700;">
+                                ⌛ Pré-validé CRH (Attente DDIS)
                             </span>
                         @elseif($avancement->statut === 'valide')
                             <span style="display: inline-block; font-size: 0.75rem; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 99px; font-weight: 700;">
-                                ✓ Validé par DDIS
+                                ✓ Validé {{ $avancement->type === 'bonification' ? 'et Signé (DDIS)' : '(Centre)' }}
                             </span>
                         @else
                             <span style="display: inline-block; font-size: 0.75rem; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 99px; font-weight: 700;">
@@ -177,25 +187,51 @@
                     {{-- Actions (Valider / Rejeter / Lettre) --}}
                     <td style="padding: 1rem 1.25rem; vertical-align: middle; text-align: right; white-space: nowrap; position: sticky; right: 0; background: #ffffff; box-shadow: -4px 0 8px rgba(0,0,0,0.02);">
                         <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
-                            @if($avancement->isSoumis() && (auth()->user()->isDDIS() || auth()->user()->isGlobal() || auth()->user()->isCrh() || auth()->user()->canApprove()))
-                                <form method="POST" action="{{ route('avancements.approuver', $avancement) }}" style="margin: 0;" onsubmit="return confirm('Êtes-vous sûr de vouloir valider officiellement cet avancement ?')">
+                            {{-- Action Avancement Échelon par le Centre --}}
+                            @if($avancement->type === 'echelon' && $avancement->statut === 'soumis' && !auth()->user()->isReadOnly())
+                                <form method="POST" action="{{ route('avancements.approuver', $avancement) }}" style="margin: 0;" onsubmit="return confirm('Êtes-vous sûr de vouloir valider cet avancement d\'échelon au niveau du centre ?')">
                                     @csrf
-                                    <button type="submit" style="padding: 6px 12px; font-weight: 700; font-size: 0.8rem; background: #059669; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5,150,105,0.25); transition: background 0.15s;" title="Valider et appliquer l'avancement">
-                                        ✓ Valider
+                                    <button type="submit" style="padding: 6px 12px; font-weight: 700; font-size: 0.8rem; background: #059669; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5,150,105,0.25);" title="Valider l'avancement d'échelon au niveau du centre">
+                                        ✓ Valider (Centre)
                                     </button>
                                 </form>
-                                <form method="POST" action="{{ route('avancements.rejeter', $avancement) }}" style="margin: 0;" onsubmit="return confirm('Êtes-vous sûr de vouloir rejeter cette demande d\'avancement ?')">
+                            @endif
+
+                            {{-- Étape 1 Bonification : Pré-validation CRH --}}
+                            @if($avancement->type === 'bonification' && $avancement->statut === 'soumis' && (auth()->user()->isCRH() || auth()->user()->isGlobal()))
+                                <form method="POST" action="{{ route('avancements.valider-crh', $avancement) }}" style="margin: 0;" onsubmit="return confirm('Confirmer la pré-validation par le CRH pour transmission à la DDIS ?')">
                                     @csrf
-                                    <button type="submit" style="padding: 6px 12px; font-weight: 700; font-size: 0.8rem; background: #dc2626; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(220,38,38,0.25); transition: background 0.15s;" title="Rejeter l'avancement">
+                                    <button type="submit" style="padding: 6px 12px; font-weight: 700; font-size: 0.8rem; background: #2563eb; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(37,99,235,0.25);" title="Pré-valider la bonification en tant que CRH">
+                                        ✓ Pré-valider (CRH)
+                                    </button>
+                                </form>
+                            @endif
+
+                            {{-- Étape 2 Bonification : Validation finale DDIS avec signature --}}
+                            @if($avancement->type === 'bonification' && $avancement->statut === 'valide_crh' && (auth()->user()->isDDIS() || auth()->user()->isGlobal()))
+                                <form method="POST" action="{{ route('avancements.approuver', $avancement) }}" style="margin: 0;" onsubmit="return confirm('Confirmer la validation officielle et l\'imposition de la signature de la DDIS ?')">
+                                    @csrf
+                                    <button type="submit" style="padding: 6px 12px; font-weight: 700; font-size: 0.8rem; background: #7c3aed; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(124,58,237,0.25);" title="Valider et imposer la signature DDIS">
+                                        ✍️ Signer & Valider (DDIS)
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if(($avancement->statut === 'soumis' || $avancement->statut === 'valide_crh') && !auth()->user()->isReadOnly())
+                                <form method="POST" action="{{ route('avancements.rejeter', $avancement) }}" style="margin: 0;" onsubmit="return confirm('Êtes-vous sûr de vouloir rejeter cette demande ?')">
+                                    @csrf
+                                    <button type="submit" style="padding: 6px 12px; font-weight: 700; font-size: 0.8rem; background: #dc2626; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(220,38,38,0.25);" title="Rejeter la demande">
                                         ✖ Rejeter
                                     </button>
                                 </form>
                             @endif
+
                             <a href="{{ route('avancements.document', $avancement) }}" target="_blank" style="padding: 6px 10px; font-weight: 600; font-size: 0.8rem; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Consulter la lettre officielle">
                                 📄 Lettre
                             </a>
                         </div>
                     </td>
+
                 </tr>
                 @empty
                 <tr>

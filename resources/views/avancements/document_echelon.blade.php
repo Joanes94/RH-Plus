@@ -11,20 +11,20 @@
     <title>Notification d'avancement — {{ $personnel->nom_complet }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Times New Roman', Times, serif; background: #f5f4f0; color: #000; font-size: 13px; }
+        body { font-family: 'Times New Roman', Times, serif; background: #f5f4f0; color: #000; font-size: 14px; }
         .doc-page { width: 210mm; min-height: 297mm; margin: 20px auto; background: white; padding: 14mm 18mm 20mm; box-shadow: 0 4px 24px rgba(0,0,0,0.12); position: relative; overflow: hidden; }
         .letterhead { text-align: center; padding-bottom: 8px; border-bottom: 2.5px solid #000; margin-bottom: 24px; }
         .lh-line1 { font-size: 1.05rem; font-weight: 700; }
         .lh-line2 { font-size: .82rem; margin-top: 4px; }
-        .doc-date { text-align: right; margin-bottom: 12px; font-style: italic; }
-        .doc-body { font-size: 1rem; line-height: 1.8; text-align: justify; }
-        .doc-body p { margin-bottom: 14px; }
-        .dest { width: 280px; margin-left: auto; text-align: left; margin-bottom: 20px; font-size: 0.95rem; }
-        .dest .qui { font-weight: 700; }
-        .ref { font-weight: 700; font-style: italic; margin-bottom: 6px; }
-        .objet { font-weight: 700; margin-bottom: 22px; }
-        .signature { margin-top: 35px; width: 300px; margin-left: auto; text-align: center; }
-        .signature .titre { font-weight: 700; margin-bottom: 4px; font-size: 0.95rem; }
+        .doc-date { text-align: right; margin-bottom: 12px; font-style: italic; font-size: 14px; font-family: 'Times New Roman', Times, serif; }
+        .doc-body { font-size: 14px; font-family: 'Times New Roman', Times, serif; line-height: 1.8; text-align: justify; }
+        .doc-body p { margin-bottom: 14px; font-size: 14px; }
+        .dest { width: 280px; margin-left: auto; text-align: left; margin-bottom: 20px; font-size: 14px; font-family: 'Times New Roman', Times, serif; }
+        .dest .qui { font-weight: 700; font-size: 14px; }
+        .ref { font-weight: 700; font-style: italic; margin-bottom: 6px; font-size: 14px; font-family: 'Times New Roman', Times, serif; }
+        .objet { font-weight: 700; margin-bottom: 22px; font-size: 14px; font-family: 'Times New Roman', Times, serif; }
+        .signature { margin-top: 35px; width: 300px; margin-left: auto; text-align: center; font-size: 14px; font-family: 'Times New Roman', Times, serif; }
+        .signature .titre { font-weight: 700; margin-bottom: 4px; font-size: 14px; }
         .sig-image-wrap { text-align: center; margin: 6px auto; line-height: 0; }
         .sig-image { height: 100px; width: auto; max-width: 280px; object-fit: contain; display: block; margin: 0 auto; }
         .sig-line { height: 60px; width: 220px; border-bottom: 1.5px solid #000; margin: 0 auto; }

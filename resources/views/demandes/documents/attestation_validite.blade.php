@@ -14,9 +14,15 @@ ATTESTATION DE VALIDITE DE TRAVAIL
 
 @section('doc-body')
 <p class="indent-first">
-    Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
-    du {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }}, atteste que
-    <strong>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }},
+    @if(!empty($approuvePar) && $approuvePar->isCRH())
+        Je soussigné <strong>{{ $approuvePar->nom_complet }}</strong>, {{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }} des Institutions Sanitaires Diocésaines,
+        atteste que <strong>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
+        du <strong>{{ $centre->nom ?? 'Centre' }}</strong>,
+    @else
+        Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
+        du {{ $centre->nom ?? 'Centre' }}, atteste que
+        <strong>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
+    @endif
     né{{ $est_femme ? 'e' : '' }} le
     {{ $personnel->date_naissance ? $personnel->date_naissance->isoFormat('DD MMMM YYYY') : '____________' }},
     est embauché{{ $est_femme ? 'e' : '' }} le

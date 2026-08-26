@@ -262,14 +262,17 @@
             <div class="card-body">
                 <div class="alert-list">
                     @foreach($contratsExpirantBientot->take(8) as $contrat)
+                    @php
+                        $jRestants = (int) ceil(now()->startOfDay()->diffInDays($contrat->date_fin->startOfDay(), false));
+                    @endphp
                     <div class="alert-item">
                         <div class="alert-info">
                             <strong>{{ $contrat->personnel->nom_complet }}</strong>
                             <span class="alert-meta">{{ $contrat->type_contrat }} — {{ $contrat->personnel->centre?->nom ?? 'N/A' }}</span>
                         </div>
-                        <div class="alert-date {{ $contrat->date_fin->diffInDays(now()) <= 7 ? 'urgent' : '' }}">
+                        <div class="alert-date {{ $jRestants <= 7 ? 'urgent' : '' }}">
                             {{ $contrat->date_fin->format('d/m/Y') }}
-                            <small>({{ $contrat->date_fin->diffInDays(now()) }}j)</small>
+                            <small>({{ $jRestants }}j)</small>
                         </div>
                     </div>
                     @endforeach

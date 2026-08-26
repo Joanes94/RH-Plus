@@ -52,6 +52,25 @@
                         </div>
                     </div>
 
+                    {{-- Configuration Direction du Travail (Visa des contrats) --}}
+                    <div class="form-group fg-6" style="border-top:1px solid var(--col-border);padding-top:16px;margin-top:4px">
+                        <label>Titre Officiel (Directeur / Directrice Départemental du Travail)</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="directeur_travail_titre"
+                                   value="{{ old('directeur_travail_titre', $config['directeur_travail_titre'] ?? 'La Directrice Départementale du Travail et de la Fonction Publique du Littoral') }}"
+                                   placeholder="Ex: La Directrice Départementale du Travail et de la Fonction Publique du Littoral">
+                        </div>
+                    </div>
+
+                    <div class="form-group fg-6" style="border-top:1px solid var(--col-border);padding-top:16px;margin-top:4px">
+                        <label>Nom complet (Directeur / Directrice du Travail)</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="directeur_travail_nom"
+                                   value="{{ old('directeur_travail_nom', $config['directeur_travail_nom'] ?? 'Mireille C. LEGBA ADANKON') }}"
+                                   placeholder="Ex: Mireille C. LEGBA ADANKON">
+                        </div>
+                    </div>
+
                     {{-- Upload image de signature --}}
                     <div class="form-group fg-6" style="border-top:1px solid var(--col-border);padding-top:16px;margin-top:4px">
                         <label>Signature — Upload image (PNG/JPG, fond transparent recommandé)</label>

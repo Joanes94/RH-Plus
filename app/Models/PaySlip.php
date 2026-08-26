@@ -19,10 +19,11 @@ class PaySlip extends Model
         'cotisation_sociale_salarie', 'impot_its',
         'cotisation_sociale_patronale', 'prestation_familiale_patronale', 'risque_professionnel_patronale',
         'taxe_radio', 'taxe_tele', 'frais_medicaux', 'avance_salaire', 'trop_percu_net', 'mise_a_pied',
-        'moins_percu_rembourse', 'salaire_net', 'validated_by'
+        'moins_percu_rembourse', 'salaire_net', 'validated_by', 'is_fictif'
     ];
 
     protected $casts = [
+        'is_fictif'        => 'boolean',
         'jours_travailles' => 'integer',
         'jours_absence'    => 'integer',
         'heures_supplementaires' => 'decimal:2',
@@ -54,6 +55,7 @@ class PaySlip extends Model
         'moins_percu_rembourse' => 'decimal:2',
         'salaire_net'     => 'decimal:2',
     ];
+
 
     public function payPeriod()
     {

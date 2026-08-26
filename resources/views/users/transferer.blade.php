@@ -119,4 +119,14 @@
         </div>
     </div>
 </div>
+
+@push('styles')
+<style>
+@media (max-width: 768px) {
+    .grid-2-cols { grid-template-columns: 1fr !important; }
+}
+</style>
+@endpush
 @endsection
+
+

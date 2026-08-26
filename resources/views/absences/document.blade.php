@@ -6,8 +6,8 @@
     <title>Autorisation d'absence — {{ $personnel->nom_complet }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { font-size: 13px; -webkit-font-smoothing: antialiased; }
-        body { font-family: 'Times New Roman', Times, serif; background: #f5f4f0; color: #000; }
+        html { font-size: 14px; -webkit-font-smoothing: antialiased; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 14px; background: #f5f4f0; color: #000; }
 
         .doc-page {
             width: 210mm; min-height: 297mm; margin: 20px auto;
@@ -26,17 +26,17 @@
         .lh-line4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
         .lh-line5 { font-size: .82rem; line-height: 1.5; padding: 0 75px; }
 
-        .doc-date-lieu { text-align: right; font-style: italic; margin-bottom: 16px; }
-        .doc-dest { margin: 10px 0 16px; text-align: right; padding-right: 40px; }
-        .doc-dest-a { font-weight: 700; text-align: right; }
-        .doc-dest-name { font-weight: 700; text-align: right; }
-        .doc-dest-fn   { text-align: right; font-style: italic; }
+        .doc-date-lieu { text-align: right; font-style: italic; margin-bottom: 16px; font-size: 14px; font-family: 'Times New Roman', Times, serif; }
+        .doc-dest { margin: 10px 0 16px; text-align: right; padding-right: 40px; font-size: 14px; font-family: 'Times New Roman', Times, serif; }
+        .doc-dest-a { font-weight: 700; text-align: right; font-size: 14px; }
+        .doc-dest-name { font-weight: 700; text-align: right; font-size: 14px; }
+        .doc-dest-fn   { text-align: right; font-style: italic; font-size: 14px; }
 
-        .doc-ref-line { font-size: .92rem; font-style: italic; font-weight: 700; margin: 14px 0 8px; }
-        .doc-object   { font-weight: 700; margin-bottom: 14px; }
+        .doc-ref-line { font-size: 14px; font-style: italic; font-weight: 700; margin: 14px 0 8px; font-family: 'Times New Roman', Times, serif; }
+        .doc-object   { font-weight: 700; margin-bottom: 14px; font-size: 14px; font-family: 'Times New Roman', Times, serif; }
 
-        .doc-body { font-size: .98rem; line-height: 2; text-align: justify; }
-        .doc-body p { margin-bottom: 12px; }
+        .doc-body { font-size: 14px; font-family: 'Times New Roman', Times, serif; line-height: 2; text-align: justify; }
+        .doc-body p { margin-bottom: 12px; font-size: 14px; }
         .doc-body strong { font-weight: 700; }
         .indent-first { text-indent: 50px; }
 
@@ -173,16 +173,25 @@
     </div>
 
     {{-- Signature --}}
-    <div class="doc-signature-block" style="margin-top: 40px;">
-        <div class="sig-title">{{ $drh_titre }}</div>
-        <div class="sig-image-wrap">
-            @if($signature_url)
-                <img src="{{ $signature_url }}" alt="Signature" class="sig-image">
-            @else
-                <div class="sig-line"></div>
+    <div class="sig-wrap" style="margin-top: 30px; width: 300px; margin-left: auto; text-align: center; font-family: 'Times New Roman', Times, serif; font-size: 14px;">
+        @if(!empty($approuvePar) && $approuvePar->isCRH())
+            <div style="font-weight: 700;">{{ $drh_titre ?? 'Le Directeur de Centre' }}</div>
+            <div style="font-weight: 700;">{{ $drh_nom }}</div>
+            <div style="font-weight: 700; margin-bottom: 4px;">P.O.</div>
+            @if(!empty($signature_url))
+                <div style="text-align: center; margin: 4px 0;"><img src="{{ $signature_url }}" alt="Signature CRH" style="height: 70px; width: auto; display: block; margin: 0 auto;"></div>
             @endif
-        </div>
-        <div class="sig-name">{{ $drh_nom }}</div>
+            <div style="font-weight: 700; text-decoration: underline;">{{ $approuvePar->nom_complet }}</div>
+            <div style="font-size: 0.85rem; font-style: italic;">({{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }})</div>
+        @else
+            <div style="font-weight: 700;">{{ $drh_titre ?? 'Directeur des Ressources Humaines' }}</div>
+            @if(!empty($signature_url))
+                <div style="text-align: center; margin: 4px 0;"><img src="{{ $signature_url }}" alt="Signature" style="height: 70px; width: auto; display: block; margin: 0 auto;"></div>
+            @else
+                <div style="height: 50px;"></div>
+            @endif
+            <div style="font-weight: 700; text-decoration: underline;">{{ $drh_nom }}</div>
+        @endif
     </div>
 
     {{-- Pied de page DYNAMIQUE --}}

@@ -6,6 +6,8 @@ use App\Models\Conge;
 use App\Models\Absence;
 use App\Models\Demande;
 use App\Models\ConfigRh;
+use App\Models\Personnel;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 
@@ -76,6 +78,42 @@ class DocumentService
         return $this->generateMonthlyReference($date, $suffix);
     }
 
+    public function resolveDrhCentre(?Personnel $personnel, ?User $approuvePar = null): array
+    {
+        if ($approuvePar && !$approuvePar->isCRH()) {
+            return [
+                'nom'   => ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar->nom_complet ?: 'Nom du DRH'),
+                'titre' => ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar->titre_effectif ?: 'Directeur des Ressources Humaines'),
+            ];
+        }
+
+        $centreId = $personnel?->centre_id;
+
+        if ($centreId) {
+            $drhCentreUser = User::where('centre_id', $centreId)
+                ->whereIn('role', ['drh', 'directeur_centre', 'directeur', 'assistant_rh'])
+                ->first();
+
+            if ($drhCentreUser) {
+                $nom   = ConfigRh::get('drh_nom', null, $drhCentreUser) ?: $drhCentreUser->nom_complet;
+                $titre = ConfigRh::get('drh_titre', null, $drhCentreUser) ?: ($drhCentreUser->titre_effectif ?: 'Directeur des Ressources Humaines');
+                return ['nom' => $nom, 'titre' => $titre];
+            }
+
+            $cfgNom   = ConfigRh::where('cle', 'drh_nom')->where('centre_id', $centreId)->whereNotNull('valeur')->where('valeur', '!=', '')->first()?->valeur;
+            $cfgTitre = ConfigRh::where('cle', 'drh_titre')->where('centre_id', $centreId)->whereNotNull('valeur')->where('valeur', '!=', '')->first()?->valeur;
+
+            if ($cfgNom) {
+                return ['nom' => $cfgNom, 'titre' => $cfgTitre ?: 'Directeur des Ressources Humaines'];
+            }
+        }
+
+        return [
+            'nom'   => 'Le Directeur du ' . ($personnel?->centre?->nom ?: 'Centre'),
+            'titre' => 'Directeur des Ressources Humaines',
+        ];
+    }
+
     public function buildCongeData(Conge $conge): array
     {
         $p = $conge->personnel;
@@ -83,6 +121,7 @@ class DocumentService
         $currentUser = auth()->user();
         $approuvePar = $conge->approuvePar ?? $currentUser;
         $redigePar   = $conge->creator ?? $currentUser;
+        $drhInfo     = $this->resolveDrhCentre($p, $approuvePar);
 
         return [
             'type'            => 'conge',
@@ -90,11 +129,12 @@ class DocumentService
             'personnel'       => $p,
             'centre'          => $c,
             'redige_par_nom'  => $redigePar?->nom_complet,
-            'drh_nom'         => ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar?->nom_complet ?: 'Nom du DRH'),
-            'drh_titre'       => ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar?->titre_effectif ?: 'Directeur des Ressources Humaines'),
+            'drh_nom'         => $drhInfo['nom'],
+            'drh_titre'       => $drhInfo['titre'],
             'organisation'    => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
             'ville'           => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($conge->signature_path, $approuvePar),
+            'approuvePar'     => $approuvePar,
             'centre_logo'     => $this->imageToBase64($c?->logo_path),
             'entete_image_url'=> $this->imageToBase64($c?->entete_image_path),
             'entete_texte'    => $c?->entete_texte,
@@ -112,6 +152,7 @@ class DocumentService
         $currentUser = auth()->user();
         $approuvePar = $absence->approuvePar ?? $currentUser;
         $redigePar   = $absence->creator ?? $currentUser;
+        $drhInfo     = $this->resolveDrhCentre($p, $approuvePar);
 
         return [
             'type'            => 'absence',
@@ -119,11 +160,12 @@ class DocumentService
             'personnel'       => $p,
             'centre'          => $c,
             'redige_par_nom'  => $redigePar?->nom_complet,
-            'drh_nom'         => ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar?->nom_complet ?: 'Nom du DRH'),
-            'drh_titre'       => ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar?->titre_effectif ?: 'Directeur des Ressources Humaines'),
+            'drh_nom'         => $drhInfo['nom'],
+            'drh_titre'       => $drhInfo['titre'],
             'organisation'    => $c?->nom ?: ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines'),
             'ville'           => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($absence->signature_path, $approuvePar),
+            'approuvePar'     => $approuvePar,
             'centre_logo'     => $this->imageToBase64($c?->logo_path),
             'entete_image_url'=> $this->imageToBase64($c?->entete_image_path),
             'entete_texte'    => $c?->entete_texte,

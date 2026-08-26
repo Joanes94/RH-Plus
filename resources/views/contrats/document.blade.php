@@ -45,19 +45,19 @@
         .lh-line4 { font-size: .76rem; font-weight: 700; }
         .lh-line5 { font-size: .64rem; color: #555; margin-top: 2px; }
 
-        .doc-title { text-align: center; margin: 14px 0 20px; }
-        .doc-title .t1 { font-size: 1.15rem; font-weight: 700; text-transform: uppercase; }
-        .doc-title .t2 { font-size: 1rem; font-weight: 700; }
+        .doc-title { text-align: center; margin: 14px 0 20px; font-family: 'Times New Roman', Times, serif; }
+        .doc-title .t1 { font-size: 1.25rem; font-weight: 700; text-transform: uppercase; }
+        .doc-title .t2 { font-size: 1.1rem; font-weight: 700; }
 
-        .doc-body { font-size: .88rem; line-height: 1.55; text-align: justify; }
-        .doc-body p { margin-bottom: 10px; }
-        .article-title { font-weight: 700; text-decoration: underline; margin: 14px 0 4px; }
-        .partie-label { font-weight: 700; }
-        .champ { display: inline-block; min-width: 160px; }
+        .doc-body { font-size: 14px; font-family: 'Times New Roman', Times, serif; line-height: 1.65; text-align: justify; }
+        .doc-body p { font-size: 14px; font-family: 'Times New Roman', Times, serif; margin-bottom: 10px; }
+        .article-title { font-weight: 700; font-size: 14px; text-decoration: underline; margin: 14px 0 4px; }
+        .partie-label { font-weight: 700; font-size: 14px; }
+        .champ { display: inline-block; min-width: 160px; font-size: 14px; }
 
-        .signature-row { display: flex; justify-content: space-between; margin-top: 34px; gap: 20px; }
-        .signature-col { width: 46%; text-align: center; }
-        .signature-col .titre { font-weight: 700; margin-bottom: 30px; }
+        .signature-row { display: flex; justify-content: space-between; margin-top: 34px; gap: 20px; font-family: 'Times New Roman', Times, serif; font-size: 14px; }
+        .signature-col { width: 46%; text-align: center; font-size: 14px; }
+        .signature-col .titre { font-weight: 700; margin-bottom: 30px; font-size: 14px; }
         .signature-col .nom { font-weight: 700; margin-top: 6px; }
 
         .visa-block { margin-top: 40px; font-size: .82rem; text-align: center; }
@@ -87,34 +87,34 @@
 
 <div class="doc-page">
 
-    @include('partials._letterhead')
-
-    <div class="doc-title">
-        <div class="t1">CONTRAT DE TRAVAIL A DUREE {{ $estCdd ? 'DETERMINEE' : 'INDETERMINEE' }}</div>
-        <div class="t2">({{ $contrat->type_contrat }})</div>
+    {{-- Titre officiel du contrat (sans en-tête) --}}
+    <div style="text-align: center; margin-bottom: 24px; font-family: 'Times New Roman', Times, serif;">
+        <h2 style="font-size: 1.2rem; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.02em;">ARCHIDIOCÈSE DE COTONOU</h2>
+        <h3 style="font-size: 1.05rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">CONTRAT DE TRAVAIL A DUREE {{ $estCdd ? 'DETERMINEE' : 'INDETERMINEE' }}</h3>
+        <div style="font-size: 0.95rem; font-weight: 700;">({{ $contrat->type_contrat }})</div>
+        <div style="font-size: 0.9rem; margin: 4px 0; font-weight: 700;">=====°°°°°=====</div>
+        <div style="font-size: 0.95rem; font-weight: 700; margin-top: 6px;">ENTRE LES SOUSSIGNÉS</div>
     </div>
 
     <div class="doc-body">
-        <p style="text-align:center;font-weight:700">ENTRE LES SOUSSIGNÉS</p>
-
-        <p>{{ strtoupper($employeur_nom) }}, {{ $employeur_adresse }}, représenté par son Excellence Monseigneur {{ $representant_nom }}, {{ $representant_titre }}, agissant au nom et pour le compte de {{ $contrat->centre ?: '…………………………' }} demeurant, domicilié et qualifié audit lieu ;</p>
+        <p>{{ strtoupper($employeur_nom) }}, {{ $employeur_adresse }}, représenté par son Excellence Monseigneur {{ $representant_nom }}, Archevêque, op., agissant au nom et pour le compte de {{ $contrat->centre ?: '…………………………' }} demeurant, domicilié et qualités audit lieu ;</p>
         <p>Ayant la qualité d'Employeur,</p>
-        <p style="text-align:center;font-weight:700">D'UNE PART ET,</p>
+        <p style="text-align:center;font-weight:700;margin:12px 0;">D'UNE PART ET,</p>
 
-        <p><span class="partie-label">{{ $civilite }} :</span> {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</p>
-        <p><span class="partie-label">TÉL :</span> {{ $personnel->telephone ?: '…………………………' }}</p>
-        <p><span class="partie-label">DATE ET LIEU DE NAISSANCE :</span> {{ $fmtDate($personnel->date_naissance) }} @if($personnel->lieu_naissance) à {{ $personnel->lieu_naissance }} @endif</p>
-        <p><span class="partie-label">NATIONALITÉ :</span> {{ $personnel->nationalite ?: 'Béninoise' }}</p>
-        <p><span class="partie-label">RÉSIDANT HABITUELLEMENT À :</span> {{ $personnel->residence ?: '…………………………' }}</p>
-        <p><span class="partie-label">LIEU DE CONGÉ :</span> {{ $contrat->lieu_conge ?: ($personnel->residence ?: '…………………………') }}</p>
-        <p><span class="partie-label">SITUATION DE FAMILLE :</span> {{ $situationFamille }}</p>
-        <p><span class="partie-label">TITRES ET DIPLÔMES :</span> {{ $personnel->diplome ?: '…………………………' }}</p>
-        <p>Ayant la qualité d'Employé,</p>
-        <p style="text-align:center;font-weight:700">D'AUTRE PART</p>
+        <p><span class="partie-label">{{ $civilite }}</span>................................................................................................... {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</p>
+        <p><span class="partie-label">TÉL</span>............................................................................................................ {{ $personnel->telephone ?: '…………………………' }}</p>
+        <p><span class="partie-label">DATE ET LIEU DE NAISSANCE :</span> ……………….................{{ $fmtDate($personnel->date_naissance) }} @if($personnel->lieu_naissance) à {{ $personnel->lieu_naissance }} @endif</p>
+        <p><span class="partie-label">NATIONALITÉ</span>..................................................................................{{ $personnel->nationalite ?: 'Béninoise' }}</p>
+        <p><span class="partie-label">RÉSIDANT HABITUELLEMENT À</span>.......................................... {{ $personnel->residence ?: '…………………………' }}</p>
+        <p><span class="partie-label">LIEU DE CONGÉ</span>................................................................................{{ $contrat->lieu_conge ?: ($personnel->residence ?: '…………………………') }}</p>
+        <p><span class="partie-label">SITUATION DE FAMILLE</span>..............................................................{{ $situationFamille }}</p>
+        <p><span class="partie-label">TITRES ET DIPLÔMES</span>......................................................................{{ $personnel->diplome ?: '…………………………' }}</p>
+        <p style="margin-top:8px;">Ayant la qualité d'Employé,</p>
+        <p style="text-align:center;font-weight:700;margin:12px 0;">D'AUTRE PART</p>
 
-        <p>Qui déclare être libre de tout engagement, a été établi le présent contrat régi par la Loi N°98-004 du 27-01-98 portant Code du Travail en République du Bénin et par la Convention Collective Générale du Travail applicable aux entreprises relevant des secteurs privés et para-publics en République du Bénin, et la loi 2017-05 fixant les conditions et la procédure d'embauche, de placement de la main d'œuvre et de résiliation du contrat de travail en République du Bénin ainsi que par les textes subséquents.</p>
+        <p>Qui déclare être libre de tout engagement a été établi le présent contrat régi par la Loi N°98-004 du 27-01-98 portant Code du Travail en République du Bénin et par la Convention Collective Générale du Travail applicable aux entreprises relevant des secteurs privés et para-publics en République du Bénin, et la loi 2017-05 fixant les conditions et la procédure d'embauche, de placement de la main d'œuvre et de résiliation du contrat de travail en République du Bénin ainsi que par les textes subséquents.</p>
 
-        <div class="article-title">Article 1er : NATURE DU CONTRAT</div>
+        <div class="article-title">Article 1<sup>er</sup> : NATURE DU CONTRAT</div>
         @if($estCdd)
             <p>Le présent contrat est conclu pour une durée déterminée de {{ $contrat->duree_mois ? sprintf('%02d', $contrat->duree_mois) : '……' }} mois. Il prend effet à compter du {{ $fmtDate($contrat->date_debut) }} et expire de plein droit le {{ $fmtDate($contrat->date_fin) }}.</p>
         @else
@@ -122,7 +122,7 @@
         @endif
 
         <div class="article-title">Article 2 : FONCTIONS ET DURÉE HEBDOMADAIRE DE TRAVAIL</div>
-        <p>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }} a été engagé{{ $personnel->sexe === 'F' ? 'e' : '' }} pour exercer sous le contrôle de ses supérieurs hiérarchiques les fonctions {{ $contrat->fonction ? 'de ' . $contrat->fonction : '…………………………' }} au {{ $contrat->centre ?: '…………………………' }}. {{ $pronomSujet }} peut être muté{{ $personnel->sexe === 'F' ? 'e' : '' }} sur toute paroisse ou institution de {{ $employeur_nom }} en cas de besoin.</p>
+        <p>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }} a été engagé{{ $personnel->sexe === 'F' ? 'e' : '' }} pour exercer sous le contrôle de ses supérieurs hiérarchiques les fonctions {{ $contrat->fonction ? 'de ' . $contrat->fonction : '…………………………' }} sur le {{ $contrat->centre ?: '…………………………' }}. {{ $pronomSujet }} peut être muté{{ $personnel->sexe === 'F' ? 'e' : '' }} sur toute paroisse ou institution de l'Archidiocèse de Cotonou en cas de besoin.</p>
         <p>La durée hebdomadaire de travail est de 40 heures conformément au Décret n°98-368 du 04 septembre 1998, fixant les heures d'équivalence dans les entreprises régies par le Code du travail.</p>
         <p>{{ $pronomSujet }} s'engage à s'acquitter avec zèle et fidélité des travaux ou missions qui lui seront confiés et à se rendre en tous lieux où l'employeur aura besoin de ses services, toujours dans le cadre de ses activités.</p>
         <p>Le présent contrat est valable pour la RÉPUBLIQUE DU BÉNIN.</p>
@@ -142,10 +142,10 @@
 
         <div class="article-title">Article 7 : SOINS MÉDICAUX</div>
         <p>Conformément à l'article 73 de la Convention Collective Générale du Travail applicable aux entreprises relevant des secteurs privés et para-publics en République du Bénin, {{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }} et les membres de sa famille bénéficient gratuitement de consultations en cas d'urgence suivies de soins dans les services de santé au travail de l'Archevêché de Cotonou ou dans les formations sanitaires agréées.</p>
-        <p>En dehors du service de santé au travail de l'Archevêché de Cotonou, {{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }} et les membres de sa famille bénéficient des remboursements par l'employeur, et dans la limite de 60 % des frais occasionnés par une hospitalisation et facturés par les hôpitaux publics ou les formations sanitaires agréées par l'entreprise.</p>
+        <p>En dehors du service de santé au travail de l'Archevêché de Cotonou, {{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }} et les membres de sa famille bénéficient des remboursements par l'employeur, et dans la limite de 60 % des frais occasionnés par une hospitalisation et facturés par les hôpitaux publics ou les formations sanitaires agréés par l'entreprise.</p>
 
         <div class="article-title">Article 8 : RESILIATION</div>
-        <p>Le présent contrat pourra être rompu dans les conditions prévues à l'article 37 de la loi 2017-05 fixant les conditions et la procédure d'embauche, de placement de la main d'œuvre et de résiliation du contrat de Travail en République du Bénin.</p>
+        <p>Le présent contrat pourra être rompu dans les conditions prévues par les articles 45 et suivants du code du travail.</p>
 
         <div class="article-title">Article 9 : CLAUSES DE NON CONCURRENCE</div>
         <p>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }} s'interdit de divulguer, pendant ou après son emploi, tout renseignement de nature confidentielle {{ $possessif }} aura pu recueillir.</p>
@@ -157,30 +157,39 @@
         <div class="article-title">Article 11 : DIVERS</div>
         <p>Pour tout ce qui n'est pas précisé au présent contrat, les parties s'en remettent aux dispositions légales, réglementaires ou conventionnelles en vigueur en République du Bénin.</p>
 
-        <p style="margin-top:18px">Fait en trois (03) exemplaires originaux à {{ $contrat->lieu_signature ?: $ville }}, le {{ $fmtDate($contrat->date_signature) }}</p>
+        <p style="margin-top:22px; text-align: center; font-weight: 700;">
+            Fait en trois (03) exemplaires originaux à {{ $contrat->lieu_signature ?: $ville }} , le {{ $fmtDate($contrat->date_signature) }}
+        </p>
     </div>
 
-    <div class="signature-row">
-        <div class="signature-col">
-            <div class="titre">L'EMPLOYEUR</div>
-            <div style="margin-top:20px">Mgr {{ $representant_nom }} P.O.</div>
-            <div class="nom">{{ $delegataire_nom }}</div>
-            <div>({{ $delegataire_titre }})</div>
+    {{-- Espace des Signatures Employeur & Employé (Même disposition) --}}
+    <div class="signature-row" style="display: flex; justify-content: space-between; margin-top: 30px; font-family: 'Times New Roman', Times, serif; font-size: 14px;">
+        <div class="signature-col" style="width: 48%; text-align: left; line-height: 1.5;">
+            <div style="font-weight: 700; margin-bottom: 8px;">L’EMPLOYEUR</div>
+            <div style="font-weight: 700;">Mgr {{ $representant_nom ?? 'Roger HOUNGBEDJI' }}</div>
+            <div style="font-weight: 700; margin-bottom: 8px;">P.O.</div>
+            <div style="font-weight: 700;">{{ $delegataire_nom ?? 'Abbé Théophile AKOHA' }}</div>
+            <div>({{ $delegataire_titre ?? 'Vicaire Général' }})</div>
         </div>
-        <div class="signature-col">
-            <div class="titre">{{ $qualiteEmploye }}</div>
-            <div style="height:60px"></div>
-            <div class="nom">{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</div>
+
+        <div class="signature-col" style="width: 48%; text-align: right; line-height: 1.5;">
+            <div style="font-weight: 700; margin-bottom: 8px;">L'EMPLOYÉ</div>
+            <div style="height: 55px;"></div>
+            <div style="font-weight: 700;">{{ strtoupper($personnel->nom_complet) }}</div>
         </div>
     </div>
 
-    <div class="visa-block">
-        <div>VISÉ ET ENREGISTRÉ SOUS LE N° {{ $contrat->numero_visa ?: '…………/MTFP/SGM/DDTFP-LITT/SITPS/SD' }} DU {{ $contrat->date_visa ? $fmtDate($contrat->date_visa) : '……………' }}</div>
-        <div class="visa-titre">La Directrice Départementale du Travail et de la Fonction Publique du Littoral</div>
-        <div>{{ $directrice_travail }}</div>
+    {{-- Visa Direction Départementale du Travail --}}
+    <div class="visa-block" style="margin-top: 45px; text-align: center; font-family: 'Times New Roman', Times, serif; font-size: 14px; line-height: 1.65;">
+        <div>VISÉ ET ENREGISTRÉ SOUS LE N° {{ $contrat->numero_visa ?: '........./MTFP/SGM/DDTFP- LITT/SITPS/SD DU .........' }}</div>
+        <div style="font-weight: 700; text-decoration: underline; margin-top: 10px;">
+            {{ $directeur_travail_titre ?? 'La Directrice Départementale du Travail et de la Fonction Publique du Littoral' }}
+        </div>
+        <div style="font-weight: 700; margin-top: 40px;">
+            {{ $directeur_travail_nom ?? 'Mireille C. LEGBA ADANKON' }}
+        </div>
     </div>
 
-    @include('partials._footer')
 </div>
 </body>
 </html>

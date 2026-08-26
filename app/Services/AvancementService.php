@@ -117,9 +117,10 @@ class AvancementService
      */
     public function approuverBonification(Avancement $avancement, \App\Models\User $user): void
     {
-        if ($avancement->type !== 'bonification' || !$avancement->isSoumis()) {
+        if ($avancement->type !== 'bonification' || !in_array($avancement->statut, ['soumis', 'valide_crh'])) {
             return;
         }
+
 
         $contrat = $avancement->contrat ?? $avancement->personnel->contrat_actif;
         if ($contrat) {

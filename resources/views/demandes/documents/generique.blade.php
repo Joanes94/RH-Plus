@@ -14,9 +14,15 @@
 
 @section('doc-body')
 <p class="indent-first">
-    Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
-    du {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }}, atteste ce qui suit
-    concernant {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
+    @if(!empty($approuvePar) && $approuvePar->isCRH())
+        Je soussigné <strong>{{ $approuvePar->nom_complet }}</strong>, {{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }} des Institutions Sanitaires Diocésaines,
+        atteste ce qui suit concernant {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
+        du <strong>{{ $centre->nom ?? 'Centre' }}</strong>,
+    @else
+        Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
+        du {{ $centre->nom ?? 'Centre' }}, atteste ce qui suit
+        concernant {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
+    @endif
     {{ $personnel->corporation ?: '—' }}
     @if($personnel->service) au service {{ strtolower($personnel->service) }} @endif.
 </p>

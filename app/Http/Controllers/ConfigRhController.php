@@ -19,15 +19,17 @@ class ConfigRhController extends Controller
         $user   = auth()->user();
 
         $config = [
-            'drh_nom'             => ConfigRh::get('drh_nom', '', $user),
-            'drh_titre'           => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $user),
-            'organisation'        => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines', $user),
-            'ville'               => ConfigRh::get('ville', 'Cotonou', $user),
-            'signature_path'      => ConfigRh::get('drh_signature_path', null, $user),
-            'ddis_nom'            => ConfigRh::get('ddis_nom', ConfigRh::get('drh_nom', '', $user), $user),
-            'ddis_titre'          => ConfigRh::get('ddis_titre', 'Directeur Diocésain de la Santé', $user),
-            'ddis_directeur_nom'  => ConfigRh::get('ddis_directeur_nom', 'Abbé Paul HESSOU', $user),
-            'ddis_signature_path' => ConfigRh::get('ddis_signature_path', ConfigRh::get('drh_signature_path', null, $user), $user),
+            'drh_nom'                 => ConfigRh::get('drh_nom', '', $user),
+            'drh_titre'               => ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines', $user),
+            'organisation'            => ConfigRh::get('organisation', 'Institutions Sanitaires Diocésaines', $user),
+            'ville'                   => ConfigRh::get('ville', 'Cotonou', $user),
+            'signature_path'          => ConfigRh::get('drh_signature_path', null, $user),
+            'directeur_travail_titre' => ConfigRh::get('directeur_travail_titre', 'La Directrice Départementale du Travail et de la Fonction Publique du Littoral'),
+            'directeur_travail_nom'   => ConfigRh::get('directeur_travail_nom', 'Mireille C. LEGBA ADANKON'),
+            'ddis_nom'                => ConfigRh::get('ddis_nom', ConfigRh::get('drh_nom', '', $user), $user),
+            'ddis_titre'              => ConfigRh::get('ddis_titre', 'Directeur Diocésain de la Santé', $user),
+            'ddis_directeur_nom'      => ConfigRh::get('ddis_directeur_nom', 'Abbé Paul HESSOU', $user),
+            'ddis_signature_path'     => ConfigRh::get('ddis_signature_path', ConfigRh::get('drh_signature_path', null, $user), $user),
         ];
 
         $joursFixesSuggeres = JourFerie::joursFixesBenin((int)$annee);
@@ -38,13 +40,15 @@ class ConfigRhController extends Controller
     public function saveConfig(Request $request)
     {
         $data = $request->validate([
-            'drh_nom'            => 'required|string|max:150',
-            'drh_titre'          => 'required|string|max:200',
-            'organisation'       => 'nullable|string|max:200',
-            'ville'              => 'nullable|string|max:100',
-            'ddis_nom'           => 'nullable|string|max:150',
-            'ddis_titre'         => 'nullable|string|max:200',
-            'ddis_directeur_nom' => 'nullable|string|max:150',
+            'drh_nom'                 => 'required|string|max:150',
+            'drh_titre'               => 'required|string|max:200',
+            'organisation'            => 'nullable|string|max:200',
+            'ville'                   => 'nullable|string|max:100',
+            'directeur_travail_titre' => 'nullable|string|max:250',
+            'directeur_travail_nom'   => 'nullable|string|max:150',
+            'ddis_nom'                => 'nullable|string|max:150',
+            'ddis_titre'              => 'nullable|string|max:200',
+            'ddis_directeur_nom'      => 'nullable|string|max:150',
         ]);
 
         $user = auth()->user();

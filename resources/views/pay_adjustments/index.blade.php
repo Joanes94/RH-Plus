@@ -6,9 +6,21 @@
 <div class="page-header" style="margin-bottom: 2rem;">
     <div>
         <h1 class="page-title" style="font-size: 1.8rem; font-weight: 700; color: #111827; margin: 0 0 0.25rem 0;">Ajustements & Échéanciers Salariaux</h1>
-        <p class="page-subtitle" style="font-size: 0.9rem; color: #6b7280; margin: 0;">Configurez les amortissements d'avances sur salaire, frais de soins médicaux ou les rappels de moins-perçus échelonnés.</p>
+        <p class="page-subtitle" style="font-size: 0.9rem; color: #6b7280; margin: 0;">Configurez les amortissements d'avances sur salaire, frais de soins médicaux ou les rappels de moins-perçus échelonnés par mois.</p>
     </div>
 </div>
+
+{{-- Alerts --}}
+@if(session('success'))
+<div class="alert alert-success" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+    <span>✓</span> {{ session('success') }}
+</div>
+@endif
+@if(session('error'))
+<div class="alert alert-error" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+    <span>⚠️</span> {{ session('error') }}
+</div>
+@endif
 
 {{-- Barre d'actions & Filtre Centre --}}
 <div class="action-card" style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
@@ -31,7 +43,7 @@
     
     @if(!auth()->user()->isReadOnly())
     <div>
-        <button class="btn-premium" onclick="document.getElementById('modalAddAdjustment').showModal()">
+        <button class="btn-premium" onclick="openAddModal()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 0.25rem;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nouveau plan d'ajustement
         </button>
@@ -51,6 +63,7 @@
                     <th class="text-right">Montant mensuel</th>
                     <th class="text-right">Dette Globale</th>
                     <th class="text-center">Durée restante</th>
+                    <th class="text-center">Échéancier</th>
                     <th class="text-center">Statut</th>
                     @if(!auth()->user()->isReadOnly())
                         <th class="text-right">Actions</th>
@@ -62,10 +75,10 @@
                 <tr>
                     <td>
                         <div class="agent-profile">
-                            <div class="agent-avatar">{{ substr($adj->personnel->nom, 0, 1) }}{{ substr($adj->personnel->prenoms, 0, 1) }}</div>
+                            <div class="agent-avatar">{{ strtoupper(substr($adj->personnel->nom ?? '', 0, 1)) }}{{ strtoupper(substr($adj->personnel->prenoms ?? '', 0, 1)) }}</div>
                             <div>
-                                <div class="agent-name">{{ $adj->personnel->nom_complet }}</div>
-                                <div class="agent-subtext">{{ $adj->personnel->corporation }}</div>
+                                <div class="agent-name">{{ $adj->personnel->nom_complet ?? 'N/A' }}</div>
+                                <div class="agent-subtext">{{ $adj->personnel->corporation ?? '' }}</div>
                             </div>
                         </div>
                     </td>
@@ -82,7 +95,7 @@
                         {{ $adj->libelle }}
                     </td>
                     <td class="text-right" style="font-weight: 700; font-size: 0.95rem; color: {{ $adj->type === 'moins_percu' ? '#059669' : '#dc2626' }};">
-                        {{ $adj->type === 'moins_percu' ? '+' : '-' }}{{ number_format($adj->montant_mensuel, 0, ',', ' ') }} F / mois
+                        {{ $adj->type === 'moins_percu' ? '+' : '-' }}{{ number_format($adj->getMontantPourMois(date('Y-m')), 0, ',', ' ') }} F / mois
                     </td>
                     <td class="text-right" style="font-weight: 500; color: #4b5563;">
                         {{ $adj->montant_total ? number_format($adj->montant_total, 0, ',', ' ') . ' F' : '—' }}
@@ -92,6 +105,15 @@
                             <span style="font-weight: 600; color: #1f2937;">{{ $adj->mois_restants }} mois</span>
                         @else
                             <span style="color: #6b7280; font-style: italic; font-size: 0.82rem;">Permanent</span>
+                        @endif
+                    </td>
+                    <td class="text-center">
+                        @if(!empty($adj->echeances))
+                            <button type="button" class="btn-detail-schedule" onclick="toggleSchedule('sch-{{ $adj->id }}')">
+                                📅 Voir ({{ count($adj->echeances) }} mois)
+                            </button>
+                        @else
+                            <span style="color: #9ca3af; font-size: 0.78rem;">Standard</span>
                         @endif
                     </td>
                     <td class="text-center">
@@ -127,9 +149,34 @@
                     </td>
                     @endif
                 </tr>
+
+                {{-- Ligne détail d'échéancier si présent --}}
+                @if(!empty($adj->echeances))
+                <tr id="sch-{{ $adj->id }}" class="schedule-detail-row" style="display: none; background: #f9fafb;">
+                    <td colspan="9" style="padding: 0.8rem 1.25rem;">
+                        <div style="font-weight: 600; font-size: 0.8rem; color: #374151; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🗓️ Échéancier détaillé par mois pour {{ $adj->personnel->nom_complet ?? '' }} :</span>
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            @foreach($adj->echeances as $ech)
+                                @php
+                                    $isCurrent = ($ech['mois'] ?? '') === date('Y-m');
+                                    $dt = \Carbon\Carbon::createFromFormat('Y-m', $ech['mois'] ?? date('Y-m'));
+                                    $moisNom = $dt ? ucfirst($dt->translatedFormat('F Y')) : $ech['mois'];
+                                @endphp
+                                <div style="background: {{ $isCurrent ? '#ecfdf5' : '#ffffff' }}; border: 1px solid {{ $isCurrent ? '#a7f3d0' : '#e5e7eb' }}; padding: 0.4rem 0.75rem; border-radius: 8px; font-size: 0.8rem;">
+                                    <strong style="color: {{ $isCurrent ? '#065f46' : '#111827' }};">{{ $moisNom }}</strong> :
+                                    <span style="font-weight: 700; color: #dc2626;">{{ number_format($ech['montant'], 0, ',', ' ') }} F</span>
+                                    @if($isCurrent) <span style="font-size: 0.7rem; background: #065f46; color: #fff; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">Ce mois</span> @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </td>
+                </tr>
+                @endif
                 @empty
                 <tr>
-                    <td colspan="8" style="text-align: center; color: #9ca3af; padding: 4rem;">
+                    <td colspan="9" style="text-align: center; color: #9ca3af; padding: 4rem;">
                         <div style="font-size: 2rem; margin-bottom: 0.5rem;">💸</div>
                         Aucun plan d'ajustement salarial enregistré pour ce centre.
                     </td>
@@ -140,16 +187,16 @@
     </div>
 </div>
 
-{{-- Modale d'enregistrement de plan - Ultra propre --}}
-<dialog id="modalAddAdjustment" class="modal" style="border: none; border-radius: 20px; padding: 0; max-width: 520px; width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
+{{-- Modale d'enregistrement de plan --}}
+<dialog id="modalAddAdjustment" class="modal" style="border: none; border-radius: 20px; padding: 0; max-width: 650px; width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
     <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f0f0f0; background: linear-gradient(135deg, #1a5c45 0%, #227055 100%); color: #fff;">
         <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600; color: #fff;">Nouveau plan d'ajustement salarial</h2>
         <button onclick="document.getElementById('modalAddAdjustment').close()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: rgba(255,255,255,0.7); padding: 0;">&times;</button>
     </div>
     
-    <form action="{{ route('pay-adjustments.store') }}" method="POST">
+    <form action="{{ route('pay-adjustments.store') }}" method="POST" id="formAdjustment">
         @csrf
-        <div class="modal-body" style="padding: 1.5rem;">
+        <div class="modal-body" style="padding: 1.5rem; max-height: 75vh; overflow-y: auto;">
             
             <div class="form-group" style="margin-bottom: 1.25rem;">
                 <label for="personnel_id" class="form-label">Salarié bénéficiaire / redevable *</label>
@@ -172,22 +219,41 @@
 
             <div class="form-group" style="margin-bottom: 1.25rem;">
                 <label for="libelle" class="form-label">Motif / Libellé du plan *</label>
-                <input type="text" name="libelle" id="libelle" class="form-input" placeholder="ex. Remboursement Avance Scolaire" required>
+                <input type="text" name="libelle" id="libelle" class="form-input" placeholder="ex. Remboursement Avance Scolaire / Frais d'hospitalisation" required>
             </div>
 
-            <div id="wrapperMontantTotal" class="form-group" style="margin-bottom: 1.25rem;">
-                <label for="montant_total" class="form-label">Montant global de la dette (FCFA) *</label>
-                <input type="number" name="montant_total" id="montant_total" class="form-input" placeholder="ex. 150000">
+            <div id="wrapperDetteGlobale" class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="montant_total" class="form-label">Montant global de la dette à rembourser (FCFA) *</label>
+                <input type="number" name="montant_total" id="montant_total" class="form-input" placeholder="ex. 10675" oninput="updateCalculsEcheancier()">
             </div>
 
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label for="montant_mensuel" class="form-label">Prélèvement / Versement mensuel (FCFA) *</label>
-                <input type="number" name="montant_mensuel" id="montant_mensuel" class="form-input" placeholder="ex. 15000" required>
+            {{-- Échéancier mensuel personnalisé --}}
+            <div id="wrapperEcheancier" style="margin-bottom: 1.25rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <div>
+                        <strong style="font-size: 0.88rem; color: #111827;">Plan de remboursement mensuel (Échéancier)</strong>
+                        <p style="margin: 0; font-size: 0.75rem; color: #6b7280;">Sélectionnez chaque mois et saisissez le montant correspondant (à partir du mois en cours).</p>
+                    </div>
+                    <button type="button" class="btn-add-month" onclick="addMoisRow()">
+                        + Ajouter un mois
+                    </button>
+                </div>
+
+                <div id="echeancesContainer" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                    {{-- Les lignes de mois seront générées dynamiquement en JS --}}
+                </div>
+
+                {{-- Récapitulatif solde --}}
+                <div id="recapEcheancier" style="margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px dashed #d1d5db; display: flex; justify-content: space-between; font-size: 0.83rem;">
+                    <span>Total échéances saisies : <strong id="totalSaisi">0 F</strong></span>
+                    <span>Solde restant : <strong id="soldeRestant">0 F</strong></span>
+                </div>
             </div>
 
-            <div id="wrapperMoisRestants" class="form-group" style="margin-bottom: 1.25rem;">
-                <label for="mois_restants" class="form-label">Durée de l'amortissement (Nombre de mois) *</label>
-                <input type="number" name="mois_restants" id="mois_restants" class="form-input" placeholder="ex. 10">
+            {{-- Champ simple pour Moins-perçu --}}
+            <div id="wrapperMontantMensuelSimple" class="form-group" style="margin-bottom: 1.25rem; display: none;">
+                <label for="montant_mensuel" class="form-label">Montant mensuel à verser (FCFA) *</label>
+                <input type="number" name="montant_mensuel" id="montant_mensuel" class="form-input" placeholder="ex. 15000">
             </div>
 
         </div>
@@ -200,7 +266,6 @@
 
 @push('styles')
 <style>
-/* CSS Ajustements Salariaux Premium */
 .premium-card {
     background: #ffffff;
     border: 1px solid #e5e7eb;
@@ -208,247 +273,225 @@
     box-shadow: 0 4px 20px rgba(0,0,0,0.03);
     overflow: hidden;
 }
-
-.premium-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
+.premium-table { width: 100%; border-collapse: collapse; }
 .premium-table th {
-    background-color: #f9fafb;
-    border-bottom: 1.5px solid #e5e7eb;
-    color: #4b5563;
-    font-size: 0.78rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 1rem 1.25rem;
+    background-color: #f9fafb; border-bottom: 1.5px solid #e5e7eb;
+    color: #4b5563; font-size: 0.75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; padding: 1rem 1.25rem;
 }
+.premium-table td { padding: 1rem 1.25rem; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+.premium-table tr:hover td { background-color: #f9fafb; }
 
-.premium-table td {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #f3f4f6;
-    vertical-align: middle;
-}
-
-.premium-table tr:hover td {
-    background-color: #f9fafb;
-}
-
-/* Agent Avatar & Profile info */
-.agent-profile {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
+.agent-profile { display: flex; align-items: center; gap: 0.75rem; }
 .agent-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 36px; height: 36px; border-radius: 10px;
     background: linear-gradient(135deg, #1a5c45 0%, #2e7d62 100%);
-    color: #ffffff;
-    font-weight: bold;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    letter-spacing: 0.5px;
-    flex-shrink: 0;
+    color: #ffffff; font-weight: bold; font-size: 0.8rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+.agent-name { font-size: 0.9rem; font-weight: 600; color: #111827; line-height: 1.3; }
+.agent-subtext { font-size: 0.75rem; color: #6b7280; }
 
-.agent-name {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #111827;
-    line-height: 1.3;
-}
+.type-pill { font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 600; display: inline-block; border: 1px solid transparent; }
+.type-avance { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+.type-medicaux { background: #fdf2f2; color: #9b1c1c; border-color: #fde8e8; }
+.type-moinspercu { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
 
-.agent-subtext {
-    font-size: 0.75rem;
-    color: #6b7280;
-}
+.status-pill { font-size: 0.72rem; padding: 3px 8px; border-radius: 99px; font-weight: 600; display: inline-block; }
+.status-actif { background: #d1fae5; color: #065f46; }
+.status-termine { background: #f3f4f6; color: #4b5563; }
 
-/* Type adjustment pills */
-.type-pill {
-    font-size: 0.72rem;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-weight: 600;
-    display: inline-block;
-    border: 1px solid transparent;
-}
-.type-avance {
-    background: #eff6ff;
-    color: #1e40af;
-    border-color: #bfdbfe;
-}
-.type-medicaux {
-    background: #fdf2f2;
-    color: #9b1c1c;
-    border-color: #fde8e8;
-}
-.type-moinspercu {
-    background: #f0fdf4;
-    color: #166534;
-    border-color: #bbf7d0;
-}
-
-/* Status pills */
-.status-pill {
-    font-size: 0.72rem;
-    padding: 3px 8px;
-    border-radius: 99px;
-    font-weight: 600;
-    display: inline-block;
-}
-.status-actif {
-    background: #d1fae5;
-    color: #065f46;
-}
-.status-termine {
-    background: #f3f4f6;
-    color: #4b5563;
-}
-
-/* Buttons style */
 .btn-premium {
     background: linear-gradient(135deg, #1a5c45 0%, #227055 100%);
-    color: #ffffff;
-    border: none;
-    padding: 0.55rem 1.25rem;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 10px rgba(26, 92, 69, 0.15);
+    color: #ffffff; border: none; padding: 0.55rem 1.25rem; border-radius: 10px;
+    font-weight: 600; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center;
+    transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(26, 92, 69, 0.15);
 }
-.btn-premium:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(26, 92, 69, 0.25);
-}
+.btn-premium:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(26, 92, 69, 0.25); }
 
-.filter-select {
-    padding: 0.45rem 2.25rem 0.45rem 0.75rem;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #374151;
-    background-color: #fff;
-    cursor: pointer;
-}
+.filter-select { padding: 0.45rem 2.25rem 0.45rem 0.75rem; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.85rem; font-weight: 500; color: #374151; background-color: #fff; cursor: pointer; }
 
-/* Actions inline buttons */
-.action-btn {
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-.btn-archive {
-    background-color: #f3f4f6;
-    color: #4b5563;
-    border-color: #d1d5db;
-}
-.btn-archive:hover {
-    background-color: #e5e7eb;
-    color: #1f2937;
-}
-.btn-activate {
-    background-color: #ecfdf5;
-    color: #047857;
-    border-color: #a7f3d0;
-}
-.btn-activate:hover {
-    background-color: #d1fae5;
-}
-.btn-delete {
-    background-color: #fdf2f2;
-    color: #b91c1c;
-    border-color: #fde8e8;
-}
-.btn-delete:hover {
-    background-color: #fde8e8;
-}
+.action-btn { padding: 4px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 6px; border: 1px solid transparent; cursor: pointer; transition: all 0.15s; }
+.btn-archive { background-color: #f3f4f6; color: #4b5563; border-color: #d1d5db; }
+.btn-archive:hover { background-color: #e5e7eb; color: #1f2937; }
+.btn-activate { background-color: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.btn-activate:hover { background-color: #d1fae5; }
+.btn-delete { background-color: #fdf2f2; color: #b91c1c; border-color: #fde8e8; }
+.btn-delete:hover { background-color: #fde8e8; }
 
-/* Form Styles */
-.form-label {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.35rem;
+.btn-detail-schedule {
+    background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;
+    padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
 }
-.form-input {
-    width: 100%;
-    padding: 0.55rem;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
-    font-size: 0.88rem;
-    box-sizing: border-box;
-    transition: border-color 0.15s;
-    background-color: #fff;
-}
-.form-input:focus {
-    border-color: var(--col-primary, #1a5c45);
-    outline: none;
-}
+.btn-detail-schedule:hover { background: #dcfce7; }
 
-.action-btn-submit {
-    background-color: var(--col-primary, #1a5c45);
-    color: #fff;
-    border: none;
-    padding: 0.5rem 1.25rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.88rem;
-    font-weight: 600;
+.form-label { display: block; font-size: 0.82rem; font-weight: 600; color: #374151; margin-bottom: 0.35rem; }
+.form-input { width: 100%; padding: 0.55rem; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.88rem; box-sizing: border-box; transition: border-color 0.15s; background-color: #fff; }
+.form-input:focus { border-color: var(--col-primary, #1a5c45); outline: none; }
+
+.action-btn-submit { background-color: var(--col-primary, #1a5c45); color: #fff; border: none; padding: 0.5rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-weight: 600; }
+.action-btn-submit:hover { background-color: #124030; }
+.action-btn-back { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 0.5rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-weight: 500; }
+
+.btn-add-month {
+    background: #1a5c45; color: #fff; border: none; padding: 4px 10px;
+    border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer;
 }
-.action-btn-submit:hover {
-    background-color: #124030;
+.btn-add-month:hover { background: #124030; }
+.btn-remove-row {
+    background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
+    border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-weight: bold;
 }
-.action-btn-back {
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-    padding: 0.5rem 1.25rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.88rem;
-    font-weight: 500;
-}
+.btn-remove-row:hover { background: #fee2e2; }
+
+.ech-row { display: flex; gap: 0.5rem; align-items: center; }
+.ech-row select, .ech-row input { padding: 0.45rem; border-radius: 6px; border: 1px solid #d1d5db; font-size: 0.85rem; }
 </style>
 @endpush
 
+@push('scripts')
 <script>
+    const currentMonthStr = "{{ date('Y-m') }}"; // Ex: "2026-08"
+
+    function toggleSchedule(rowId) {
+        const row = document.getElementById(rowId);
+        if (row) {
+            row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+        }
+    }
+
     function toggleFormFields(value) {
-        const wrapperTotal = document.getElementById('wrapperMontantTotal');
-        const wrapperMois = document.getElementById('wrapperMoisRestants');
-        const inputTotal = document.getElementById('montant_total');
-        const inputMois = document.getElementById('mois_restants');
+        const wrapperDette = document.getElementById('wrapperDetteGlobale');
+        const wrapperEcheancier = document.getElementById('wrapperEcheancier');
+        const wrapperSimple = document.getElementById('wrapperMontantMensuelSimple');
+        const inputDette = document.getElementById('montant_total');
+        const inputSimple = document.getElementById('montant_mensuel');
 
         if (value === 'moins_percu') {
-            wrapperTotal.style.display = 'none';
-            wrapperMois.style.display = 'none';
-            inputTotal.removeAttribute('required');
-            inputMois.removeAttribute('required');
+            wrapperDette.style.display = 'none';
+            wrapperEcheancier.style.display = 'none';
+            wrapperSimple.style.display = 'block';
+            inputDette.removeAttribute('required');
+            inputSimple.setAttribute('required', 'required');
         } else {
-            wrapperTotal.style.display = 'block';
-            wrapperMois.style.display = 'block';
-            inputTotal.setAttribute('required', 'required');
-            inputMois.setAttribute('required', 'required');
+            wrapperDette.style.display = 'block';
+            wrapperEcheancier.style.display = 'block';
+            wrapperSimple.style.display = 'none';
+            inputDette.setAttribute('required', 'required');
+            inputSimple.removeAttribute('required');
         }
+    }
+
+    function getNextMonthCode(lastMonthCode) {
+        if (!lastMonthCode) return currentMonthStr;
+        const parts = lastMonthCode.split('-');
+        let y = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        m++;
+        if (m > 12) {
+            m = 1;
+            y++;
+        }
+        return y + '-' + (m < 10 ? '0' + m : m);
+    }
+
+    function formatMonthFrench(monthCode) {
+        const parts = monthCode.split('-');
+        const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        const mIdx = parseInt(parts[1], 10) - 1;
+        return months[mIdx] + ' ' + parts[0];
+    }
+
+    let echeanceIndex = 0;
+
+    function addMoisRow(defaultMonthCode = null, defaultAmount = '') {
+        const container = document.getElementById('echeancesContainer');
+        const existingRows = container.querySelectorAll('.ech-row');
+        
+        let monthCode = defaultMonthCode;
+        if (!monthCode) {
+            if (existingRows.length > 0) {
+                const lastSelect = existingRows[existingRows.length - 1].querySelector('select');
+                monthCode = getNextMonthCode(lastSelect.value);
+            } else {
+                monthCode = currentMonthStr;
+            }
+        }
+
+        const idx = echeanceIndex++;
+        const row = document.createElement('div');
+        row.className = 'ech-row';
+        row.id = 'echRow_' + idx;
+
+        // Générer la liste des 24 prochains mois à partir de currentMonthStr
+        let monthOptionsHtml = '';
+        let mCursor = currentMonthStr;
+        for (let i = 0; i < 24; i++) {
+            const isSelected = (mCursor === monthCode) ? 'selected' : '';
+            monthOptionsHtml += `<option value="${mCursor}" ${isSelected}>${formatMonthFrench(mCursor)}</option>`;
+            mCursor = getNextMonthCode(mCursor);
+        }
+
+        row.innerHTML = `
+            <div style="flex: 1;">
+                <select name="echeances[${idx}][mois]" class="form-input" style="padding: 0.45rem;" onchange="updateCalculsEcheancier()" required>
+                    ${monthOptionsHtml}
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <input type="number" name="echeances[${idx}][montant]" class="form-input ech-montant-input" placeholder="Montant (ex. 3000)" value="${defaultAmount}" oninput="updateCalculsEcheancier()" required min="1">
+            </div>
+            <button type="button" class="btn-remove-row" onclick="removeMoisRow(${idx})">×</button>
+        `;
+
+        container.appendChild(row);
+        updateCalculsEcheancier();
+    }
+
+    function removeMoisRow(idx) {
+        const row = document.getElementById('echRow_' + idx);
+        if (row) row.remove();
+        updateCalculsEcheancier();
+    }
+
+    function updateCalculsEcheancier() {
+        const totalDette = parseFloat(document.getElementById('montant_total').value) || 0;
+        const inputs = document.querySelectorAll('.ech-montant-input');
+        let sum = 0;
+        inputs.forEach(inp => {
+            sum += parseFloat(inp.value) || 0;
+        });
+
+        const solde = totalDette - sum;
+        document.getElementById('totalSaisi').textContent = new Intl.NumberFormat('fr-FR').format(sum) + ' F';
+        
+        const soldeEl = document.getElementById('soldeRestant');
+        soldeEl.textContent = new Intl.NumberFormat('fr-FR').format(solde) + ' F';
+        if (solde === 0 && totalDette > 0) {
+            soldeEl.style.color = '#059669';
+        } else if (solde < 0) {
+            soldeEl.style.color = '#dc2626';
+        } else {
+            soldeEl.style.color = '#b45309';
+        }
+    }
+
+    function openAddModal() {
+        const container = document.getElementById('echeancesContainer');
+        container.innerHTML = '';
+        echeanceIndex = 0;
+        // Ajouter 1 premier mois par défaut
+        addMoisRow(currentMonthStr);
+        document.getElementById('modalAddAdjustment').showModal();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         toggleFormFields(document.getElementById('type').value);
     });
 </script>
+@endpush
 @endsection
+
+

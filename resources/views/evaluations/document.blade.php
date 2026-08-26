@@ -28,9 +28,12 @@
         .lh-line4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
         .lh-line5 { font-size: .82rem; line-height: 1.5; color: #444; margin-top: 3px; }
 
+        body { font-family: 'Times New Roman', Times, serif; font-size: 14px; background: #f5f4f0; color: #000; }
+
         .doc-title {
             text-align: center;
-            font-size: 1.1rem;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.15rem;
             font-weight: 700;
             text-transform: uppercase;
             text-decoration: underline;
@@ -38,9 +41,11 @@
             letter-spacing: .04em;
         }
 
-        .doc-body { font-size: .98rem; line-height: 1.6; text-align: justify; }
+        .doc-body { font-size: 14px; font-family: 'Times New Roman', Times, serif; line-height: 1.65; text-align: justify; }
         .doc-body .field-label {
             font-weight: 700;
+            font-size: 14px;
+            font-family: 'Times New Roman', Times, serif;
             display: block;
             margin-top: 18px;
             margin-bottom: 6px;

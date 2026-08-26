@@ -91,10 +91,7 @@ class PayPeriodController extends Controller
             $this->payrollService->initialiserBulletinsPourPeriode($payPeriod->id, $payPeriod->code, $selectedCentre->id);
         }
 
-        $slips = PaySlip::with('personnel')
-            ->where('pay_period_id', $payPeriod->id)
-            ->where('centre_id', $selectedCentre->id)
-            ->get();
+        $slips = $this->getPayableSlips($payPeriod->id, $selectedCentre->id);
 
         return view('pay_periods.show', compact('payPeriod', 'selectedCentre', 'centres', 'slips', 'user'));
     }
@@ -140,10 +137,7 @@ class PayPeriodController extends Controller
             abort(403, 'Accès non autorisé aux données de ce centre.');
         }
 
-        $slips = PaySlip::with('personnel')
-            ->where('pay_period_id', $payPeriod->id)
-            ->where('centre_id', $centre->id)
-            ->get();
+        $slips = $this->getPayableSlips($payPeriod->id, $centre->id);
 
         return view('pay_periods.exports.livre_paie', compact('payPeriod', 'centre', 'slips'));
     }
@@ -158,10 +152,7 @@ class PayPeriodController extends Controller
             abort(403, 'Accès non autorisé.');
         }
 
-        $slips = PaySlip::with('personnel')
-            ->where('pay_period_id', $payPeriod->id)
-            ->where('centre_id', $centre->id)
-            ->get();
+        $slips = $this->getPayableSlips($payPeriod->id, $centre->id);
 
         return view('pay_periods.exports.registre_paie', compact('payPeriod', 'centre', 'slips'));
     }
@@ -176,10 +167,7 @@ class PayPeriodController extends Controller
             abort(403, 'Accès non autorisé.');
         }
 
-        $slips = PaySlip::with('personnel')
-            ->where('pay_period_id', $payPeriod->id)
-            ->where('centre_id', $centre->id)
-            ->get();
+        $slips = $this->getPayableSlips($payPeriod->id, $centre->id);
 
         // Grouper par Banque
         $groupedSlips = $slips->groupBy('banque');
@@ -197,10 +185,7 @@ class PayPeriodController extends Controller
             abort(403, 'Accès non autorisé.');
         }
 
-        $slips = PaySlip::with('personnel')
-            ->where('pay_period_id', $payPeriod->id)
-            ->where('centre_id', $centre->id)
-            ->get();
+        $slips = $this->getPayableSlips($payPeriod->id, $centre->id);
 
         return view('pay_periods.exports.cnss', compact('payPeriod', 'centre', 'slips'));
     }
@@ -215,11 +200,100 @@ class PayPeriodController extends Controller
             abort(403, 'Accès non autorisé.');
         }
 
-        $slips = PaySlip::with('personnel')
-            ->where('pay_period_id', $payPeriod->id)
-            ->where('centre_id', $centre->id)
-            ->get();
+        $slips = $this->getPayableSlips($payPeriod->id, $centre->id);
 
         return view('pay_periods.exports.its', compact('payPeriod', 'centre', 'slips'));
     }
+
+    /**
+     * Envoie par email les bulletins de paie de tout le personnel actif du centre.
+     */
+    public function envoyerBulletinsEmail(PayPeriod $payPeriod, Request $request)
+    {
+        $user = Auth::user();
+        $centreId = $request->get('centre_id') ?: ($user->centre_id ?: 0);
+        $centre = Centre::find($centreId);
+
+        if (!$centre) {
+            return back()->with('error', 'Centre introuvable.');
+        }
+
+        if (!$user->isGlobal() && $user->centre_id !== $centre->id) {
+            abort(403, 'Accès non autorisé aux données de ce centre.');
+        }
+
+        $slips = $this->getPayableSlips($payPeriod->id, $centre->id);
+
+        if ($slips->isEmpty()) {
+            return back()->with('error', 'Aucun bulletin de paie actif trouvé pour ce centre.');
+        }
+
+        $sentCount = 0;
+        $missingEmailCount = 0;
+        $errors = [];
+        $docService = new \App\Services\DocumentService();
+
+        foreach ($slips as $slip) {
+            $personnel = $slip->personnel;
+            if (!$personnel || empty($personnel->email)) {
+                $missingEmailCount++;
+                continue;
+            }
+
+            try {
+                $recipientEmail = trim($personnel->email);
+                $subject = "Votre bulletin de paie - " . $payPeriod->label . " (" . $centre->nom . ")";
+                $drhInfo = $docService->resolveDrhCentre($personnel, $user);
+
+                $bulletinHtml = view('pay_slips.bulletin_email', [
+                    'paySlip'   => $slip,
+                    'centre'    => $centre,
+                    'personnel' => $personnel,
+                    'drhInfo'   => $drhInfo,
+                ])->render();
+
+                \Illuminate\Support\Facades\Mail::html($bulletinHtml, function ($message) use ($recipientEmail, $subject) {
+                    $message->to($recipientEmail)->subject($subject);
+                });
+
+                $sentCount++;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Erreur d'envoi bulletin email à {$personnel->email}: " . $e->getMessage());
+                $errors[] = $e->getMessage();
+            }
+        }
+
+        if ($sentCount === 0 && !empty($errors)) {
+            $firstError = $errors[0];
+            if (str_contains($firstError, '535') || str_contains($firstError, 'BadCredentials') || str_contains($firstError, 'authenticate')) {
+                return back()->with('error', "Échec de l'envoi par email : Les identifiants SMTP Google ne sont pas acceptés (Code 535 Bad Credentials). Veuillez renseigner un mot de passe d'application Gmail valide dans le fichier .env (MAIL_PASSWORD).");
+            }
+            return back()->with('error', "Échec d'envoi des bulletins par email : " . substr($firstError, 0, 250));
+        }
+
+        $msg = "{$sentCount} bulletin(s) de paie ont été transmis par email aux salariés du centre {$centre->nom}.";
+        if ($missingEmailCount > 0) {
+            $msg .= " ({$missingEmailCount} salarié(s) n'ont pas d'adresse email renseignée).";
+        }
+
+        return back()->with('success', $msg);
+    }
+
+
+    /**
+     * Récupère les bulletins de paie valides (non fictifs et CDI/CDD) d'un centre pour une période.
+     */
+    private function getPayableSlips(int $payPeriodId, int $centreId)
+    {
+        return PaySlip::with('personnel')
+            ->where('pay_period_id', $payPeriodId)
+            ->where('centre_id', $centreId)
+            ->where('is_fictif', false)
+            ->get()
+            ->filter(function ($slip) {
+                $type = strtoupper($slip->personnel?->type_contrat_actuel ?? '');
+                return in_array($type, ['CDI', 'CDD']);
+            });
+    }
+
 }

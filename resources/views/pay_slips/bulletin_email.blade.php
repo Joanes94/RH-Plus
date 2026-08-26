@@ -156,7 +156,7 @@
         .text-center { text-align: center; }
         .font-bold { font-weight: bold; }
 
-        /* RECAPITULATIF RECADRÉ EN BAS */
+        /* RECAPITULATIF RECADRÃ‰ EN BAS */
         .recap-table {
             width: 100%;
             border-collapse: collapse;
@@ -207,7 +207,7 @@
     {{-- Bouton d'impression --}}
     <div class="no-print" style="margin-bottom: 8px; text-align: right;">
         <button onclick="window.print()" style="padding: 6px 16px; background-color: #1a5c45; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11.5px;">
-            🖨️ Imprimer le bulletin
+            ðŸ–¨ï¸ Imprimer le bulletin
         </button>
     </div>
 
@@ -217,16 +217,16 @@
     @endphp
 
     <div class="bulletin-container">
-        {{-- EN-TÊTE CONFORME PHOTO ST LUC (Photo de l'Évêque pour tous les centres) --}}
+        {{-- EN-TÃŠTE CONFORME PHOTO ST LUC (Photo de l'Ã‰vÃªque pour tous les centres) --}}
         <table class="header-table">
             <tr>
                 <td class="header-left">
                     <div class="header-title-left">BULLETIN DE PAIE</div>
                     <div class="photo-box">
                         @if(!empty($evequePhotoBase64))
-                            <img src="{{ $evequePhotoBase64 }}" alt="Photo Évêque">
+                            <img src="{{ $evequePhotoBase64 }}" alt="Photo Ã‰vÃªque">
                         @else
-                            <img src="{{ asset('images/letterhead/photo_eveque.jpeg') }}" alt="Photo Évêque">
+                            <img src="{{ asset('images/letterhead/photo_eveque.jpeg') }}" alt="Photo Ã‰vÃªque">
                         @endif
                     </div>
                 </td>
@@ -249,22 +249,22 @@
             SALAIRE DU MOIS DE {{ mb_strtoupper($paySlip->payPeriod->label) }}
         </div>
 
-        {{-- TABLEAU INFORMATIONS SALARIÉ / EMPLOYEUR --}}
+        {{-- TABLEAU INFORMATIONS SALARIÃ‰ / EMPLOYEUR --}}
         <table class="info-table">
             <tr>
                 <td style="width: 50%; border-right: 1px solid #000;">
                     <div><span class="info-label">Matricule</span>: {{ $personnel->id }}</div>
-                    <div><span class="info-label">Nom et prénoms</span>: {{ mb_strtoupper($personnel->nom_complet) }}</div>
+                    <div><span class="info-label">Nom et prÃ©noms</span>: {{ mb_strtoupper($personnel->nom_complet) }}</div>
                     <div><span class="info-label">Date Embauche</span>: {{ $personnel->date_embauche_centre ? \Carbon\Carbon::parse($personnel->date_embauche_centre)->format('d/m/Y') : '-' }}</div>
-                    <div><span class="info-label">Sit Matr</span>: {{ $personnel->situation_matrimoniale ?? 'Célibataire' }}</div>
+                    <div><span class="info-label">Sit Matr</span>: {{ $personnel->situation_matrimoniale ?? 'CÃ©libataire' }}</div>
                     <div><span class="info-label">Service</span>: {{ mb_strtoupper($personnel->service ?? 'CHIRURGIE') }}</div>
                     <div><span class="info-label">Titre</span>: {{ mb_strtoupper($personnel->corporation ?? $paySlip->poste) }}</div>
                 </td>
                 <td style="width: 50%;">
-                    <div><span class="info-label">Catégorie</span>: {{ $paySlip->categorie ? ($paySlip->categorie . '-' . sprintf('%02d', $paySlip->echelon)) : '05-08' }}</div>
-                    <div><span class="info-label">N° CNSS</span>: {{ $paySlip->matricule_cnss ?? '-' }}</div>
-                    <div><span class="info-label">Mode de Régl.</span>: {{ mb_strtoupper($paySlip->mode_reglement ?? 'VIREMENT') }}</div>
-                    <div><span class="info-label">N° Compte</span>: {{ $paySlip->numero_compte ?? '-' }}</div>
+                    <div><span class="info-label">CatÃ©gorie</span>: {{ $paySlip->categorie ? ($paySlip->categorie . '-' . sprintf('%02d', $paySlip->echelon)) : '05-08' }}</div>
+                    <div><span class="info-label">NÂ° CNSS</span>: {{ $paySlip->matricule_cnss ?? '-' }}</div>
+                    <div><span class="info-label">Mode de RÃ©gl.</span>: {{ mb_strtoupper($paySlip->mode_reglement ?? 'VIREMENT') }}</div>
+                    <div><span class="info-label">NÂ° Compte</span>: {{ $paySlip->numero_compte ?? '-' }}</div>
                     <div><span class="info-label">Banque</span>: {{ mb_strtoupper($paySlip->banque ?? 'BOA') }}</div>
                 </td>
             </tr>
@@ -276,11 +276,11 @@
                 <tr>
                     <th rowspan="2" style="width: 32%;">Rubriques</th>
                     <th rowspan="2" style="width: 14%;">Base</th>
-                    <th colspan="3" style="width: 30%;">Part ouvrière</th>
+                    <th colspan="3" style="width: 30%;">Part ouvriÃ¨re</th>
                     <th colspan="2" style="width: 24%;">Part patronale</th>
                 </tr>
                 <tr>
-                    <th style="width: 10%;">Qté/Taux</th>
+                    <th style="width: 10%;">QtÃ©/Taux</th>
                     <th style="width: 10%;">Retenue</th>
                     <th style="width: 10%;">Gains</th>
                     <th style="width: 12%;">Taux</th>
@@ -288,9 +288,9 @@
                 </tr>
             </thead>
             <tbody>
-                {{-- Base catégorielle --}}
+                {{-- Base catÃ©gorielle --}}
                 <tr>
-                    <td>Base catégorielle</td>
+                    <td>Base catÃ©gorielle</td>
                     <td class="text-right">{{ number_format($paySlip->salaire_base, 0, ',', ' ') }}</td>
                     <td></td><td></td><td></td><td></td><td></td>
                 </tr>
@@ -305,10 +305,10 @@
                     <td></td><td></td>
                 </tr>
 
-                {{-- Indemnités & Primes Fixes --}}
+                {{-- IndemnitÃ©s & Primes Fixes --}}
                 @if($paySlip->indemnite_residence > 0)
                 <tr>
-                    <td>Prime de Résidence</td>
+                    <td>Prime de RÃ©sidence</td>
                     <td class="text-right">{{ number_format($paySlip->salaire_base, 0, ',', ' ') }}</td>
                     <td class="text-center">10</td>
                     <td></td>
@@ -355,7 +355,7 @@
 
                 @if($paySlip->prime_specialite > 0)
                 <tr>
-                    <td>Prime de spécialité</td>
+                    <td>Prime de spÃ©cialitÃ©</td>
                     <td></td><td></td><td></td>
                     <td class="text-right">{{ number_format($paySlip->prime_specialite, 0, ',', ' ') }}</td>
                     <td></td><td></td>
@@ -405,7 +405,7 @@
                     <td class="text-right">{{ number_format($paySlip->risque_professionnel_patronale, 0, ',', ' ') }}</td>
                 </tr>
 
-                {{-- Impôts ITS --}}
+                {{-- ImpÃ´ts ITS --}}
                 <tr>
                     <td>I.T.S.</td>
                     <td class="text-right">{{ number_format($paySlip->salaire_brut - $paySlip->cotisation_sociale_salarie, 0, ',', ' ') }}</td>
@@ -429,7 +429,7 @@
 
                 @if($paySlip->taxe_tele > 0 || $paySlip->taxe_radio > 0)
                 <tr>
-                    <td>Taxes Télévisuelle / Radio</td>
+                    <td>Taxes TÃ©lÃ©visuelle / Radio</td>
                     <td></td><td></td>
                     <td class="text-right">{{ number_format($paySlip->taxe_tele + $paySlip->taxe_radio, 0, ',', ' ') }}</td>
                     <td></td><td></td><td></td>
@@ -447,7 +447,7 @@
         </table>
     </div>
 
-    {{-- RECAPITULATIF EN BAS (Masse Salariale & Montant à Payer) --}}
+    {{-- RECAPITULATIF EN BAS (Masse Salariale & Montant Ã  Payer) --}}
     @php
         $baseImposable = $paySlip->salaire_brut - $paySlip->cotisation_sociale_salarie;
         $masseSalariale = $paySlip->salaire_brut + $totalCotisPatronale;
@@ -457,7 +457,7 @@
             <tr>
                 <th>Salaire Brut</th>
                 <th>Base imposable</th>
-                <th colspan="2">Part Employé</th>
+                <th colspan="2">Part EmployÃ©</th>
                 <th colspan="2">Part Employeur</th>
                 <th>Masse Salariale</th>
                 <th style="background-color: #9ca3af;">MONTANT A PAYER</th>
@@ -490,7 +490,7 @@
     {{-- SIGNATURES --}}
     @php
         $docService = new \App\Services\DocumentService();
-        $drhInfo = $docService->resolveDrhCentre($personnel);
+        $drhInfo = isset($drhInfo) ? $drhInfo : $docService->resolveDrhCentre($personnel);
         $drhTitre = $drhInfo['titre'] ?? 'Directeur des Ressources Humaines';
         $drhNom   = $drhInfo['nom']   ?? '...';
     @endphp

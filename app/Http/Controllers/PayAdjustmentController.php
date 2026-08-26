@@ -58,24 +58,64 @@ class PayAdjustmentController extends Controller
             'type'            => 'required|in:avance_salaire,frais_medicaux,moins_percu',
             'libelle'         => 'required|string|max:150',
             'montant_total'   => 'nullable|numeric|min:0',
-            'montant_mensuel' => 'required|numeric|min:0',
+            'montant_mensuel' => 'nullable|numeric|min:0',
             'mois_restants'   => 'nullable|integer|min:1',
+            // Écheancier personnalisé
+            'echeances'       => 'nullable|array|min:1',
+            'echeances.*.mois'    => 'required_with:echeances|string|regex:/^\d{4}-\d{2}$/',
+            'echeances.*.montant' => 'required_with:echeances|numeric|min:0',
         ]);
 
-        // Pour les moins_percu, montant_total et mois_restants peuvent être nuls (remboursement récurrent sans limite ou temporaire)
-        if ($validated['type'] !== 'moins_percu') {
-            if (empty($validated['montant_total']) || empty($validated['mois_restants'])) {
-                return back()->with('error', 'Le montant total et la durée en mois sont obligatoires pour les avances et frais médicaux.')->withInput();
+        $echeances = null;
+        $montantMensuel = $validated['montant_mensuel'] ?? 0;
+        $moisRestants = $validated['mois_restants'] ?? null;
+        $moisDebut = null;
+
+        // Si un écheancier personnalisé est soumis (mode avance/frais médicaux)
+        if (!empty($validated['echeances']) && $validated['type'] !== 'moins_percu') {
+            $echeances = $validated['echeances'];
+
+            // Trier par mois croissant
+            usort($echeances, fn($a, $b) => strcmp($a['mois'], $b['mois']));
+
+            // Vérifier que tous les mois sont >= mois courant
+            $moisCourant = date('Y-m');
+            foreach ($echeances as $ligne) {
+                if ($ligne['mois'] < $moisCourant) {
+                    return back()->with('error', 'Impossible de saisir un mois passé dans l\'échéancier.')->withInput();
+                }
             }
+
+            // Calculer montant_total si non fourni
+            $totalEcheancier = array_sum(array_column($echeances, 'montant'));
+            $montantTotal = $validated['montant_total'] ?? $totalEcheancier;
+
+            // Nombre de mois = nombre de lignes
+            $moisRestants = count($echeances);
+            $moisDebut = $echeances[0]['mois'] ?? $moisCourant;
+
+            // Montant mensuel = premier mois (pour compatibilité)
+            $montantMensuel = $echeances[0]['montant'] ?? 0;
+
+        } else {
+            // Mode classique (montant fixe)
+            if ($validated['type'] !== 'moins_percu') {
+                if (empty($validated['montant_total']) || empty($validated['montant_mensuel'])) {
+                    return back()->with('error', 'Le montant total et le montant mensuel sont obligatoires.')->withInput();
+                }
+            }
+            $montantTotal = $validated['montant_total'] ?? null;
         }
 
         PayAdjustment::create([
             'personnel_id'    => $validated['personnel_id'],
             'type'            => $validated['type'],
             'libelle'         => $validated['libelle'],
-            'montant_total'   => $validated['montant_total'] ?: null,
-            'montant_mensuel' => $validated['montant_mensuel'],
-            'mois_restants'   => $validated['mois_restants'] ?: null,
+            'montant_total'   => $montantTotal ?? null,
+            'montant_mensuel' => $montantMensuel,
+            'mois_restants'   => $moisRestants,
+            'echeances'       => $echeances,
+            'mois_debut'      => $moisDebut,
             'statut'          => 'actif',
             'created_by'      => Auth::id(),
         ]);

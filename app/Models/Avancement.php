@@ -51,20 +51,22 @@ class Avancement extends Model
     public function getStatutLabelAttribute(): string
     {
         return match ($this->statut) {
-            'soumis'   => 'En attente de validation',
-            'valide'   => 'Validé',
-            'rejete'   => 'Rejeté',
-            default    => $this->statut,
+            'soumis'     => 'En attente de validation',
+            'valide_crh' => 'Pré-validé par CRH (Attente DDIS)',
+            'valide'     => 'Validé',
+            'rejete'     => 'Rejeté',
+            default      => $this->statut,
         };
     }
 
     public function isSoumis(): bool
     {
-        return $this->statut === 'soumis';
+        return in_array($this->statut, ['soumis', 'valide_crh']);
     }
 
     public function isApprouve(): bool
     {
         return $this->statut === 'valide';
     }
+
 }

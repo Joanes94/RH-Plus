@@ -142,9 +142,15 @@ ATTESTATION DE PRESTATION DE SERVICES
 
 @section('doc-body')
 <p class="indent-first">
-    Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
-    du {{ $centre->nom ?? 'Centre de Santé à Vocation Humanitaire Saint Luc' }}, atteste que
-    {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
+    @if(!empty($approuvePar) && $approuvePar->isCRH())
+        Je soussigné <strong>{{ $approuvePar->nom_complet }}</strong>, {{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }} des Institutions Sanitaires Diocésaines,
+        atteste que {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
+        du <strong>{{ $centre->nom ?? 'Centre' }}</strong>,
+    @else
+        Je soussigné <strong>{{ $drh_nom }}</strong>, {{ $drh_titre ?? 'Directeur des Ressources Humaines' }}
+        du {{ $centre->nom ?? 'Centre' }}, atteste que
+        {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
+    @endif
     {{ $posteCorrige ?: '____________' }}
     a exercé{{ $est_femme ? 'é' : '' }} sous contrat de prestation de
     services dans ledit Centre

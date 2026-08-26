@@ -97,7 +97,7 @@
         <div class="dash-col-right">
             <div class="dash-card">
                 <div class="card-header">
-                    <h3>Contrats expirant bientôt</h3>
+                    <h3>Contrats expirant bientôt (30 jours)</h3>
                     <span class="badge badge-warn">{{ $contratsExpirantBientot->count() }}</span>
                 </div>
                 <div class="recruit-list">
@@ -105,10 +105,15 @@
                     <div class="recruit-item">
                         <div class="recruit-info">
                             <span class="recruit-poste">{{ $contrat->personnel->nom_complet }}</span>
-                            <span class="recruit-dept">{{ $contrat->type_contrat }} · {{ $contrat->date_fin?->format('d/m/Y') }}</span>
+                            <span class="recruit-dept">
+                                {{ $contrat->type_contrat }} · Expiration : {{ $contrat->date_fin?->format('d/m/Y') }}
+                                @if($contrat->personnel->centre)
+                                    · <strong style="color: #047857;">{{ $contrat->personnel->centre->nom }}</strong>
+                                @endif
+                            </span>
                         </div>
                         <div class="recruit-right">
-                            <span class="recruit-count">{{ $contrat->personnel->service ?: '—' }}</span>
+                            <span class="recruit-count" style="font-weight: 600;">{{ $contrat->personnel->service ?: '—' }}</span>
                         </div>
                     </div>
                     @empty
@@ -117,19 +122,44 @@
                 </div>
             </div>
 
-            <div class="dash-card card-mini">
+            <div class="dash-card card-mini" style="grid-column: 1 / -1; margin-top: 1rem;">
                 <div class="card-header">
                     <h3>Personnel en congé</h3>
                     <span class="badge badge-blue">{{ is_object($enConge) ? $enConge->count() : $enConge }}</span>
                 </div>
-                <div class="alert-rh-list">
-                    @forelse(is_object($enConge) ? $enConge : collect() as $conge)
-                    <div class="alert-rh-item alert-rh-amber">
-                        <span>{{ $conge->personnel->nom_complet }}</span>
-                    </div>
-                    @empty
-                    <p class="empty-inline">Aucun agent en congé actuellement.</p>
-                    @endforelse
+                <div class="table-responsive" style="overflow-x: auto; margin-top: 8px;">
+                    <table class="table" style="width: 100%; font-size: 0.84rem; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f9fafb; border-bottom: 1.5px solid #e5e7eb; color: #4b5563; font-size: 0.75rem; text-transform: uppercase;">
+                                <th style="padding: 10px 12px; text-align: left;">Noms et Prénoms</th>
+                                <th style="padding: 10px 12px; text-align: left;">Service</th>
+                                <th style="padding: 10px 12px; text-align: left;">Centre</th>
+                                <th style="padding: 10px 12px; text-align: center;">Date de départ</th>
+                                <th style="padding: 10px 12px; text-align: center;">Date de retour</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse(is_object($enConge) ? $enConge : collect() as $conge)
+                            <tr style="border-bottom: 1px solid #f3f4f6;">
+                                <td style="padding: 10px 12px; font-weight: 700; color: #111827;">{{ $conge->personnel->nom_complet }}</td>
+                                <td style="padding: 10px 12px; color: #4b5563;">{{ $conge->personnel->service ?: '—' }}</td>
+                                <td style="padding: 10px 12px;">
+                                    <span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; font-weight: 600;">
+                                        🏥 {{ $conge->personnel->centre?->nom ?: '—' }}
+                                    </span>
+                                </td>
+                                <td style="padding: 10px 12px; text-align: center; color: #4b5563; font-weight: 500;">{{ $conge->date_debut?->format('d/m/Y') }}</td>
+                                <td style="padding: 10px 12px; text-align: center; font-weight: 700; color: #2563eb;">{{ $conge->date_fin?->format('d/m/Y') }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #9ca3af; padding: 1.5rem;">
+                                    Aucun agent en congé actuellement.
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

@@ -197,7 +197,7 @@ class DashboardController extends Controller
             ->where('date_debut', '<=', now())
             ->where('date_fin', '>=', now())
             ->when($centreId, fn($q) => $q->whereHas('personnel', fn($q2) => $q2->where('centre_id', $centreId)))
-            ->with('personnel')
+            ->with('personnel.centre')
             ->get();
 
         // Effectifs par service
@@ -209,7 +209,7 @@ class DashboardController extends Controller
             ->whereNotNull('date_fin')
             ->whereBetween('date_fin', [now(), now()->addDays(30)])
             ->when($centreId, fn($q) => $q->whereHas('personnel', fn($q2) => $q2->where('centre_id', $centreId)))
-            ->with('personnel')
+            ->with('personnel.centre')
             ->orderBy('date_fin')
             ->get();
 

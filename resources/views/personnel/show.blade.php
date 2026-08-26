@@ -58,12 +58,16 @@
 @endif
 
 {{-- ── En-tête fiche ──────────────────────────────────────────────────────── --}}
-<div class="fiche-hero">
-     @if($personnel->photo_url)
-        <img src="{{ $personnel->photo_url }}" alt="{{ $personnel->nom_complet }}" class="fiche-avatar-photo">
-     @else
-        <img src="{{ $personnel->avatar_url }}" alt="{{ $personnel->initiales }}" class="fiche-avatar-photo">
-     @endif
+<div class="fiche-hero" style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+    <div class="fb-profile-photo-container" onclick="openPhotoModal()">
+        @if($personnel->photo_url)
+            <img src="{{ $personnel->photo_url }}" alt="{{ $personnel->nom_complet }}" class="fb-profile-photo" id="profileImg">
+        @else
+            <img src="{{ $personnel->avatar_url }}" alt="{{ $personnel->initiales }}" class="fb-profile-photo" id="profileImg">
+        @endif
+        <div class="fb-photo-badge" title="Cliquer pour agrandir la photo">🔍</div>
+    </div>
+
     <div class="fiche-hero-info">
         <h2>{{ $personnel->nom_complet }}</h2>
         <div class="fiche-tags">
@@ -419,4 +423,64 @@
     </div>
 </div>
 
+{{-- Modale Facebook Lightbox Photo --}}
+<dialog id="modalFbPhoto" style="border: none; border-radius: 16px; padding: 0; max-width: 560px; background: rgba(17, 24, 39, 0.95); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px);">
+    <div style="position: relative; padding: 1.5rem; text-align: center;">
+        <button onclick="document.getElementById('modalFbPhoto').close()" style="position: absolute; top: 12px; right: 16px; background: rgba(255,255,255,0.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">&times;</button>
+        <div style="font-weight: 600; color: #fff; font-size: 1.1rem; margin-bottom: 1rem;">Photo de profil — {{ $personnel->nom_complet }}</div>
+        <img id="fbModalImg" src="" alt="Photo" style="max-width: 100%; max-height: 70vh; border-radius: 12px; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
+        <div style="margin-top: 1rem; font-size: 0.82rem; color: #9ca3af;">{{ $personnel->corporation ?? 'Personnel RH Plus' }}</div>
+    </div>
+</dialog>
+
+@push('styles')
+<style>
+.fb-profile-photo-container {
+    position: relative;
+    width: 168px;
+    height: 168px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.fb-profile-photo {
+    width: 168px !important;
+    height: 168px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 4px solid #ffffff !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+    background: #f3f4f6;
+}
+.fb-profile-photo-container:hover .fb-profile-photo {
+    transform: scale(1.03);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22) !important;
+}
+.fb-photo-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: #ffffff;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border: 1px solid #e5e7eb;
+}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+function openPhotoModal() {
+    const src = document.getElementById('profileImg').src;
+    document.getElementById('fbModalImg').src = src;
+    document.getElementById('modalFbPhoto').showModal();
+}
+</script>
+@endpush
 @endsection

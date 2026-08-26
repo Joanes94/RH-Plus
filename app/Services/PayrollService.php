@@ -130,8 +130,8 @@ class PayrollService
         $taxeRadio = ($month === '03') ? 1000.0 : 0.0;
         $taxeTele = ($month === '06') ? 3000.0 : 0.0;
 
-        $fraisMedicaux = isset($variables['frais_medicaux']) ? (float) $variables['frais_medicaux'] : $this->getAdjustmentAmount($personnel->id, 'frais_medicaux');
-        $avanceSalaire = isset($variables['avance_salaire']) ? (float) $variables['avance_salaire'] : $this->getAdjustmentAmount($personnel->id, 'avance_salaire');
+        $fraisMedicaux = isset($variables['frais_medicaux']) ? (float) $variables['frais_medicaux'] : $this->getAdjustmentAmount($personnel->id, 'frais_medicaux', $moisCode);
+        $avanceSalaire = isset($variables['avance_salaire']) ? (float) $variables['avance_salaire'] : $this->getAdjustmentAmount($personnel->id, 'avance_salaire', $moisCode);
         $tropPercuNet = isset($variables['trop_percu_net']) ? (float) $variables['trop_percu_net'] : 0;
 
         $delegationSaisie   = isset($variables['delegation_saisie']) ? (float) $variables['delegation_saisie'] : 0;
@@ -144,7 +144,8 @@ class PayrollService
         $miseAPied = isset($variables['mise_a_pied']) ? (float) $variables['mise_a_pied'] : (($salaireBaseOriginal / 24) * $joursMiseAPied);
 
         // 10. Remboursements (Moins-Perçus)
-        $moinsPercuRembourse = isset($variables['moins_percu_rembourse']) ? (float) $variables['moins_percu_rembourse'] : $this->getAdjustmentAmount($personnel->id, 'moins_percu');
+        $moinsPercuRembourse = isset($variables['moins_percu_rembourse']) ? (float) $variables['moins_percu_rembourse'] : $this->getAdjustmentAmount($personnel->id, 'moins_percu', $moisCode);
+
 
         // Calcul du salaire net (Sn)
         $totalDeductionsNet = $cotisationSalarie + $impotIts + $taxeRadio + $taxeTele + $fraisMedicaux + $avanceSalaire + $tropPercuNet + $miseAPied 
@@ -222,30 +223,43 @@ class PayrollService
     /**
      * Récupère le montant mensuel actif pour un type d'ajustement.
      */
-    private function getAdjustmentAmount(int $personnelId, string $type): float
+    private function getAdjustmentAmount(int $personnelId, string $type, string $moisCode = ''): float
     {
         $adj = PayAdjustment::where('personnel_id', $personnelId)
             ->where('type', $type)
             ->where('statut', 'actif')
             ->first();
 
-        return $adj ? (float) $adj->montant_mensuel : 0.0;
+        if (!$adj) {
+            return 0.0;
+        }
+
+        // Si un écheancier personnalisé existe, utiliser le montant du mois donné
+        $targetMonth = !empty($moisCode) ? $moisCode : date('Y-m');
+        return $adj->getMontantPourMois($targetMonth);
     }
 
     /**
      * Génère/Calcule les bulletins de paie de brouillon pour tous les personnels actifs d'un centre de santé.
+     * Seuls les personnels en CDI et CDD sont considérés (les prestataires sont exclus de la paie).
      */
     public function initialiserBulletinsPourPeriode(int $payPeriodId, string $moisCode, ?int $centreId = null)
     {
-        // Récupérer tout le personnel actif de ce centre
+        // Récupérer le personnel actif du centre ayant un contrat CDI ou CDD
         $personnels = Personnel::where('statut', 'actif')
             ->when($centreId, fn($q) => $q->where('centre_id', $centreId))
-            ->get();
+            ->get()
+            ->filter(function ($p) {
+                $type = strtoupper($p->type_contrat_actuel ?? '');
+                return in_array($type, ['CDI', 'CDD']);
+            });
 
         foreach ($personnels as $p) {
-            // Vérifier s'il n'y a pas déjà un bulletin
+            // Vérifier s'il n'y a pas déjà un bulletin actif (non-fictif) dans ce centre
             $exists = PaySlip::where('pay_period_id', $payPeriodId)
                 ->where('personnel_id', $p->id)
+                ->where('centre_id', $p->centre_id)
+                ->where('is_fictif', false)
                 ->exists();
 
             if (!$exists) {
@@ -253,13 +267,15 @@ class PayrollService
                 $details = $this->calculerDetailsFiche($p, $moisCode);
                 
                 $details['pay_period_id'] = $payPeriodId;
-                $details['personnel_id'] = $p->id;
-                $details['centre_id'] = $p->centre_id;
+                $details['personnel_id']  = $p->id;
+                $details['centre_id']     = $p->centre_id;
+                $details['is_fictif']     = false;
                 
                 PaySlip::create($details);
             }
         }
     }
+
 
     /**
      * Applique la décrémentation des échéances actives des agents lors de la clôture d'un mois de paie.

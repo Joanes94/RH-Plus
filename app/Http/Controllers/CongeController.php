@@ -269,6 +269,7 @@ class CongeController extends Controller
             'document'      => $conge,
             'personnel'     => $conge->personnel,
             'signature_url' => $signUrl,
+            'approuvePar'   => $approuvePar,
         ]));
     }
 
