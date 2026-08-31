@@ -155,6 +155,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/contrats/import',                        [ContratController::class, 'import'])->name('contrats.import');
     Route::get('/contrats/import/modele',                  [ContratController::class, 'downloadTemplate'])->name('contrats.template');
 
+    // ── Contrats — assignation en masse par sélection d'agents ───────────────
+    Route::get('/contrats/assigner',  [ContratController::class, 'assignMultipleForm'])->name('contrats.assign-multiple.form');
+    Route::post('/contrats/assigner', [ContratController::class, 'assignMultiple'])->name('contrats.assign-multiple');
+
     // ── Contrats (plusieurs par personnel) ────────────────────────────────────
     Route::prefix('personnel/{personnel}/contrats')->name('contrats.')->scopeBindings()->group(function () {
         Route::get('/create',                    [ContratController::class, 'create'])->name('create');

@@ -429,6 +429,7 @@ class PersonnelController extends Controller
             'nom'                          => 'required|string|max:100',
             'prenoms'                      => 'required|string|max:150',
             'email'                        => 'nullable|email|unique:personnels,email,' . $ignoreId,
+            'matricule'                    => 'nullable|string|max:50',
             'date_naissance'               => 'nullable|date',
             'lieu_naissance'               => 'nullable|string|max:150',
             'nationalite'                  => 'nullable|string|max:100',
@@ -459,6 +460,7 @@ class PersonnelController extends Controller
             'photo'                        => 'nullable|image|max:2048|mimes:jpg,jpeg,png',
         ]);
     }
+
 
     private function syncCentreSelection(array &$data, ?Personnel $personnel = null): void
     {

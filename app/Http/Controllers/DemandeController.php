@@ -186,8 +186,9 @@ class DemandeController extends Controller
     public function document(Demande $demande)
     {
         abort_if($demande->statut !== 'approuve', 403, 'Document disponible uniquement après approbation.');
-        $demande->load(['personnel.centre', 'approuvePar']);
+        $demande->load(['personnel.centre', 'approuvePar', 'creePar']);
         $approuvePar = $demande->approuvePar;
+        $creePar     = $demande->creePar;
 
         $p        = $demande->personnel;
         $c        = $p?->centre;
@@ -197,9 +198,13 @@ class DemandeController extends Controller
 
         // Signature en base64
         $signPath = $demande->signature_path ?: ($approuvePar?->signature_path ?: ConfigRh::get('drh_signature_path', null, $approuvePar));
-        $signUrl  = $docService->imageToBase64($signPath);
+        $signUrl  = $docService->imageToBase64($signPath) ?: $approuvePar?->signature_base64;
 
         $drhInfo = $docService->resolveDrhCentre($p, $approuvePar);
+
+        $approuveParCRH = $approuvePar && $approuvePar->isCRH();
+        $creeParCRH     = $creePar && $creePar->isCRH();
+        $isCrhAutonome  = $approuveParCRH && $creeParCRH;
 
         $data = [
             'demande'          => $demande,
@@ -217,6 +222,8 @@ class DemandeController extends Controller
             'ville'            => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'    => $signUrl,
             'approuvePar'      => $approuvePar,
+            'creePar'          => $creePar,
+            'is_crh_autonome'  => $isCrhAutonome,
             'type_demande'     => $demande->type_demande,
             'centre_logo'      => $docService->imageToBase64($c?->logo_path),
             'entete_image_url' => $docService->imageToBase64($c?->entete_image_path),
@@ -226,6 +233,7 @@ class DemandeController extends Controller
                 ? $demande->approuve_le->isoFormat('D MMMM YYYY')
                 : now()->isoFormat('D MMMM YYYY'),
         ];
+
 
         // Vue spécifique par type
         $view = 'demandes.documents.' . $demande->type_demande;

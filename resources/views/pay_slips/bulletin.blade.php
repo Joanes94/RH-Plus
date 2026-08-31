@@ -494,29 +494,28 @@
         $drhTitre = $drhInfo['titre'] ?? 'Directeur des Ressources Humaines';
         $drhNom   = $drhInfo['nom']   ?? '...';
     @endphp
-    <table class="signatures-table" style="width: 100%; margin-top: 25px; font-size: 11px; border-top: 1.5px solid #000; padding-top: 10px;">
+    <table style="width: 100%; margin-top: 30px; font-size: 11px; border-top: 1.5px solid #000; padding-top: 10px; border-collapse: collapse;">
         <tr>
+            {{-- Employé à gauche --}}
             <td style="text-align: left; width: 45%; vertical-align: top;">
-                <div style="font-weight: bold; text-decoration: underline; margin-bottom: 5px;">L'EMPLOYÉ</div>
-                <br><br>
-                <div style="font-weight: bold; font-size: 11px;">{{ $personnel->nom_complet }}</div>
+                <div style="font-weight: 700; margin-bottom: 4px;">L'EMPLOYÉ</div>
+                <div style="height: 50px;"></div>
+                <div style="font-weight: 700; font-size: 11px;">{{ $personnel->nom_complet }}</div>
             </td>
+            {{-- DRH/Directeur du Centre à droite (style docs officiels) --}}
             <td style="text-align: right; width: 55%; vertical-align: top;">
-                {{-- Titre : Directeur du Centre ou DRH du Centre (propre à chaque centre) --}}
-                <div style="font-weight: bold; font-size: 11px; text-decoration: underline; margin-bottom: 2px;">
-                    {{ $drhTitre }}
-                </div>
-                {{-- Espace signature --}}
-                <div style="height: 45px; border-bottom: 1px dotted #888; margin: 6px 0 4px 0; min-width: 180px; display: inline-block; width: 70%;">
-                    @if(!empty($drhInfo['signature_url']))
-                        <img src="{{ $drhInfo['signature_url'] }}" style="max-height: 42px;" alt="Signature">
-                    @endif
-                </div>
-                {{-- Nom du DRH / Directeur --}}
-                <div style="font-weight: bold; font-size: 11px; margin-top: 2px;">{{ $drhNom }}</div>
+                <div style="font-weight: 700; font-size: 11px; margin-bottom: 4px;">{{ $drhTitre }}</div>
+                @if(!empty($drhInfo['signature_url']))
+                    <div style="text-align: right; margin: 4px 0;"><img src="{{ $drhInfo['signature_url'] }}" style="height: 70px; width: auto; display: inline-block;" alt="Signature"></div>
+                @else
+                    <div style="height: 50px;"></div>
+                @endif
+                <div style="font-weight: 700; text-decoration: underline; font-size: 11px; margin-top: 0;">{{ $drhNom }}</div>
             </td>
         </tr>
     </table>
+
+
 
 </body>
 </html>

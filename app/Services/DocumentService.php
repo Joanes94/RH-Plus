@@ -81,9 +81,14 @@ class DocumentService
     public function resolveDrhCentre(?Personnel $personnel, ?User $approuvePar = null): array
     {
         if ($approuvePar && !$approuvePar->isCRH()) {
+            $nom     = ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar->nom_complet ?: 'Nom du DRH');
+            $titre   = ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar->titre_effectif ?: 'Directeur des Ressources Humaines');
+            $sigPath = ConfigRh::get('drh_signature_path', null, $approuvePar) ?: $approuvePar->signature_path;
             return [
-                'nom'   => ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar->nom_complet ?: 'Nom du DRH'),
-                'titre' => ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar->titre_effectif ?: 'Directeur des Ressources Humaines'),
+                'nom'           => $nom,
+                'titre'         => $titre,
+                'signature_url' => $this->signatureToBase64($sigPath) ?: $approuvePar->signature_base64,
+                'user'          => $approuvePar,
             ];
         }
 
@@ -91,26 +96,50 @@ class DocumentService
 
         if ($centreId) {
             $drhCentreUser = User::where('centre_id', $centreId)
-                ->whereIn('role', ['drh', 'directeur_centre', 'directeur', 'assistant_rh'])
+                ->whereIn('role', ['drh', 'directeur_centre', 'directeur'])
                 ->first();
 
+            if (!$drhCentreUser) {
+                $drhCentreUser = User::where('centre_id', $centreId)
+                    ->where('role', 'assistant_rh')
+                    ->first();
+            }
+
             if ($drhCentreUser) {
-                $nom   = ConfigRh::get('drh_nom', null, $drhCentreUser) ?: $drhCentreUser->nom_complet;
-                $titre = ConfigRh::get('drh_titre', null, $drhCentreUser) ?: ($drhCentreUser->titre_effectif ?: 'Directeur des Ressources Humaines');
-                return ['nom' => $nom, 'titre' => $titre];
+                $nom     = ConfigRh::get('drh_nom', null, $drhCentreUser) ?: $drhCentreUser->nom_complet;
+                $titre   = ConfigRh::get('drh_titre', null, $drhCentreUser) ?: ($drhCentreUser->titre_effectif ?: 'Directeur des Ressources Humaines');
+                $sigPath = ConfigRh::get('drh_signature_path', null, $drhCentreUser) ?: $drhCentreUser->signature_path;
+                return [
+                    'nom'           => $nom,
+                    'titre'         => $titre,
+                    'signature_url' => $this->signatureToBase64($sigPath) ?: $drhCentreUser->signature_base64,
+                    'user'          => $drhCentreUser,
+                ];
             }
 
             $cfgNom   = ConfigRh::where('cle', 'drh_nom')->where('centre_id', $centreId)->whereNotNull('valeur')->where('valeur', '!=', '')->first()?->valeur;
             $cfgTitre = ConfigRh::where('cle', 'drh_titre')->where('centre_id', $centreId)->whereNotNull('valeur')->where('valeur', '!=', '')->first()?->valeur;
+            $cfgSig   = ConfigRh::where('cle', 'drh_signature_path')->where('centre_id', $centreId)->whereNotNull('valeur')->where('valeur', '!=', '')->first()?->valeur;
 
             if ($cfgNom) {
-                return ['nom' => $cfgNom, 'titre' => $cfgTitre ?: 'Directeur des Ressources Humaines'];
+                return [
+                    'nom'           => $cfgNom,
+                    'titre'         => $cfgTitre ?: 'Directeur des Ressources Humaines',
+                    'signature_url' => $this->signatureToBase64($cfgSig),
+                    'user'          => null,
+                ];
             }
         }
 
+        $cfgNom   = ConfigRh::get('drh_nom', 'Le Directeur du ' . ($personnel?->centre?->nom ?: 'Centre'));
+        $cfgTitre = ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines');
+        $cfgSig   = ConfigRh::get('drh_signature_path');
+
         return [
-            'nom'   => 'Le Directeur du ' . ($personnel?->centre?->nom ?: 'Centre'),
-            'titre' => 'Directeur des Ressources Humaines',
+            'nom'           => $cfgNom,
+            'titre'         => $cfgTitre,
+            'signature_url' => $this->signatureToBase64($cfgSig),
+            'user'          => null,
         ];
     }
 
@@ -122,6 +151,10 @@ class DocumentService
         $approuvePar = $conge->approuvePar ?? $currentUser;
         $redigePar   = $conge->creator ?? $currentUser;
         $drhInfo     = $this->resolveDrhCentre($p, $approuvePar);
+
+        $approuveParCRH = $approuvePar && $approuvePar->isCRH();
+        $creeParCRH     = ($redigePar && $redigePar->isCRH()) || ($conge->cree_par && User::find($conge->cree_par)?->isCRH());
+        $isCrhAutonome  = $approuveParCRH && $creeParCRH;
 
         return [
             'type'            => 'conge',
@@ -135,6 +168,8 @@ class DocumentService
             'ville'           => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($conge->signature_path, $approuvePar),
             'approuvePar'     => $approuvePar,
+            'creePar'         => $redigePar,
+            'is_crh_autonome' => $isCrhAutonome,
             'centre_logo'     => $this->imageToBase64($c?->logo_path),
             'entete_image_url'=> $this->imageToBase64($c?->entete_image_path),
             'entete_texte'    => $c?->entete_texte,
@@ -154,6 +189,10 @@ class DocumentService
         $redigePar   = $absence->creator ?? $currentUser;
         $drhInfo     = $this->resolveDrhCentre($p, $approuvePar);
 
+        $approuveParCRH = $approuvePar && $approuvePar->isCRH();
+        $creeParCRH     = ($redigePar && $redigePar->isCRH()) || ($absence->cree_par && User::find($absence->cree_par)?->isCRH());
+        $isCrhAutonome  = $approuveParCRH && $creeParCRH;
+
         return [
             'type'            => 'absence',
             'document'        => $absence,
@@ -166,6 +205,8 @@ class DocumentService
             'ville'           => ConfigRh::get('ville', 'Cotonou'),
             'signature_url'   => $approuvePar?->signature_base64 ?: $this->resolveSignature($absence->signature_path, $approuvePar),
             'approuvePar'     => $approuvePar,
+            'creePar'         => $redigePar,
+            'is_crh_autonome' => $isCrhAutonome,
             'centre_logo'     => $this->imageToBase64($c?->logo_path),
             'entete_image_url'=> $this->imageToBase64($c?->entete_image_path),
             'entete_texte'    => $c?->entete_texte,
@@ -175,6 +216,7 @@ class DocumentService
                 : now()->isoFormat('D MMMM YYYY'),
         ];
     }
+
 
     /**
      * Sauvegarde la signature uploadée par le DRH.

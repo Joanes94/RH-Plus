@@ -174,8 +174,16 @@
         <div class="form-group fg-2"><label>Date d'embauche dans le Centre</label><div class="input-wrapper"><input type="date" name="date_embauche_centre" value="{{ old('date_embauche_centre', isset($personnel->date_embauche_centre) ? $personnel->date_embauche_centre->format('Y-m-d') : '') }}"></div></div>
         <div class="form-group fg-2"><label>Date d'embauche dans les ISD</label><div class="input-wrapper"><input type="date" name="date_embauche_isd" value="{{ old('date_embauche_isd', isset($personnel->date_embauche_isd) ? $personnel->date_embauche_isd->format('Y-m-d') : '') }}"></div></div>
         <div class="form-group fg-2"><label>N° CNSS</label><div class="input-wrapper"><input type="text" name="numero_cnss" value="{{ old('numero_cnss', $personnel->numero_cnss ?? '') }}" placeholder="CN123456" class="mono-input"></div></div>
+        <div class="form-group fg-2">
+            <label>Matricule <span style="font-size:.72rem;color:var(--col-text-3)">(N° interne)</span></label>
+            <div class="input-wrapper">
+                <input type="text" name="matricule" value="{{ old('matricule', $personnel->matricule ?? '') }}" placeholder="Ex: MAT-2024-001" class="mono-input">
+            </div>
+            @error('matricule') <span class="field-error">{{ $message }}</span> @enderror
+        </div>
         <div class="form-group fg-2"><label>Date de départ à la retraite</label><div class="input-wrapper"><input type="date" name="date_depart_retraite" value="{{ old('date_depart_retraite', isset($personnel->date_depart_retraite) ? $personnel->date_depart_retraite->format('Y-m-d') : '') }}"></div></div>
     </div>
+
     <p style="font-size:.78rem;color:var(--col-text-3);margin-top:6px">
         Le type de contrat, la catégorie/échelon, la date de fin et le débauchage se gèrent désormais par contrat, depuis la fiche du personnel une fois enregistré.
     </p>

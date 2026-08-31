@@ -187,15 +187,24 @@
                     {{-- Actions (Valider / Rejeter / Lettre) --}}
                     <td style="padding: 1rem 1.25rem; vertical-align: middle; text-align: right; white-space: nowrap; position: sticky; right: 0; background: #ffffff; box-shadow: -4px 0 8px rgba(0,0,0,0.02);">
                         <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
-                            {{-- Action Avancement Échelon par le Centre --}}
-                            @if($avancement->type === 'echelon' && $avancement->statut === 'soumis' && !auth()->user()->isReadOnly())
-                                <form method="POST" action="{{ route('avancements.approuver', $avancement) }}" style="margin: 0;" onsubmit="return confirm('Êtes-vous sûr de vouloir valider cet avancement d\'échelon au niveau du centre ?')">
+                            {{-- Action Avancement Échelon : réservé au DRH/Directeur du Centre --}}
+                            @php
+                                $personnelCentreId = $avancement->personnel?->centre_id;
+                                $authUser = auth()->user();
+                                $canValidateEchelon = $avancement->type === 'echelon'
+                                    && $avancement->statut === 'soumis'
+                                    && in_array($authUser->role, ['drh', 'directeur_centre', 'directeur'])
+                                    && ($authUser->isGlobal() || $authUser->centre_id === $personnelCentreId);
+                            @endphp
+                            @if($canValidateEchelon)
+                                <form method="POST" action="{{ route('avancements.approuver', $avancement) }}" style="margin: 0;" onsubmit="return confirm('Êtes-vous sûr de vouloir valider cet avancement d\'échelon ?')">
                                     @csrf
-                                    <button type="submit" style="padding: 6px 12px; font-weight: 700; font-size: 0.8rem; background: #059669; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5,150,105,0.25);" title="Valider l'avancement d'échelon au niveau du centre">
+                                    <button type="submit" style="padding: 6px 12px; font-weight: 700; font-size: 0.8rem; background: #059669; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5,150,105,0.25);" title="Valider l'avancement d'échelon (DRH/Directeur du Centre)">
                                         ✓ Valider (Centre)
                                     </button>
                                 </form>
                             @endif
+
 
                             {{-- Étape 1 Bonification : Pré-validation CRH --}}
                             @if($avancement->type === 'bonification' && $avancement->statut === 'soumis' && (auth()->user()->isCRH() || auth()->user()->isGlobal()))

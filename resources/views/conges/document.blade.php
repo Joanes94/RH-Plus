@@ -206,17 +206,32 @@
     </div>
 
     {{-- SIGNATURE --}}
+    @php
+        $approuveParCRH = !empty($approuvePar) && $approuvePar->isCRH();
+        $isAutonome     = !empty($is_crh_autonome) && $is_crh_autonome;
+    @endphp
     <div class="sig-wrap" style="margin-top: 30px; width: 300px; margin-left: auto; text-align: center; font-family: 'Times New Roman', Times, serif; font-size: 14px;">
-        @if(!empty($approuvePar) && $approuvePar->isCRH())
-            <div style="font-weight: 700;">{{ $drh_titre ?? 'Le Directeur de Centre' }}</div>
+        @if($isAutonome)
+            {{-- CRH a créé ET validé le congé lui-même --}}
+            <div style="font-weight: 700;">Conseiller aux Ressources Humaines</div>
+            @if(!empty($signature_url))
+                <div style="text-align: center; margin: 4px 0;"><img src="{{ $signature_url }}" alt="Signature" style="height: 70px; width: auto; display: block; margin: 0 auto;"></div>
+            @else
+                <div style="height: 50px;"></div>
+            @endif
+            <div style="font-weight: 700; text-decoration: underline;">{{ $approuvePar->nom_complet }}</div>
+        @elseif($approuveParCRH)
+            {{-- CRH valide en P.O. le congé demandé au niveau du centre --}}
+            <div style="font-weight: 700;">{{ $drh_titre ?? 'Directeur du Centre' }}</div>
             <div style="font-weight: 700;">{{ $drh_nom }}</div>
-            <div style="font-weight: 700; margin-bottom: 4px;">P.O.</div>
+            <div style="font-weight: 700; margin-top: 2px; margin-bottom: 4px;">P.O.</div>
             @if(!empty($signature_url))
                 <div style="text-align: center; margin: 4px 0;"><img src="{{ $signature_url }}" alt="Signature CRH" style="height: 70px; width: auto; display: block; margin: 0 auto;"></div>
             @endif
             <div style="font-weight: 700; text-decoration: underline;">{{ $approuvePar->nom_complet }}</div>
             <div style="font-size: 0.85rem; font-style: italic;">({{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }})</div>
         @else
+            {{-- DRH / Directeur du Centre valide directement --}}
             <div style="font-weight: 700;">{{ $drh_titre ?? 'Directeur des Ressources Humaines' }}</div>
             @if(!empty($signature_url))
                 <div style="text-align: center; margin: 4px 0;"><img src="{{ $signature_url }}" alt="Signature" style="height: 70px; width: auto; display: block; margin: 0 auto;"></div>
@@ -226,6 +241,7 @@
             <div style="font-weight: 700; text-decoration: underline;">{{ $drh_nom }}</div>
         @endif
     </div>
+
 
     {{-- FOOTER DYNAMIQUE --}}
     @include('partials._footer')

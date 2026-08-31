@@ -13,7 +13,7 @@ class Personnel extends Model
     protected $table = 'personnels';
 
     protected $fillable = [
-        'nom', 'prenoms', 'email', 'photo_path',
+        'nom', 'prenoms', 'email', 'photo_path', 'matricule',
         'date_naissance', 'lieu_naissance', 'nationalite', 'residence',
         'sexe', 'telephone', 'situation_matrimoniale', 'diplome',
         'autorisation_clientele_privee',
@@ -26,6 +26,7 @@ class Personnel extends Model
         'affectation', 'date_affectation',
         'statut', 'motif_depart', 'date_depart', 'created_by', 'centre_id',
     ];
+
 
     protected $casts = [
         'date_naissance'         => 'date',

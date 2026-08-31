@@ -14,7 +14,7 @@ ATTESTATION DE VALIDITE DE TRAVAIL
 
 @section('doc-body')
 <p class="indent-first">
-    @if(!empty($approuvePar) && $approuvePar->isCRH())
+    @if(!empty($is_crh_autonome) && $is_crh_autonome)
         Je soussigné <strong>{{ $approuvePar->nom_complet }}</strong>, {{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }} des Institutions Sanitaires Diocésaines,
         atteste que <strong>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
         du <strong>{{ $centre->nom ?? 'Centre' }}</strong>,
@@ -23,6 +23,7 @@ ATTESTATION DE VALIDITE DE TRAVAIL
         du {{ $centre->nom ?? 'Centre' }}, atteste que
         <strong>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
     @endif
+
     né{{ $est_femme ? 'e' : '' }} le
     {{ $personnel->date_naissance ? $personnel->date_naissance->isoFormat('DD MMMM YYYY') : '____________' }},
     est embauché{{ $est_femme ? 'e' : '' }} le

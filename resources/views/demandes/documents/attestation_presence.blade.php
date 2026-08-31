@@ -87,7 +87,7 @@ ATTESTATION DE PRESENCE AU POSTE
 
 @section('doc-body')
 <p class="indent-first">
-    @if(!empty($approuvePar) && $approuvePar->isCRH())
+    @if(!empty($is_crh_autonome) && $is_crh_autonome)
         Je soussigné <strong>{{ $approuvePar->nom_complet }}</strong>, {{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }} des Institutions Sanitaires Diocésaines,
         atteste que {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
         du <strong>{{ $centre->nom ?? 'Centre' }}</strong>,
@@ -96,6 +96,7 @@ ATTESTATION DE PRESENCE AU POSTE
         du {{ $centre->nom ?? 'Centre' }},
         atteste que {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
     @endif
+
     né{{ $est_femme ? 'e' : '' }} le <strong>{{ $personnel->date_naissance ? $personnel->date_naissance->format('d/m/Y') : '__/__/____' }}</strong>
     est recruté{{ $est_femme ? 'e' : '' }} depuis le
     <strong>{{ $personnel->date_embauche_centre ? $personnel->date_embauche_centre->isoFormat('DD MMMM YYYY') : '____________' }}</strong>

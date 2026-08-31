@@ -14,7 +14,7 @@
 
 @section('doc-body')
 <p class="indent-first">
-    @if(!empty($approuvePar) && $approuvePar->isCRH())
+    @if(!empty($is_crh_autonome) && $is_crh_autonome)
         Je soussigné <strong>{{ $approuvePar->nom_complet }}</strong>, {{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }} des Institutions Sanitaires Diocésaines,
         atteste ce qui suit concernant {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
         du <strong>{{ $centre->nom ?? 'Centre' }}</strong>,
@@ -23,6 +23,7 @@
         du {{ $centre->nom ?? 'Centre' }}, atteste ce qui suit
         concernant {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
     @endif
+
     {{ $personnel->corporation ?: '—' }}
     @if($personnel->service) au service {{ strtolower($personnel->service) }} @endif.
 </p>

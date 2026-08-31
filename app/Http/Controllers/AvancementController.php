@@ -188,7 +188,7 @@ class AvancementController extends Controller
         return back()->with('success', "La bonification pour {$avancement->personnel->nom_complet} a été pré-validée par le CRH et transmise à la DDIS.");
     }
 
-    /** Validation finale : Avancement d'Échelon (par Centre/CRH/DDIS) OU Bonification (par DDIS après validation CRH). */
+    /** Validation finale : Avancement d'Échelon (par DRH/Directeur du Centre uniquement) OU Bonification (par DDIS après validation CRH). */
     public function approuver(Avancement $avancement, AvancementService $service)
     {
         $user = auth()->user();
@@ -206,14 +206,23 @@ class AvancementController extends Controller
             return back()->with('success', "La bonification pour {$avancement->personnel->nom_complet} a été validée et signée officiellement par la DDIS.");
         }
 
-        // Pour les avancements d'échelon : Validation par Centre (DRH / Directeur du Centre) ou CRH / DDIS
-        if ($user->isReadOnly()) {
-            abort(403, "Action non autorisée.");
+        // Pour les avancements d'échelon : Validation par le DRH ou Directeur du Centre uniquement
+        // Vérifier que l'utilisateur est DRH/Directeur du centre du personnel concerné
+        $personnelCentreId = $avancement->personnel?->centre_id;
+
+        $isDrhDuCentre = in_array($user->role, ['drh', 'directeur_centre', 'directeur'])
+            && ($user->isGlobal() || $user->centre_id === $personnelCentreId);
+
+        $isGlobalAdmin = $user->isGlobal() && in_array($user->role, ['admin', 'super_admin']);
+
+        if (!$isDrhDuCentre && !$isGlobalAdmin) {
+            abort(403, "Seul le DRH ou le Directeur du Centre peut valider un avancement d'échelon. La DDIS ne valide plus les avancements d'échelon.");
         }
 
         $service->approuverEchelon($avancement, $user);
-        return back()->with('success', "L'avancement d'échelon pour {$avancement->personnel->nom_complet} a été validé et appliqué au niveau du centre.");
+        return back()->with('success', "L'avancement d'échelon pour {$avancement->personnel->nom_complet} a été validé au niveau du centre.");
     }
+
 
     /** Rejeter un avancement d'échelon ou une bonification. */
     public function rejeter(Avancement $avancement, AvancementService $service)

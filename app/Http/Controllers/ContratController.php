@@ -47,6 +47,95 @@ class ContratController extends Controller
         return view('contrats.import');
     }
 
+    // ── Assignation de contrats en masse (sélection d'agents par le CRH) ─────
+    public function assignMultipleForm(Request $request)
+    {
+        $user = Auth::user();
+
+        $personnelsQuery = Personnel::with(['contrats' => fn ($q) => $q->where('statut', 'actif')->orderByDesc('date_debut')])
+            ->whereIn('statut', ['actif', 'inactif'])
+            ->orderBy('nom');
+
+        // Filtrage par centre : un CRH ne voit que son centre
+        if (!$user->isGlobal() && $user->centre_id) {
+            $personnelsQuery->where('centre_id', $user->centre_id);
+        } elseif ($request->filled('centre_id')) {
+            $personnelsQuery->where('centre_id', $request->centre_id);
+        }
+
+        $personnels = $personnelsQuery->get();
+        $centres    = \App\Models\Centre::actifs()->orderBy('nom')->get();
+        $types      = ['CDI', 'CDD', 'Prestataire'];
+
+        return view('contrats.assign_multiple', compact('personnels', 'centres', 'types'));
+    }
+
+    public function assignMultiple(Request $request)
+    {
+        $request->validate([
+            'type_contrat'   => 'required|in:CDI,CDD,Prestataire',
+            'date_debut'     => 'required|date',
+            'duree_mois'     => 'nullable|integer|min:1|max:60',
+            'personnel_ids'  => 'required|array|min:1',
+            'personnel_ids.*'=> 'exists:personnels,id',
+        ], [
+            'personnel_ids.required' => 'Veuillez sélectionner au moins un agent.',
+        ]);
+
+        $user   = Auth::user();
+        $type   = $request->type_contrat;
+        $count  = 0;
+        $errors = [];
+
+        foreach ($request->personnel_ids as $personnelId) {
+            $personnel = Personnel::find($personnelId);
+            if (!$personnel) continue;
+
+            // Sécurité : un CRH non global ne peut agir que sur son centre
+            if (!$user->isGlobal() && $user->centre_id && $personnel->centre_id !== $user->centre_id) {
+                $errors[] = "Accès refusé pour {$personnel->nom_complet} (centre différent).";
+                continue;
+            }
+
+            try {
+                // Terminer les contrats actifs existants du même type
+                Contrat::where('personnel_id', $personnelId)
+                    ->where('statut', 'actif')
+                    ->update(['statut' => 'termine']);
+
+                // Créer le nouveau contrat
+                $data = $this->filterContratColumns([
+                    'personnel_id' => $personnelId,
+                    'type_contrat' => $type,
+                    'date_debut'   => $request->date_debut,
+                    'duree_mois'   => in_array($type, ['CDD', 'Prestataire']) ? $request->duree_mois : null,
+                    'statut'       => 'actif',
+                    'centre_id'    => $personnel->centre_id,
+                    'centre'       => $personnel->centre?->nom,
+                    'fonction'     => $personnel->contrat_actif?->fonction,
+                    'service'      => $personnel->service,
+                    'categorie'    => $personnel->contrat_actif?->categorie,
+                    'echelon'      => $personnel->contrat_actif?->echelon,
+                    'salaire_base' => $personnel->contrat_actif?->salaire_base,
+                    'created_by'   => Auth::id(),
+                ]);
+
+                Contrat::create($data);
+                $count++;
+            } catch (\Exception $e) {
+                $errors[] = "{$personnel->nom_complet} : " . $e->getMessage();
+            }
+        }
+
+        $msg = "{$count} contrat(s) de type « {$type} » attribué(s) avec succès.";
+        if ($errors) {
+            session()->flash('assign_errors', $errors);
+            $msg .= " " . count($errors) . " agent(s) ignoré(s).";
+        }
+
+        return redirect()->route('contrats.assign-multiple.form')->with('success', $msg);
+    }
+
     public function import(Request $request)
     {
         $request->validate([

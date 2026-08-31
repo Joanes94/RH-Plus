@@ -165,6 +165,8 @@
             <div class="card-header"><h3>Carrière</h3></div>
             <dl class="detail-list">
                 <div class="dl-row"><dt>N° CNSS</dt><dd class="mono-text">{{ $personnel->numero_cnss ?: '—' }}</dd></div>
+                <div class="dl-row"><dt>Matricule</dt><dd class="mono-text">{{ $personnel->matricule ?: '—' }}</dd></div>
+
                 <div class="dl-row"><dt>Embauche dans le Centre</dt><dd>{{ $personnel->date_embauche_centre ? $personnel->date_embauche_centre->format('d/m/Y') : '—' }}</dd></div>
                 <div class="dl-row"><dt>Embauche dans les ISD</dt><dd>{{ $personnel->date_embauche_isd ? $personnel->date_embauche_isd->format('d/m/Y') : '—' }}</dd></div>
                 <div class="dl-row"><dt>Départ à la retraite</dt><dd>{{ $personnel->date_depart_retraite ? $personnel->date_depart_retraite->format('d/m/Y') : '—' }}</dd></div>

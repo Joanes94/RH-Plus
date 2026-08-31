@@ -142,7 +142,7 @@ ATTESTATION DE PRESTATION DE SERVICES
 
 @section('doc-body')
 <p class="indent-first">
-    @if(!empty($approuvePar) && $approuvePar->isCRH())
+    @if(!empty($is_crh_autonome) && $is_crh_autonome)
         Je soussigné <strong>{{ $approuvePar->nom_complet }}</strong>, {{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }} des Institutions Sanitaires Diocésaines,
         atteste que {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
         du <strong>{{ $centre->nom ?? 'Centre' }}</strong>,
@@ -151,6 +151,7 @@ ATTESTATION DE PRESTATION DE SERVICES
         du {{ $centre->nom ?? 'Centre' }}, atteste que
         {{ $civilite }} <strong>{{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
     @endif
+
     {{ $posteCorrige ?: '____________' }}
     a exercé{{ $est_femme ? 'é' : '' }} sous contrat de prestation de
     services dans ledit Centre

@@ -57,7 +57,7 @@ ATTESTATION DE STAGE
 
 @section('doc-body')
 <p class="indent-first">
-    @if(!empty($approuvePar) && $approuvePar->isCRH())
+    @if(!empty($is_crh_autonome) && $is_crh_autonome)
         Je soussigné <strong>{{ $approuvePar->nom_complet }}</strong>, {{ $approuvePar->titre_effectif ?: 'Conseiller aux Ressources Humaines' }} des Institutions Sanitaires Diocésaines,
         atteste que <strong>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
         du <strong>{{ $centre->nom ?? 'Centre' }}</strong>,
@@ -66,6 +66,7 @@ ATTESTATION DE STAGE
         du {{ $centre->nom ?? 'Centre' }}, atteste que
         <strong>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }}</strong>,
     @endif
+
     a effectué un stage de découverte
     @if($dureeTexte) de <strong>{{ $dureeTexte }}</strong> @endif
     dans ledit centre.
