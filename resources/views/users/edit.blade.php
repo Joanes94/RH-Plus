@@ -14,7 +14,7 @@
             <h2>{{ isset($user) ? 'Modifier : '.$user->nom_complet : 'Créer un compte utilisateur' }}</h2>
         </div>
 
-        <form method="POST" action="{{ isset($user) ? route('users.update', $user) : route('users.store') }}">
+        <form method="POST" action="{{ isset($user) ? route('users.update', $user) : route('users.store') }}" enctype="multipart/form-data">
             @csrf
             @if(isset($user)) @method('PUT') @endif
 
@@ -52,8 +52,19 @@
                             <label for="telephone">Téléphone</label>
                             <input type="text" name="telephone" id="telephone" value="{{ old('telephone', $user->telephone ?? '') }}" class="form-control">
                         </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="photo">Photo de profil <span style="font-size:0.75rem; color:#6b7280; font-weight:normal;">(facultative, JPG/PNG)</span></label>
+                            @if(isset($user) && $user->photo_url)
+                                <div style="margin-bottom:8px; display:flex; align-items:center; gap:12px;">
+                                    <img src="{{ $user->photo_url }}" alt="Photo de profil" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #e5e7eb;">
+                                    <span style="font-size:0.8rem; color:#6b7280;">Photo actuelle</span>
+                                </div>
+                            @endif
+                            <input type="file" name="photo" id="photo" accept="image/jpeg,image/png,image/jpg" class="form-control">
+                        </div>
                     </div>
                 </div>
+
 
                 <div class="form-section">
                     <h3 class="form-section-title">Accès</h3>

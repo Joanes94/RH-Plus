@@ -3,10 +3,16 @@
 @section('title', 'Gestion des Périodes de Paie')
 
 @section('content')
-<div class="page-header" style="margin-bottom: 2rem;">
+<div class="page-header" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div>
         <h1 class="page-title" style="font-size: 1.8rem; font-weight: 700; color: #111827; margin: 0 0 0.25rem 0;">Gestion des Périodes de Paie</h1>
-        <p class="page-subtitle" style="font-size: 0.9rem; color: #6b7280; margin: 0;">Pilotez l'ouverture des mois de paie, le calcul des salaires et l'historique des bulletins clôturés.</p>
+        <p class="page-subtitle" style="font-size: 0.95rem; color: #6b7280; margin: 0;">
+            @if($user->isGlobal())
+                Supervision de l'ouverture et du calcul des paies pour tous les centres de santé.
+            @else
+                Périodes de paie et calcul des salaires — <strong>{{ $user->centre?->nom ?? 'Mon Centre' }}</strong>
+            @endif
+        </p>
     </div>
     @if(!auth()->user()->isReadOnly())
     <div>
@@ -18,16 +24,40 @@
     @endif
 </div>
 
+{{-- Filtre par centre si rôle global --}}
+@if($user->isGlobal())
+<div class="card premium-card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <form method="GET" action="{{ route('pay-periods.index') }}" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <label for="filter_centre" style="font-weight: 600; font-size: 0.95rem; color: #374151;">🏥 Filtrer par Centre :</label>
+        <select name="centre_id" id="filter_centre" class="form-control" style="width: auto; min-width: 240px; padding: 7px 12px; font-size: 0.95rem;" onchange="this.form.submit()">
+            <option value="">— Tous les centres —</option>
+            @foreach($centres as $c)
+                <option value="{{ $c->id }}" {{ request('centre_id') == $c->id ? 'selected' : '' }}>{{ $c->nom }}</option>
+            @endforeach
+        </select>
+        @if(request('centre_id'))
+            <a href="{{ route('pay-periods.index') }}" class="action-btn-back" style="padding: 7px 12px; font-size: 0.85rem;">✕ Effacer le filtre</a>
+        @endif
+    </form>
+    <div style="font-size: 0.88rem; color: #6b7280;">
+        <strong>{{ $periods->count() }}</strong> période(s) trouvée(s)
+    </div>
+</div>
+@endif
+
 {{-- Tableau des périodes --}}
 <div class="card premium-card" style="margin-top: 1.5rem;">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; border-bottom: 1px solid #e5e7eb;">
-        <h3 class="card-title" style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #111827;">Mois de traitement salarial</h3>
+        <h3 class="card-title" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #111827;">Mois de traitement salarial</h3>
     </div>
     
     <div class="table-responsive">
         <table class="table premium-table">
             <thead>
                 <tr>
+                    @if($user->isGlobal())
+                        <th>Centre de santé</th>
+                    @endif
                     <th>Mois (Code)</th>
                     <th>Désignation</th>
                     <th>Statut de la période</th>
@@ -39,6 +69,13 @@
             <tbody>
                 @forelse($periods as $period)
                 <tr>
+                    @if($user->isGlobal())
+                        <td>
+                            <strong style="color: #1a5c45; font-size: 0.95rem;">
+                                {{ $period->centre?->nom ?? '— Non assigné —' }}
+                            </strong>
+                        </td>
+                    @endif
                     <td><strong style="font-family: monospace; font-size: 0.95rem; color: #111827;">{{ $period->code }}</strong></td>
                     <td style="font-weight: 600; color: #374151;">{{ $period->label }}</td>
                     <td>
@@ -61,9 +98,9 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" style="text-align: center; color: #9ca3af; padding: 4rem;">
-                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📅</div>
-                        Aucune période de paie n'a encore été initialisée.
+                    <td colspan="{{ $user->isGlobal() ? 7 : 6 }}" style="text-align: center; color: #9ca3af; padding: 4rem;">
+                        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📅</div>
+                        Aucune période de paie n'a encore été initialisée pour ce centre.
                     </td>
                 </tr>
                 @endforelse
@@ -73,14 +110,31 @@
 </div>
 
 {{-- Modale pour démarrer un nouveau mois --}}
-<dialog id="modalNewPeriod" class="modal" style="border: none; border-radius: 20px; padding: 0; max-width: 480px; width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
+<dialog id="modalNewPeriod" class="modal" style="border: none; border-radius: 20px; padding: 0; max-width: 500px; width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
     <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f0f0f0; background: linear-gradient(135deg, #1a5c45 0%, #227055 100%); color: #fff;">
-        <h2 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #fff;">Démarrer un nouveau mois de paie</h2>
+        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #fff;">Démarrer un nouveau mois de paie</h2>
         <button onclick="document.getElementById('modalNewPeriod').close()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: rgba(255,255,255,0.7); padding: 0;">&times;</button>
     </div>
     <form action="{{ route('pay-periods.store') }}" method="POST">
         @csrf
         <div class="modal-body" style="padding: 1.5rem;">
+            @if($user->isGlobal())
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="centre_id" class="form-label">Centre de Santé *</label>
+                    <select name="centre_id" id="centre_id" class="form-input" required>
+                        <option value="">— Sélectionner le centre —</option>
+                        @foreach($centres as $c)
+                            <option value="{{ $c->id }}">{{ $c->nom }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @else
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label class="form-label">Centre de Santé</label>
+                    <input type="text" class="form-input" value="{{ $user->centre?->nom ?? 'Mon Centre' }}" disabled style="background:#f3f4f6; color:#4b5563; font-weight:600;">
+                </div>
+            @endif
+
             <div class="form-group" style="margin-bottom: 1.25rem;">
                 <label for="code" class="form-label">Code Période (AAAA-MM) *</label>
                 <input type="text" name="code" id="code" class="form-input" placeholder="{{ date('Y-m') }}" required>
@@ -98,6 +152,7 @@
         </div>
     </form>
 </dialog>
+
 
 @push('styles')
 <style>

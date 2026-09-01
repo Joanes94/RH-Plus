@@ -30,8 +30,16 @@ class ProfileController extends Controller
             'email'          => 'required|email|unique:users,email,' . $user->id,
             'telephone'      => 'nullable|string|max:20',
             'titre_officiel' => 'nullable|string|max:200',
+            'photo'          => 'nullable|image|max:2048|mimes:jpeg,png,jpg',
             'signature'      => 'nullable|image|max:2048|mimes:jpeg,png,jpg',
         ]);
+
+        if ($request->hasFile('photo')) {
+            if ($user->photo_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->photo_path);
+            }
+            $validated['photo_path'] = $request->file('photo')->store('photos/users', 'public');
+        }
 
         if ($request->hasFile('signature')) {
             if ($user->signature_path) {
@@ -42,8 +50,9 @@ class ProfileController extends Controller
 
         $user->update($validated);
 
-        return redirect()->route('profile.show')->with('success', 'Profil et signature mis à jour avec succès.');
+        return redirect()->route('profile.show')->with('success', 'Profil et informations mis à jour avec succès.');
     }
+
 
     public function updatePassword(Request $request)
     {

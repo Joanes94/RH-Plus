@@ -7,14 +7,24 @@
 <div class="profile-layout">
     {{-- Card info principale --}}
     <div class="dash-card profile-card">
-        <div class="profile-hero">
-            <div class="profile-avatar-lg">
-                {{ strtoupper(substr($user->prenoms, 0, 1)) }}{{ strtoupper(substr($user->nom, 0, 1)) }}
+        <div class="profile-hero" style="display: flex; align-items: center; gap: 1.5rem;">
+            <div class="fb-profile-photo-container" onclick="openPhotoModal()" style="position: relative; width: 90px; height: 90px; flex-shrink: 0; cursor: pointer;">
+                @if($user->photo_url)
+                    <img src="{{ $user->photo_url }}" alt="{{ $user->nom_complet }}" id="profileImg" class="fb-profile-photo" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid #1a5c45; box-shadow: 0 4px 14px rgba(0,0,0,0.15); transition: transform 0.2s ease;">
+                @else
+                    <div id="profileImgAvatar" class="profile-avatar-lg" style="width: 90px; height: 90px; font-size: 1.8rem; border-radius: 50%;">
+                        {{ strtoupper(substr($user->prenoms, 0, 1)) }}{{ strtoupper(substr($user->nom, 0, 1)) }}
+                    </div>
+                @endif
+                <div class="fb-photo-badge" title="Cliquer pour agrandir la photo" style="position: absolute; bottom: 2px; right: 2px; background: #ffffff; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; box-shadow: 0 2px 6px rgba(0,0,0,0.25); border: 1px solid #e5e7eb;">🔍</div>
             </div>
             <div class="profile-hero-info">
                 <h2>{{ $user->prenoms }} {{ strtoupper($user->nom) }}</h2>
-                <span class="role-tag">{{ $user->role === 'drh' ? 'Directeur RH' : 'Assistant RH' }}</span>
+                <span class="role-tag">{{ $user->role_label }}</span>
                 <span class="sexe-tag">{{ $user->sexe === 'M' ? 'Homme' : 'Femme' }}</span>
+                @if($user->centre)
+                    <span class="role-tag" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;">🏥 {{ $user->centre->nom }}</span>
+                @endif
             </div>
         </div>
 
@@ -26,6 +36,10 @@
             <div class="detail-row">
                 <span class="detail-key">Téléphone</span>
                 <span class="detail-val">{{ $user->telephone ?: '—' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-key">Titre officiel</span>
+                <span class="detail-val">{{ $user->titre_effectif }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-key">Membre depuis</span>
@@ -40,6 +54,7 @@
             </a>
         </div>
     </div>
+
 
     {{-- Modifier mot de passe --}}
     <div class="dash-card">
@@ -107,4 +122,27 @@
     </div>
 </div>
 
+{{-- Modale Lightbox Photo --}}
+<dialog id="modalFbPhoto" style="border: none; border-radius: 16px; padding: 0; max-width: 540px; background: rgba(17, 24, 39, 0.96); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);">
+    <div style="position: relative; padding: 1.5rem; text-align: center;">
+        <button onclick="document.getElementById('modalFbPhoto').close()" style="position: absolute; top: 12px; right: 16px; background: rgba(255,255,255,0.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">&times;</button>
+        <div style="font-weight: 700; color: #fff; font-size: 1.15rem; margin-bottom: 1rem;">Photo de profil — {{ $user->nom_complet }}</div>
+        @if($user->photo_url)
+            <img id="fbModalImg" src="{{ $user->photo_url }}" alt="Photo" style="max-width: 100%; max-height: 70vh; border-radius: 12px; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
+        @else
+            <div style="width: 160px; height: 160px; border-radius: 50%; background: #1a5c45; color: white; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 700; margin: 1.5rem auto; border: 4px solid rgba(255,255,255,0.3);">
+                {{ strtoupper(substr($user->prenoms, 0, 1)) }}{{ strtoupper(substr($user->nom, 0, 1)) }}
+            </div>
+        @endif
+        <div style="margin-top: 1rem; font-size: 0.88rem; color: #9ca3af; font-weight: 600;">{{ $user->role_label }} — {{ $user->centre?->nom ?? 'Direction Générale' }}</div>
+    </div>
+</dialog>
+
+@push('scripts')
+<script>
+function openPhotoModal() {
+    document.getElementById('modalFbPhoto').showModal();
+}
+</script>
+@endpush
 @endsection

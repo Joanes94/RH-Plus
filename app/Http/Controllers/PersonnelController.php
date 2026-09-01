@@ -660,14 +660,17 @@ class PersonnelController extends Controller
                 ->update(['is_fictif' => true]);
         }
 
-        // Initialiser immédiatement la paie sous le nouveau centre pour les périodes ouvertes
-        $openPeriods = \App\Models\PayPeriod::where('statut', 'ouvert')->get();
+        // Initialiser immédiatement la paie sous le nouveau centre pour les périodes ouvertes de ce centre
+        $openPeriods = \App\Models\PayPeriod::where('centre_id', $nouveauCentre->id)
+            ->where('statut', 'ouvert')
+            ->get();
         if ($openPeriods->isNotEmpty()) {
             $payrollService = app(\App\Services\PayrollService::class);
             foreach ($openPeriods as $openPeriod) {
                 $payrollService->initialiserBulletinsPourPeriode($openPeriod->id, $openPeriod->code, $nouveauCentre->id);
             }
         }
+
 
 
         // Notification au centre de départ (Centre A)

@@ -69,6 +69,20 @@
         </div>
 
         <div class="form-group mb-20">
+            <label for="photo">Photo de profil <span style="font-size:0.75rem; color:#6b7280; font-weight:normal;">(facultative, JPG/PNG)</span></label>
+            @if($user->photo_url)
+                <div style="margin-bottom:8px; display:flex; align-items:center; gap:12px;">
+                    <img src="{{ $user->photo_url }}" alt="Photo de profil" style="width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid #e5e7eb;">
+                    <span style="font-size:0.8rem; color:#6b7280;">Photo actuelle</span>
+                </div>
+            @endif
+            <div class="input-wrapper">
+                <input type="file" id="photo" name="photo" accept="image/png,image/jpeg,image/jpg" class="form-control">
+            </div>
+            @error('photo') <span class="field-error">{{ $message }}</span> @enderror
+        </div>
+
+        <div class="form-group mb-20">
             <label for="signature">Ma Signature manuscrite (Image JPG/PNG)</label>
             @if($user->signature_url)
                 <div style="margin-bottom:8px;">
@@ -80,6 +94,7 @@
             </div>
             @error('signature') <span class="field-error">{{ $message }}</span> @enderror
         </div>
+
 
         <div class="form-actions">
             <button type="submit" class="btn-primary">Enregistrer les modifications</button>

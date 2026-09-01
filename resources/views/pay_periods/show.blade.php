@@ -33,21 +33,12 @@
 {{-- Section Filtre de Centre et Boutons d'Exports --}}
 <div class="action-card" style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
     <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <span style="font-weight: 600; font-size: 0.88rem; color: #374151; display: inline-flex; align-items: center; gap: 0.35rem;">
+        <span style="font-weight: 600; font-size: 0.95rem; color: #374151; display: inline-flex; align-items: center; gap: 0.35rem;">
             🏥 Centre :
         </span>
-        @if($user->isGlobal())
-            <div class="select-wrapper">
-                <select onchange="window.location.href = '?centre_id=' + this.value" class="filter-select">
-                    @foreach($centres as $c)
-                        <option value="{{ $c->id }}" {{ $selectedCentre->id == $c->id ? 'selected' : '' }}>{{ $c->nom }}</option>
-                    @endforeach
-                </select>
-            </div>
-        @else
-            <strong style="color: var(--col-primary, #1a5c45); font-size: 0.95rem; font-weight: 700;">{{ $selectedCentre->nom }}</strong>
-        @endif
+        <strong style="color: var(--col-primary, #1a5c45); font-size: 1.05rem; font-weight: 700;">{{ $selectedCentre->nom }}</strong>
     </div>
+
     
     {{-- Boutons d'exports R1, R2, R3, R4 --}}
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
@@ -157,27 +148,32 @@
                             <span style="font-size: 0.72rem; color: #6b7280;">({{ $slip->banque }})</span>
                         @endif
                     </td>
-                    <td class="text-right">
-                        <div style="display: inline-flex; gap: 0.35rem; align-items: center; justify-content: flex-end;">
-                            <a href="{{ route('pay-slips.pdf', $slip->id) }}" target="_blank" class="action-btn action-btn-pdf" title="Télécharger le bulletin">
-                                🖨️ Bulletin
-                            </a>
+                    <td class="text-right" style="min-width: 340px; white-space: nowrap;">
+                        <div style="display: inline-flex; gap: 0.45rem; align-items: center; justify-content: flex-end;">
                             @if(!$slip->is_fictif)
-                                <a href="{{ route('pay-slips.solde-tout-compte', $slip->id) }}" target="_blank" class="action-btn action-btn-solde" title="Générer reçu Solde de tout compte">
-                                    📄 Solde compte
-                                </a>
                                 @if($payPeriod->statut === 'ouvert' && !auth()->user()->isReadOnly())
-                                    <button type="button" class="action-btn action-btn-ajuste" onclick="openVariablesModal({{ json_encode($slip) }})">
+                                    <button type="button" class="action-btn action-btn-ajuste" onclick="openVariablesModal({{ json_encode($slip) }})" title="Ajuster les primes, absences et retenues de ce salarié">
                                         ⚙️ Ajuster
                                     </button>
                                 @endif
+                                <a href="{{ route('pay-slips.pdf', $slip->id) }}" target="_blank" class="action-btn action-btn-pdf" title="Consulter / Imprimer le bulletin de paie">
+                                    📄 Bulletin de paie
+                                </a>
+                                <a href="{{ route('pay-slips.solde-tout-compte', $slip->id) }}" target="_blank" class="action-btn action-btn-solde" title="Générer le reçu Solde de tout compte">
+                                    🧾 Solde compte
+                                </a>
                             @else
-                                <span style="font-size: 0.72rem; color: #6b7280; font-style: italic; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; border: 1px dashed #d1d5db;">
-                                    🔒 Fictif (Lecture seule)
+                                <a href="{{ route('pay-slips.pdf', $slip->id) }}" target="_blank" class="action-btn action-btn-pdf" title="Consulter le bulletin">
+                                    📄 Bulletin de paie
+                                </a>
+                                <span style="font-size: 0.75rem; color: #6b7280; font-style: italic; background: #f3f4f6; padding: 3px 8px; border-radius: 6px; border: 1px dashed #d1d5db;">
+                                    🔒 Fictif (Transféré)
                                 </span>
                             @endif
                         </div>
                     </td>
+
+
 
                 </tr>
 
@@ -445,10 +441,34 @@
     overflow: hidden;
 }
 
+.table-responsive {
+    width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    display: block;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 10px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
 .premium-table {
     width: 100%;
+    min-width: 1280px;
     border-collapse: collapse;
 }
+
 
 .premium-table th {
     background-color: #f9fafb;
@@ -527,14 +547,30 @@
 .font-bold { font-weight: 700; }
 
 .action-btn {
-    padding: 4px 8px;
-    font-size: 0.75rem;
+    padding: 6px 12px;
+    font-size: 0.84rem;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: 8px;
     border: 1px solid transparent;
     cursor: pointer;
     text-decoration: none;
-    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+.action-btn-ajuste {
+    background: #1a5c45 !important;
+    color: #ffffff !important;
+    border: 1px solid #144836 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(26, 92, 69, 0.3) !important;
+}
+.action-btn-ajuste:hover {
+    background: #124030 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(26, 92, 69, 0.45) !important;
 }
 .action-btn-pdf {
     background-color: #ecfdf5;
@@ -543,6 +579,7 @@
 }
 .action-btn-pdf:hover {
     background-color: #d1fae5;
+    transform: translateY(-1px);
 }
 .action-btn-solde {
     background-color: #fffbeb;
@@ -551,21 +588,9 @@
 }
 .action-btn-solde:hover {
     background-color: #fef3c7;
-}
-.action-btn-ajuste {
-    background: linear-gradient(135deg, var(--col-primary, #1a5c45) 0%, #227055 100%);
-    color: #ffffff;
-    box-shadow: 0 2px 6px rgba(26, 92, 69, 0.25);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-.action-btn-ajuste:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(26, 92, 69, 0.35);
-    background: linear-gradient(135deg, #124030 0%, #1a5c45 100%);
 }
+
 
 .filter-select {
     padding: 0.45rem 2.25rem 0.45rem 0.75rem;

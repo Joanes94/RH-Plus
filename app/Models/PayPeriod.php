@@ -8,11 +8,16 @@ class PayPeriod extends Model
 {
     protected $table = 'pay_periods';
 
-    protected $fillable = ['code', 'label', 'statut', 'created_by'];
+    protected $fillable = ['centre_id', 'code', 'label', 'statut', 'created_by'];
 
     protected $casts = [
         'statut' => 'string',
     ];
+
+    public function centre()
+    {
+        return $this->belongsTo(Centre::class, 'centre_id');
+    }
 
     public function createdBy()
     {
@@ -23,6 +28,7 @@ class PayPeriod extends Model
     {
         return $this->hasMany(PaySlip::class, 'pay_period_id');
     }
+
 
     public function isCloture(): bool
     {

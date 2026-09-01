@@ -43,6 +43,7 @@ class UserManagementController extends Controller
             'telephone' => 'nullable|string|max:20',
             'role'      => 'required|in:crh,ddis,ddrh,drh_centre,assistant_rh,directeur_centre',
             'centre_id' => 'nullable|exists:centres,id',
+            'photo'     => 'nullable|image|max:2048|mimes:jpeg,png,jpg',
             'password'  => 'required|string|min:6|confirmed',
         ]);
 
@@ -54,6 +55,10 @@ class UserManagementController extends Controller
         // Les rôles globaux ne doivent PAS avoir de centre
         if (in_array($validated['role'], ['crh', 'ddis', 'ddrh'])) {
             $validated['centre_id'] = null;
+        }
+
+        if ($request->hasFile('photo')) {
+            $validated['photo_path'] = $request->file('photo')->store('photos/users', 'public');
         }
 
         $validated['password'] = $validated['password']; // Will be hashed by cast
@@ -79,6 +84,7 @@ class UserManagementController extends Controller
             'telephone' => 'nullable|string|max:20',
             'role'      => 'required|in:crh,ddis,ddrh,drh_centre,assistant_rh,directeur_centre',
             'centre_id' => 'nullable|exists:centres,id',
+            'photo'     => 'nullable|image|max:2048|mimes:jpeg,png,jpg',
             'password'  => 'nullable|string|min:6|confirmed',
         ]);
 
@@ -90,6 +96,13 @@ class UserManagementController extends Controller
             $validated['centre_id'] = null;
         }
 
+        if ($request->hasFile('photo')) {
+            if ($user->photo_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->photo_path);
+            }
+            $validated['photo_path'] = $request->file('photo')->store('photos/users', 'public');
+        }
+
         if (empty($validated['password'])) {
             unset($validated['password']);
         }
@@ -98,6 +111,7 @@ class UserManagementController extends Controller
 
         return redirect()->route('users.index')->with('success', 'Utilisateur mis à jour.');
     }
+
 
     public function showTransferer(User $user)
     {

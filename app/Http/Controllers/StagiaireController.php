@@ -12,8 +12,31 @@ class StagiaireController extends Controller
     // ── Liste ─────────────────────────────────────────────────────────────────
     public function index(Request $request)
     {
+        // Auto-vérification des stages arrivés à terme
+        $today = now()->startOfDay();
+        $stagiairesFinis = Stagiaire::where('statut', 'en_cours')
+            ->whereNotNull('date_fin_stage')
+            ->where('date_fin_stage', '<=', $today)
+            ->get();
+
+        foreach ($stagiairesFinis as $stg) {
+            $stg->update(['statut' => 'termine']);
+            if ($stg->centre_id) {
+                $dateFin = $stg->date_fin_stage ? $stg->date_fin_stage->format('d/m/Y') : $today->format('d/m/Y');
+                \App\Models\Notification::firstOrCreate([
+                    'centre_id'         => $stg->centre_id,
+                    'type'              => 'fin_stage',
+                    'titre'             => 'Fin de stage - ' . $stg->nom_complet,
+                ], [
+                    'message'           => "Le stage de {$stg->nom_complet}" . ($stg->titre ? " ({$stg->titre})" : "") . " est arrivé à terme le {$dateFin}. Le statut a été marqué comme Terminé.",
+                    'date_notification' => $today,
+                ]);
+            }
+        }
+
         $query = Stagiaire::query()->with('centre');
         $user = auth()->user();
+
 
         if ($request->filled('search')) {
             $mots = preg_split('/\s+/', trim($request->search), -1, PREG_SPLIT_NO_EMPTY);
@@ -129,6 +152,7 @@ class StagiaireController extends Controller
 
     public function update(Request $request, Stagiaire $stagiaire)
     {
+        $ancienStatut = $stagiaire->statut;
         $data = $this->valider($request, $stagiaire->id);
 
         // Photo
@@ -142,9 +166,21 @@ class StagiaireController extends Controller
 
         $stagiaire->update($data);
 
+        // Si le statut passe à terminé, émettre la notification au centre
+        if ($ancienStatut !== 'termine' && $stagiaire->statut === 'termine' && $stagiaire->centre_id) {
+            \App\Models\Notification::create([
+                'centre_id'         => $stagiaire->centre_id,
+                'type'              => 'fin_stage',
+                'titre'             => 'Fin de stage - ' . $stagiaire->nom_complet,
+                'message'           => "Le stage de {$stagiaire->nom_complet}" . ($stagiaire->titre ? " ({$stagiaire->titre})" : "") . " a été marqué comme Terminé.",
+                'date_notification' => now(),
+            ]);
+        }
+
         return redirect()->route('stagiaires.show', $stagiaire)
             ->with('success', 'Fiche mise à jour.');
     }
+
 
     // ── Suppression ───────────────────────────────────────────────────────────
     public function destroy(Stagiaire $stagiaire)

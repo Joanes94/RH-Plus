@@ -19,6 +19,7 @@ class User extends Authenticatable
         'password',
         'centre_id',
         'signature_path',
+        'photo_path',
         'titre_officiel',
     ];
 
@@ -62,6 +63,21 @@ class User extends Authenticatable
         return $this->role_label;
     }
 
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (!$this->photo_path) {
+            return null;
+        }
+
+        $cleanPath = ltrim(str_replace(['public/', 'storage/'], '', $this->photo_path), '/');
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanPath) || file_exists(storage_path('app/public/' . $cleanPath)) || file_exists(public_path('storage/' . $cleanPath))) {
+            return asset('storage/' . $cleanPath);
+        }
+
+        return null;
+    }
+
     public function getSignatureUrlAttribute(): ?string
     {
         if (!$this->signature_path) {
@@ -94,6 +110,7 @@ class User extends Authenticatable
 
         return "data:{$mime};base64,{$encoded}";
     }
+
 
     public function getRoleLabelAttribute(): string
     {

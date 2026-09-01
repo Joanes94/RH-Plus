@@ -80,14 +80,27 @@
                 <tr>
                     <td>
                         <div class="ug-user-cell">
-                            <div class="ug-avatar ug-avatar-{{ $user->role }}">
-                                {{ strtoupper(substr($user->prenoms, 0, 1)) }}{{ strtoupper(substr($user->nom, 0, 1)) }}
-                            </div>
+                            @if($user->photo_url)
+                                <img src="{{ $user->photo_url }}" alt="{{ $user->nom_complet }}"
+                                     onclick="zoomUserPhoto('{{ $user->photo_url }}', '{{ addslashes($user->nom_complet) }}', '{{ addslashes($user->role_label) }}', '{{ addslashes($user->centre?->nom ?? 'Direction Générale') }}', '')"
+                                     style="width:38px; height:38px; border-radius:50%; object-fit:cover; flex-shrink:0; cursor:pointer; border:2px solid #e5e7eb; transition:transform 0.15s ease;"
+                                     onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+                                     title="Cliquer pour zoomer">
+                            @else
+                                <div class="ug-avatar ug-avatar-{{ $user->role }}"
+                                     onclick="zoomUserPhoto('', '{{ addslashes($user->nom_complet) }}', '{{ addslashes($user->role_label) }}', '{{ addslashes($user->centre?->nom ?? 'Direction Générale') }}', '{{ strtoupper(substr($user->prenoms, 0, 1)) }}{{ strtoupper(substr($user->nom, 0, 1)) }}')"
+                                     style="cursor:pointer; transition:transform 0.15s ease;"
+                                     onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+                                     title="Cliquer pour zoomer">
+                                    {{ strtoupper(substr($user->prenoms, 0, 1)) }}{{ strtoupper(substr($user->nom, 0, 1)) }}
+                                </div>
+                            @endif
                             <div>
                                 <span class="ug-user-name">{{ $user->prenoms }} {{ strtoupper($user->nom) }}</span>
                                 <span class="ug-user-sub">{{ $user->sexe === 'M' ? '♂ Homme' : '♀ Femme' }}</span>
                             </div>
                         </div>
+
                     </td>
                     <td class="ug-email">{{ $user->email }}</td>
                     <td><span class="ug-role-badge ug-role-{{ $user->role }}">{{ $user->role_label }}</span></td>
@@ -257,6 +270,41 @@
 }
 </style>
 @endpush
+
+{{-- Modale Lightbox Photo Utilisateur --}}
+<dialog id="modalUserPhoto" style="border: none; border-radius: 16px; padding: 0; max-width: 520px; width: 90vw; background: rgba(17, 24, 39, 0.96); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);">
+    <div style="position: relative; padding: 1.5rem; text-align: center;">
+        <button onclick="document.getElementById('modalUserPhoto').close()" style="position: absolute; top: 12px; right: 16px; background: rgba(255,255,255,0.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">&times;</button>
+        <div id="uModalTitle" style="font-weight: 700; color: #fff; font-size: 1.15rem; margin-bottom: 1rem;">Photo de profil</div>
+        <div id="uModalImgContainer">
+            <img id="uModalImg" src="" alt="Photo" style="max-width: 100%; max-height: 65vh; border-radius: 12px; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
+            <div id="uModalAvatar" style="width: 140px; height: 140px; border-radius: 50%; background: #1a5c45; color: white; display: none; align-items: center; justify-content: center; font-size: 2.8rem; font-weight: 700; margin: 1.5rem auto; border: 4px solid rgba(255,255,255,0.3);"></div>
+        </div>
+        <div id="uModalMeta" style="margin-top: 1rem; font-size: 0.88rem; color: #9ca3af; font-weight: 600;"></div>
+    </div>
+</dialog>
+
+@push('scripts')
+<script>
+function zoomUserPhoto(url, name, role, centre, initials) {
+    document.getElementById('uModalTitle').textContent = 'Profil — ' + name;
+    document.getElementById('uModalMeta').textContent = role + (centre ? ' — ' + centre : '');
+    const img = document.getElementById('uModalImg');
+    const av = document.getElementById('uModalAvatar');
+    if (url && url.length > 0) {
+        img.src = url;
+        img.style.display = 'inline-block';
+        av.style.display = 'none';
+    } else {
+        img.style.display = 'none';
+        av.textContent = initials || 'RH';
+        av.style.display = 'flex';
+    }
+    document.getElementById('modalUserPhoto').showModal();
+}
+</script>
+@endpush
 @endsection
+
 
 

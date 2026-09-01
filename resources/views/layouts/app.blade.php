@@ -14,19 +14,21 @@
 <body>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="brand">
-                <div class="brand-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-                <span class="brand-name">RH<em>Plus</em></span>
+            <div class="brand" style="display: flex; align-items: center; gap: 10px;">
+                <img src="{{ asset('images/logo_tekton.jpg') }}" alt="TEKTON SIRH Logo" style="height: 38px; width: auto; border-radius: 6px; object-fit: contain; background: #fff; padding: 2px;">
+                <span class="brand-name" style="font-size: 1.15rem; font-weight: 700;">TEKTON <em style="color: #d97706; font-style: normal; font-weight: 600;">SIRH</em></span>
             </div>
             <button class="sidebar-close" id="sidebarClose">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
 
-        <div class="sidebar-user">
-            <div class="user-avatar">{{ strtoupper(substr(auth()->user()->prenoms, 0, 1)) }}{{ strtoupper(substr(auth()->user()->nom, 0, 1)) }}</div>
+        <div class="sidebar-user" style="cursor: pointer;" onclick="openSidebarPhoto()" title="Cliquer pour agrandir la photo">
+            @if(auth()->user()->photo_url)
+                <img src="{{ auth()->user()->photo_url }}" alt="{{ auth()->user()->nom_complet }}" class="user-avatar-img" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.4); flex-shrink: 0; transition: transform 0.2s ease;">
+            @else
+                <div class="user-avatar" style="transition: transform 0.2s ease;">{{ strtoupper(substr(auth()->user()->prenoms, 0, 1)) }}{{ strtoupper(substr(auth()->user()->nom, 0, 1)) }}</div>
+            @endif
             <div class="user-info">
                 <span class="user-name">{{ auth()->user()->prenoms }} {{ strtoupper(auth()->user()->nom) }}</span>
                 <span class="user-role">{{ auth()->user()->role_label }}</span>
@@ -35,6 +37,8 @@
                 @endif
             </div>
         </div>
+
+
 
         <nav class="sidebar-nav">
             <div class="nav-section">
@@ -270,7 +274,28 @@
         </div>
     </main>
 
+    <dialog id="modalSidebarPhoto" style="border: none; border-radius: 16px; padding: 0; max-width: 520px; width: 90vw; background: rgba(17, 24, 39, 0.96); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);">
+        <div style="position: relative; padding: 1.5rem; text-align: center;">
+            <button onclick="document.getElementById('modalSidebarPhoto').close()" style="position: absolute; top: 12px; right: 16px; background: rgba(255,255,255,0.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">&times;</button>
+            <div style="font-weight: 700; color: #fff; font-size: 1.15rem; margin-bottom: 1rem;">Photo de profil — {{ auth()->user()->nom_complet }}</div>
+            @if(auth()->user()->photo_url)
+                <img src="{{ auth()->user()->photo_url }}" alt="Photo" style="max-width: 100%; max-height: 65vh; border-radius: 12px; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
+            @else
+                <div style="width: 150px; height: 150px; border-radius: 50%; background: #1a5c45; color: white; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 700; margin: 1.5rem auto; border: 4px solid rgba(255,255,255,0.3);">
+                    {{ strtoupper(substr(auth()->user()->prenoms, 0, 1)) }}{{ strtoupper(substr(auth()->user()->nom, 0, 1)) }}
+                </div>
+            @endif
+            <div style="margin-top: 1rem; font-size: 0.88rem; color: #9ca3af; font-weight: 600;">{{ auth()->user()->role_label }} — {{ auth()->user()->centre?->nom ?? 'Direction Générale' }}</div>
+        </div>
+    </dialog>
+
     <script src="{{ asset('js/app.js') }}"></script>
+    <script>
+    function openSidebarPhoto() {
+        const m = document.getElementById('modalSidebarPhoto');
+        if (m) m.showModal();
+    }
+    </script>
     @stack('scripts')
 </body>
 </html>

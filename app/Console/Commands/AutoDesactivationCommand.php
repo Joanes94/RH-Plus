@@ -113,12 +113,41 @@ class AutoDesactivationCommand extends Command
             $count++;
         }
 
+        // ── Stagiaires : fin de stage échue ─────────────────────────────────
+        $stagiairesFin = \App\Models\Stagiaire::where('statut', 'en_cours')
+            ->whereNotNull('date_fin_stage')
+            ->where('date_fin_stage', '<=', $today)
+            ->get();
+
+        $stagiaireCount = 0;
+        foreach ($stagiairesFin as $stagiaire) {
+            $dateFinStr = $stagiaire->date_fin_stage ? $stagiaire->date_fin_stage->format('d/m/Y') : $today->format('d/m/Y');
+            if ($dryRun) {
+                $this->info("[DRY-RUN] Fin de stage : {$stagiaire->nom_complet} — Date de fin {$dateFinStr}");
+            } else {
+                $stagiaire->update(['statut' => 'termine']);
+
+                if ($stagiaire->centre_id) {
+                    \App\Models\Notification::create([
+                        'centre_id'         => $stagiaire->centre_id,
+                        'type'              => 'fin_stage',
+                        'titre'             => 'Fin de stage - ' . $stagiaire->nom_complet,
+                        'message'           => "Le stage de {$stagiaire->nom_complet}" . ($stagiaire->titre ? " ({$stagiaire->titre})" : "") . " est arrivé à terme le {$dateFinStr}. Le statut a été marqué comme Terminé.",
+                        'date_notification' => $today,
+                    ]);
+                }
+                $this->info("✓ Stage terminé : {$stagiaire->nom_complet} (Fin le {$dateFinStr})");
+            }
+            $stagiaireCount++;
+        }
+
         $this->info("");
         $this->info($dryRun
-            ? "{$count} personnel(s) serai(en)t désactivé(s)."
-            : "{$count} personnel(s) désactivé(s) automatiquement."
+            ? "{$count} personnel(s) et {$stagiaireCount} stagiaire(s) serai(en)t traité(s)."
+            : "{$count} personnel(s) désactivé(s) et {$stagiaireCount} stagiaire(s) marqué(s) Terminé."
         );
 
         return Command::SUCCESS;
     }
+
 }

@@ -23,15 +23,19 @@
 </div>
 
 {{-- En-tête fiche --}}
-<div class="fiche-hero">
-    @if($stagiaire->photo_url)
-        <img src="{{ $stagiaire->photo_url }}" alt="Photo"
-             style="width:64px;height:64px;object-fit:cover;border-radius:50%;border:2px solid var(--col-border-lg);flex-shrink:0">
-    @else
-        <img src="{{ $stagiaire->avatar_url }}" alt="{{ $stagiaire->initiales }}"
-             style="width:64px;height:64px;object-fit:cover;border-radius:50%;border:2px solid var(--col-border-lg);flex-shrink:0">
-    @endif
+<div class="fiche-hero" style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+    <div class="fb-profile-photo-container" onclick="openPhotoModal()" style="position: relative; width: 90px; height: 90px; flex-shrink: 0; cursor: pointer;">
+        @if($stagiaire->photo_url)
+            <img src="{{ $stagiaire->photo_url }}" alt="Photo" id="profileImg"
+                 style="width:90px;height:90px;object-fit:cover;border-radius:50%;border:3px solid #1a5c45;box-shadow:0 4px 14px rgba(0,0,0,0.15);">
+        @else
+            <img src="{{ $stagiaire->avatar_url }}" alt="{{ $stagiaire->initiales }}" id="profileImg"
+                 style="width:90px;height:90px;object-fit:cover;border-radius:50%;border:3px solid var(--col-border-lg);box-shadow:0 4px 14px rgba(0,0,0,0.15);">
+        @endif
+        <div class="fb-photo-badge" title="Cliquer pour agrandir la photo" style="position: absolute; bottom: 2px; right: 2px; background: #ffffff; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; box-shadow: 0 2px 6px rgba(0,0,0,0.25); border: 1px solid #e5e7eb;">🔍</div>
+    </div>
     <div class="fiche-hero-info">
+
         <h2>{{ $stagiaire->nom_complet }}</h2>
         <div class="fiche-tags">
             <span class="status-badge status-{{ $stagiaire->statut_color }}">{{ $stagiaire->statut_label }}</span>
@@ -155,4 +159,24 @@
 </div>
 @endif
 
+{{-- Modale Lightbox Photo Stagiaire --}}
+<dialog id="modalFbPhoto" style="border: none; border-radius: 16px; padding: 0; max-width: 540px; background: rgba(17, 24, 39, 0.96); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);">
+    <div style="position: relative; padding: 1.5rem; text-align: center;">
+        <button onclick="document.getElementById('modalFbPhoto').close()" style="position: absolute; top: 12px; right: 16px; background: rgba(255,255,255,0.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">&times;</button>
+        <div style="font-weight: 700; color: #fff; font-size: 1.15rem; margin-bottom: 1rem;">Photo — {{ $stagiaire->nom_complet }}</div>
+        <img id="fbModalImg" src="" alt="Photo" style="max-width: 100%; max-height: 70vh; border-radius: 12px; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
+        <div style="margin-top: 1rem; font-size: 0.88rem; color: #9ca3af; font-weight: 600;">{{ $stagiaire->titre ?? 'Stagiaire' }} — {{ $stagiaire->service ?? 'Service RH' }}</div>
+    </div>
+</dialog>
+
+@push('scripts')
+<script>
+function openPhotoModal() {
+    const src = document.getElementById('profileImg').src;
+    document.getElementById('fbModalImg').src = src;
+    document.getElementById('modalFbPhoto').showModal();
+}
+</script>
+@endpush
 @endsection
+

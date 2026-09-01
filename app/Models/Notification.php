@@ -54,7 +54,9 @@ class Notification extends Model
             'digest_mensuel' => '📅',
             'affectation'    => '👤',
             'transfert'      => '🔄',
+            'fin_stage'      => '🎓',
             default          => '📈',
         };
+
     }
 }
