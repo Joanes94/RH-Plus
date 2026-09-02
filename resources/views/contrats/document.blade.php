@@ -168,6 +168,7 @@
             <div style="font-weight: 700; margin-bottom: 8px;">L’EMPLOYEUR</div>
             <div style="font-weight: 700;">Mgr {{ $representant_nom ?? 'Roger HOUNGBEDJI' }}</div>
             <div style="font-weight: 700; margin-bottom: 8px;">P.O.</div>
+            <div style="height: 62px;"></div>
             <div style="font-weight: 700;">{{ $delegataire_nom ?? 'Abbé Théophile AKOHA' }}</div>
             <div>({{ $delegataire_titre ?? 'Vicaire Général' }})</div>
         </div>

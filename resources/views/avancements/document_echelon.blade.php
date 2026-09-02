@@ -65,8 +65,8 @@
     </div>
 
     <div class="signature" style="margin-top: 40px;">
-        <div class="titre">Pour la Direction Diocésaine de la Santé (DDIS),</div>
-        <div class="sous-titre" style="font-size:0.85rem; font-weight:600; color:#4b5563;">{{ $signataire_titre ?? 'Le Directeur Diocésain de la Santé' }}</div>
+        <div class="titre">Pour la Direction du Centre,</div>
+        <div class="sous-titre" style="font-size:0.85rem; font-weight:600; color:#4b5563;">{{ $signataire_titre ?? 'Le Directeur du Centre' }}</div>
         @if($avancement->statut === 'valide')
             <div class="sig-image-wrap" style="margin-top:10px;">
                 @if(!empty($signature_url))

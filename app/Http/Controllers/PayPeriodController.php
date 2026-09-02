@@ -285,7 +285,7 @@ class PayPeriodController extends Controller
             try {
                 $recipientEmail = trim($personnel->email);
                 $subject = "Votre bulletin de paie - " . $payPeriod->label . " (" . $centre->nom . ")";
-                $drhInfo = $docService->resolveDrhCentre($personnel, $user);
+                $drhInfo = $docService->resolveDrhCentre($personnel);
 
                 $bulletinHtml = view('pay_slips.bulletin_email', [
                     'paySlip'   => $slip,

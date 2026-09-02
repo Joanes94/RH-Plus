@@ -80,13 +80,15 @@ class AvancementService
         $coefficient   = (float) ConfigRh::get('coefficient_bonification', 2.3);
         $ancienSalaire = (int) $contrat->salaire_base;
         $nouveauSalaire = (int) round($caseBase->salaire * $coefficient);
+        $dateNaissance = Carbon::parse($personnel->date_naissance);
+        $dateEffet = $dateNaissance->copy()->addYears(self::AGE_BONIFICATION)->startOfDay();
 
         $avancement = Avancement::create([
             'personnel_id'          => $personnel->id,
             'contrat_id'            => $contrat->id,
             'type'                  => 'bonification',
             'statut'                => 'soumis',
-            'date_effet'            => now()->toDateString(),
+            'date_effet'            => $dateEffet->toDateString(),
             'ancienne_categorie'    => $contrat->categorie,
             'ancien_echelon'        => $contrat->echelon,
             'nouvelle_categorie'    => $contrat->categorie,
@@ -222,7 +224,9 @@ class AvancementService
             return null; // pas de point de départ fiable
         }
 
-        if ($dateReference->diffInMonths(now()) < self::MOIS_ENTRE_ECHELONS) {
+        $dateEffet = $dateReference->copy()->addMonthsNoOverflow(self::MOIS_ENTRE_ECHELONS)->startOfDay();
+
+        if (now()->startOfDay()->lt($dateEffet)) {
             return null;
         }
 
@@ -237,7 +241,7 @@ class AvancementService
             'contrat_id'            => $contrat->id,
             'type'                  => 'echelon',
             'statut'                => 'soumis', // En attente de validation par la DDIS
-            'date_effet'            => now()->toDateString(),
+            'date_effet'            => $dateEffet->toDateString(),
             'ancienne_categorie'    => $contrat->categorie,
             'ancien_echelon'        => $contrat->echelon,
             'nouvelle_categorie'    => $contrat->categorie,
@@ -371,7 +375,7 @@ class AvancementService
             $dejaBonifie = $personnel->avancements->contains('type', 'bonification');
 
             if (!$dejaBonifie && $personnel->date_naissance) {
-                $dateBonif = $personnel->date_naissance->copy()->addYears(self::AGE_BONIFICATION);
+                $dateBonif = Carbon::parse($personnel->date_naissance)->copy()->addYears(self::AGE_BONIFICATION);
                 if ($dateBonif->between($debut, $fin)) {
                     $aVenir->push([
                         'personnel_id' => $personnel->id,
@@ -389,7 +393,7 @@ class AvancementService
                     ?? $personnel->date_embauche_centre;
 
                 if ($dateReference) {
-                    $dateEchelon = $dateReference->copy()->addMonths(self::MOIS_ENTRE_ECHELONS);
+                    $dateEchelon = $dateReference->copy()->addMonthsNoOverflow(self::MOIS_ENTRE_ECHELONS);
                     if ($dateEchelon->between($debut, $fin)) {
                         $aVenir->push([
                             'personnel_id' => $personnel->id,

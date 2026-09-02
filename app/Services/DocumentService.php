@@ -5,8 +5,11 @@ namespace App\Services;
 use App\Models\Conge;
 use App\Models\Absence;
 use App\Models\Demande;
+use App\Models\Centre;
 use App\Models\ConfigRh;
+use App\Models\Evaluation;
 use App\Models\Personnel;
+use App\Models\StagiaireDocument;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -49,37 +52,101 @@ class DocumentService
     }
 
     /**
+     * Récupère une configuration RH spécifique à un centre sans dépendre de l'utilisateur connecté.
+     */
+    private function getCentreConfigValue(int $centreId, string $cle): ?string
+    {
+        return ConfigRh::where('cle', $cle)
+            ->where('centre_id', $centreId)
+            ->whereNull('user_id')
+            ->whereNotNull('valeur')
+            ->where('valeur', '!=', '')
+            ->value('valeur');
+    }
+
+    /**
+     * Construit le bloc signataire pour un utilisateur du centre.
+     */
+    private function buildTriptychFromUser(User $user, ?Centre $centre = null): array
+    {
+        $centre ??= $user->centre;
+        $titleFallback = $centre?->a_drh_dedie ? 'Directeur des Ressources Humaines' : 'Directeur';
+
+        return [
+            'nom'           => ConfigRh::get('drh_nom', null, $user) ?: $user->nom_complet,
+            'titre'         => ConfigRh::get('drh_titre', null, $user) ?: $titleFallback,
+            'signature_url' => $this->signatureToBase64(ConfigRh::get('drh_signature_path', null, $user) ?: $user->signature_path)
+                ?: $user->signature_base64,
+            'user'          => $user,
+        ];
+    }
+
+    /**
      * Génère une référence mensuelle de type O1/07-26/AC/DDIS/CSVHHSL/DIR/DRH/ARH.
      */
-    public function generateMonthlyReference(?Carbon $date = null, ?string $suffix = null): string
+    public function generateMonthlyReference(?Carbon $date = null, ?string $suffix = null, ?int $centreId = null): string
     {
         $date ??= now();
         $suffix ??= self::DEFAULT_REFERENCE_SUFFIX;
 
         $period = $date->format('m-y');
         $pattern = 'O%/' . $period . '/%';
+        $count = $this->countReferencesForCentre($pattern, $centreId);
+        $sequence = str_pad((string) ($count + 1), 3, '0', STR_PAD_LEFT);
 
-        $count = Demande::whereNotNull('reference')->where('reference', 'like', $pattern)->count()
-            + Conge::whereNotNull('reference')->where('reference', 'like', $pattern)->count()
-            + Absence::whereNotNull('reference')->where('reference', 'like', $pattern)->count();
-
-        return 'O' . ($count + 1) . '/' . $period . '/' . $suffix;
+        return 'O' . $sequence . '/' . $period . '/' . $suffix;
     }
 
     /**
      * Retourne la référence fournie ou génère automatiquement la suivante du mois.
      */
-    public function resolveReference(?string $manualReference = null, ?Carbon $date = null, ?string $suffix = null): string
+    public function resolveReference(?string $manualReference = null, ?Carbon $date = null, ?string $suffix = null, ?int $centreId = null): string
     {
         if ($manualReference !== null && trim($manualReference) !== '') {
             return trim($manualReference);
         }
 
-        return $this->generateMonthlyReference($date, $suffix);
+        return $this->generateMonthlyReference($date, $suffix, $centreId);
+    }
+
+    /**
+     * Compte les références du mois pour un centre donné, tous documents officiels confondus.
+     */
+    private function countReferencesForCentre(string $pattern, ?int $centreId = null): int
+    {
+        $demandeCount = Demande::whereNotNull('reference')
+            ->where('reference', 'like', $pattern)
+            ->when($centreId, fn ($q) => $q->whereHas('personnel', fn ($qq) => $qq->where('centre_id', $centreId)))
+            ->count();
+
+        $congeCount = Conge::whereNotNull('reference')
+            ->where('reference', 'like', $pattern)
+            ->when($centreId, fn ($q) => $q->whereHas('personnel', fn ($qq) => $qq->where('centre_id', $centreId)))
+            ->count();
+
+        $absenceCount = Absence::whereNotNull('reference')
+            ->where('reference', 'like', $pattern)
+            ->when($centreId, fn ($q) => $q->whereHas('personnel', fn ($qq) => $qq->where('centre_id', $centreId)))
+            ->count();
+
+        $evaluationCount = Evaluation::whereNotNull('reference')
+            ->where('reference', 'like', $pattern)
+            ->when($centreId, fn ($q) => $q->whereHas('stagiaire', fn ($qq) => $qq->where('centre_id', $centreId)))
+            ->count();
+
+        $stagiaireDocCount = StagiaireDocument::whereNotNull('reference')
+            ->where('reference', 'like', $pattern)
+            ->when($centreId, fn ($q) => $q->whereHas('stagiaire', fn ($qq) => $qq->where('centre_id', $centreId)))
+            ->count();
+
+        return $demandeCount + $congeCount + $absenceCount + $evaluationCount + $stagiaireDocCount;
     }
 
     public function resolveDrhCentre(?Personnel $personnel, ?User $approuvePar = null): array
     {
+        $centre   = $personnel?->centre;
+        $centreId = $centre?->id;
+
         if ($approuvePar && !$approuvePar->isCRH()) {
             $nom     = ConfigRh::get('drh_nom', null, $approuvePar) ?: ($approuvePar->nom_complet ?: 'Nom du DRH');
             $titre   = ConfigRh::get('drh_titre', null, $approuvePar) ?: ($approuvePar->titre_effectif ?: 'Directeur des Ressources Humaines');
@@ -92,46 +159,38 @@ class DocumentService
             ];
         }
 
-        $centreId = $personnel?->centre_id;
-
         if ($centreId) {
-            $drhCentreUser = User::where('centre_id', $centreId)
-                ->whereIn('role', ['drh', 'directeur_centre', 'directeur'])
-                ->first();
-
-            if (!$drhCentreUser) {
-                $drhCentreUser = User::where('centre_id', $centreId)
+            $drhCentreUser = $centre?->drhOuDirecteur
+                ?? User::where('centre_id', $centreId)
                     ->where('role', 'assistant_rh')
                     ->first();
-            }
 
             if ($drhCentreUser) {
-                $nom     = ConfigRh::get('drh_nom', null, $drhCentreUser) ?: $drhCentreUser->nom_complet;
-                $titre   = ConfigRh::get('drh_titre', null, $drhCentreUser) ?: ($drhCentreUser->titre_effectif ?: 'Directeur des Ressources Humaines');
-                $sigPath = ConfigRh::get('drh_signature_path', null, $drhCentreUser) ?: $drhCentreUser->signature_path;
-                return [
-                    'nom'           => $nom,
-                    'titre'         => $titre,
-                    'signature_url' => $this->signatureToBase64($sigPath) ?: $drhCentreUser->signature_base64,
-                    'user'          => $drhCentreUser,
-                ];
+                return $this->buildTriptychFromUser($drhCentreUser, $centre);
             }
 
-            $cfgNom   = ConfigRh::where('cle', 'drh_nom')->where('centre_id', $centreId)->whereNotNull('valeur')->where('valeur', '!=', '')->first()?->valeur;
-            $cfgTitre = ConfigRh::where('cle', 'drh_titre')->where('centre_id', $centreId)->whereNotNull('valeur')->where('valeur', '!=', '')->first()?->valeur;
-            $cfgSig   = ConfigRh::where('cle', 'drh_signature_path')->where('centre_id', $centreId)->whereNotNull('valeur')->where('valeur', '!=', '')->first()?->valeur;
+            $cfgNom   = $this->getCentreConfigValue($centreId, 'drh_nom');
+            $cfgTitre = $this->getCentreConfigValue($centreId, 'drh_titre');
+            $cfgSig   = $this->getCentreConfigValue($centreId, 'drh_signature_path');
 
-            if ($cfgNom) {
+            if ($cfgNom || $cfgTitre || $cfgSig) {
                 return [
-                    'nom'           => $cfgNom,
-                    'titre'         => $cfgTitre ?: 'Directeur des Ressources Humaines',
+                    'nom'           => $cfgNom ?: ($centre?->nom ?? 'Nom du signataire'),
+                    'titre'         => $cfgTitre ?: ($centre?->a_drh_dedie ? 'Directeur des Ressources Humaines' : 'Directeur'),
                     'signature_url' => $this->signatureToBase64($cfgSig),
                     'user'          => null,
                 ];
             }
+
+            return [
+                'nom'           => $centre?->nom ?? 'Nom du signataire',
+                'titre'         => $centre?->a_drh_dedie ? 'Directeur des Ressources Humaines' : 'Directeur',
+                'signature_url' => null,
+                'user'          => null,
+            ];
         }
 
-        $cfgNom   = ConfigRh::get('drh_nom', 'Le Directeur du ' . ($personnel?->centre?->nom ?: 'Centre'));
+        $cfgNom   = ConfigRh::get('drh_nom', 'Le Directeur du Centre');
         $cfgTitre = ConfigRh::get('drh_titre', 'Directeur des Ressources Humaines');
         $cfgSig   = ConfigRh::get('drh_signature_path');
 

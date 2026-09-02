@@ -222,7 +222,7 @@ class CongeController extends Controller
             'approuve_par'   => Auth::id(),
             'approuve_le'    => now(),
             'signature_path' => $signPath,
-            'reference'      => $this->doc->resolveReference($request->reference, now()),
+            'reference'      => $this->doc->resolveReference($request->reference, now(), null, $conge->personnel?->centre_id),
         ]);
 
         return redirect()->route('conges.show', $conge)

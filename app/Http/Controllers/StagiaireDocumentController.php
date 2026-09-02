@@ -6,10 +6,11 @@ use App\Models\Stagiaire;
 use App\Models\StagiaireDocument;
 use App\Models\Evaluation;
 use App\Models\ConfigRh;
+use App\Models\Personnel;
+use App\Services\DocumentService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -200,20 +201,7 @@ class StagiaireDocumentController extends Controller
      */
     private function generateMonthlyReference(?Carbon $date = null, ?string $suffix = null): string
     {
-        $date ??= now();
-        $suffix ??= 'AC/DDIS/CSVHHSL/DIR/DRH/ARH';
-
-        $period = $date->format('m-y');
-        $key    = 'stagiaire_doc_ref_counter:' . $period;
-        $ttl    = $date->copy()->endOfMonth()->endOfDay();
-
-        if (!Cache::has($key)) {
-            Cache::put($key, 0, $ttl);
-        }
-
-        $count = Cache::increment($key);
-
-        return 'O' . $count . '/' . $period . '/' . $suffix;
+        return app(DocumentService::class)->generateMonthlyReference($date, $suffix, null);
     }
 
     /**
@@ -335,7 +323,9 @@ class StagiaireDocumentController extends Controller
 
         $type_stage = $request->get('type', 'professionnel');
         $services = $request->get('services');
-        $reference = $request->filled('reference') ? $request->get('reference') : $this->generateMonthlyReference();
+        $reference = $request->filled('reference')
+            ? $request->get('reference')
+            : app(DocumentService::class)->generateMonthlyReference(null, null, $stagiaire->centre_id);
 
         // Créer le document en base
         $document = StagiaireDocument::create([
@@ -365,7 +355,9 @@ class StagiaireDocumentController extends Controller
 
         $type_stage = $request->get('type', 'professionnel');
         $services = $request->get('services');
-        $reference = $request->filled('reference') ? $request->get('reference') : $this->generateMonthlyReference();
+        $reference = $request->filled('reference')
+            ? $request->get('reference')
+            : app(DocumentService::class)->generateMonthlyReference(null, null, $stagiaire->centre_id);
 
         // Créer le document en base
         $document = StagiaireDocument::create([

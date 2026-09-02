@@ -6,10 +6,10 @@ namespace App\Http\Controllers;
 use App\Models\Evaluation;
 use App\Models\Stagiaire;
 use App\Models\ConfigRh;
+use App\Services\DocumentService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class EvaluationController extends Controller
@@ -19,20 +19,7 @@ class EvaluationController extends Controller
      */
     private function generateMonthlyReference(?Carbon $date = null, ?string $suffix = null): string
     {
-        $date ??= now();
-        $suffix ??= 'AC/DDIS/CSVHHSL/DIR/DRH/ARH';
-
-        $period = $date->format('m-y');
-        $key    = 'evaluation_ref_counter:' . $period;
-        $ttl    = $date->copy()->endOfMonth()->endOfDay();
-
-        if (!Cache::has($key)) {
-            Cache::put($key, 0, $ttl);
-        }
-
-        $count = Cache::increment($key);
-
-        return 'O' . $count . '/' . $period . '/' . $suffix;
+        return app(DocumentService::class)->generateMonthlyReference($date, $suffix, null);
     }
 
     // ── Liste ─────────────────────────────────────────────────────────────────
@@ -166,7 +153,9 @@ class EvaluationController extends Controller
             'approuve_par' => Auth::id(),
             'approuve_le' => now(),
             'signature_path' => $signPath,
-            'reference' => $request->filled('reference') ? $request->reference : $this->generateMonthlyReference(),
+            'reference' => $request->filled('reference')
+                ? $request->reference
+                : app(DocumentService::class)->generateMonthlyReference(null, null, $evaluation->stagiaire?->centre_id),
         ]);
 
         return redirect()->route('evaluations.show', $evaluation)

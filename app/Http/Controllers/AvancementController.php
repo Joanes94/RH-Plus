@@ -37,7 +37,7 @@ class AvancementController extends Controller
         $avancement = $service->traiterBonification($personnel, $contrat) ?? $service->traiterEchelon($personnel, $contrat);
 
         if (!$avancement) {
-            return back()->with('success', "Vérification faite : aucun avancement n'est dû aujourd'hui pour {$personnel->nom_complet}. (Rappel : le prochain avancement d'échelon se calcule à partir de la date de début de contrat, ou de la date « Échelon en vigueur depuis le » si elle est renseignée.)");
+            return back()->with('success', "Vérification faite : aucun avancement n'est dû aujourd'hui pour {$personnel->nom_complet}. (Rappel : l'avancement d'échelon se calcule à partir de la date d'entrée dans l'ISD, puis tous les 24 mois.)");
         }
 
         $libelle = $avancement->type === 'bonification' ? 'Bonification (58 ans)' : "Avancement d'échelon";
@@ -210,13 +210,12 @@ class AvancementController extends Controller
         // Vérifier que l'utilisateur est DRH/Directeur du centre du personnel concerné
         $personnelCentreId = $avancement->personnel?->centre_id;
 
-        $isDrhDuCentre = in_array($user->role, ['drh', 'directeur_centre', 'directeur'])
-            && ($user->isGlobal() || $user->centre_id === $personnelCentreId);
+        $isDrhDuCentre = (
+            $user->isDRH() || $user->isDirecteurCentre()
+        ) && ($user->isGlobal() || $user->centre_id === $personnelCentreId);
 
-        $isGlobalAdmin = $user->isGlobal() && in_array($user->role, ['admin', 'super_admin']);
-
-        if (!$isDrhDuCentre && !$isGlobalAdmin) {
-            abort(403, "Seul le DRH ou le Directeur du Centre peut valider un avancement d'échelon. La DDIS ne valide plus les avancements d'échelon.");
+        if (!$isDrhDuCentre) {
+            abort(403, "Seul le DRH ou le Directeur du Centre peut valider un avancement d'échelon.");
         }
 
         $service->approuverEchelon($avancement, $user);

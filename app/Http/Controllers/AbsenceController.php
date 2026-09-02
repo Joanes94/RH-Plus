@@ -193,7 +193,7 @@ class AbsenceController extends Controller
             'approuve_par'   => Auth::id(),
             'approuve_le'    => now(),
             'signature_path' => $signPath,
-            'reference'      => $this->doc->resolveReference($request->reference, now()),
+            'reference'      => $this->doc->resolveReference($request->reference, now(), null, $absence->personnel?->centre_id),
         ]);
 
         return redirect()->route('absences.show', $absence)
