@@ -7,12 +7,28 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Carbon\Carbon;
 
 class PasswordResetController extends Controller
 {
+    /**
+     * S'assure que la table password_reset_tokens existe dans la base.
+     */
+    protected function ensureTableExists(): void
+    {
+        if (!Schema::hasTable('password_reset_tokens')) {
+            Schema::create('password_reset_tokens', function (Blueprint $table) {
+                $table->string('email')->primary();
+                $table->string('token');
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+    }
+
     // ── Formulaire "Mot de passe oublié" ──────────────────────────────────────
     public function showForgotForm()
     {
@@ -22,6 +38,8 @@ class PasswordResetController extends Controller
     // ── Envoi du lien de réinitialisation ─────────────────────────────────────
     public function sendResetLink(Request $request)
     {
+        $this->ensureTableExists();
+
         $request->validate([
             'email' => 'required|email|exists:users,email',
         ], [
@@ -29,6 +47,7 @@ class PasswordResetController extends Controller
             'email.email'    => 'Adresse email invalide.',
             'email.exists'   => 'Aucun compte trouvé avec cette adresse email.',
         ]);
+
 
         // Générer un token sécurisé
         $token = Str::random(64);
@@ -53,12 +72,16 @@ class PasswordResetController extends Controller
 
         // Envoyer l'email
         try {
-            Mail::send('emails.reset-password', [
+            Mail::mailer('password_reset')->send('emails.reset-password', [
                 'user'     => $user,
                 'resetUrl' => $resetUrl,
                 'expire'   => 60, // minutes
             ], function ($message) use ($request, $user) {
-                $message->to($request->email, $user->nom_complet)
+                $message->from(
+                            config('mail.mailers.password_reset.from.address', 'crh@tekton.com'),
+                            config('mail.mailers.password_reset.from.name', 'CRH')
+                        )
+                        ->to($request->email, $user->nom_complet)
                         ->subject('Réinitialisation de votre mot de passe — RH Plus');
             });
 
@@ -73,7 +96,7 @@ class PasswordResetController extends Controller
                              ->with('success', '[MODE DEV] Email non envoyé — utilisez le lien ci-dessous :');
             }
 
-            return back()->withErrors(['email' => 'Erreur lors de l\'envoi de l\'email. Contactez l\'administrateur.']);
+            return back()->withErrors(['email' => 'Erreur lors de l\'envoi de l\'email de réinitialisation. Contactez l\'administrateur.']);
         }
     }
 
@@ -89,6 +112,8 @@ class PasswordResetController extends Controller
     // ── Enregistrer le nouveau mot de passe ───────────────────────────────────
     public function resetPassword(Request $request)
     {
+        $this->ensureTableExists();
+
         $request->validate([
             'token'    => 'required',
             'email'    => 'required|email|exists:users,email',

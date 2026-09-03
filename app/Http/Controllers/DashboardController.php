@@ -45,16 +45,16 @@ class DashboardController extends Controller
 
         $stats = [];
         foreach ($centres as $centre) {
-            $personnelsCentre = Personnel::where('centre_id', $centre->id)->enPoste();
+            $personnelsCentre = Personnel::where('centre_id', $centre->id)->enPoste()->with('contrats')->get();
 
             $stats[$centre->id] = [
                 'centre'       => $centre,
-                'total'        => (clone $personnelsCentre)->count(),
-                'hommes'       => (clone $personnelsCentre)->where('sexe', 'M')->count(),
-                'femmes'       => (clone $personnelsCentre)->where('sexe', 'F')->count(),
-                'cdd'          => (clone $personnelsCentre)->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'CDD'))->count(),
-                'cdi'          => (clone $personnelsCentre)->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'CDI'))->count(),
-                'prestataires' => (clone $personnelsCentre)->whereHas('contrats', fn($q) => $q->where('statut', 'actif')->where('type_contrat', 'Prestataire'))->count(),
+                'total'        => $personnelsCentre->count(),
+                'hommes'       => $personnelsCentre->where('sexe', 'M')->count(),
+                'femmes'       => $personnelsCentre->where('sexe', 'F')->count(),
+                'cdd'          => $personnelsCentre->filter(fn($p) => strtoupper($p->type_contrat_actuel ?? '') === 'CDD')->count(),
+                'cdi'          => $personnelsCentre->filter(fn($p) => strtoupper($p->type_contrat_actuel ?? '') === 'CDI')->count(),
+                'prestataires' => $personnelsCentre->filter(fn($p) => in_array(strtoupper($p->type_contrat_actuel ?? ''), ['PRESTATAIRE', 'PRESTATION']))->count(),
                 'stagiaires'   => Stagiaire::where('centre_id', $centre->id)->where('statut', 'en_cours')->count(),
             ];
         }

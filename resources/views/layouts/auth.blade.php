@@ -54,9 +54,16 @@
         {{-- Panneau droit formulaire --}}
         <div class="auth-panel-right">
             <div class="auth-form-container">
+                <div style="margin-bottom: 1.5rem;">
+                    <a href="{{ route('home') }}" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #64748b; text-decoration: none; font-weight: 600; transition: color 0.15s ease;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        <span>Retour à l'accueil</span>
+                    </a>
+                </div>
                 @yield('content')
             </div>
         </div>
+
     </div>
 
     <script src="{{ asset('js/app.js') }}"></script>

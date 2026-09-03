@@ -90,7 +90,7 @@ class PaySlipController extends Controller
     public function bulletin(PaySlip $paySlip)
     {
         $paySlip->load(['personnel.centre', 'payPeriod']);
-        
+
         // Encoder les images en base64 pour éviter les blocages de rendu d'impression
         $centre = $paySlip->personnel->centre;
         $logoBase64 = null;
@@ -123,7 +123,11 @@ class PaySlipController extends Controller
         }
 
         $viewName = ($centre && $centre->code === 'ST_JEAN') ? 'pay_slips.bulletin_st_jean' : 'pay_slips.bulletin';
-        return view($viewName, compact('paySlip', 'centre', 'logoBase64', 'enteteBase64', 'dioceseLogoBase64', 'evequePhotoBase64', 'stJeanPhotoBase64', 'personnelPhotoBase64'));
+        $html = view($viewName, compact('paySlip', 'centre', 'logoBase64', 'enteteBase64', 'dioceseLogoBase64', 'evequePhotoBase64', 'stJeanPhotoBase64', 'personnelPhotoBase64'))->render();
+
+        // Generate PDF with Dompdf
+        $pdf = \PDF::loadHTML($html);
+        return $pdf->stream($paySlip->id . '.pdf');
     }
 
     /**

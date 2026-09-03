@@ -54,6 +54,13 @@
         <a href="{{ route('pay-periods.virements', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="R4 - État de paiement Banque (Filtre par banque)">
             🏦 R4 - État de paiement
         </a>
+        <label style="display: inline-flex; align-items: center; gap: 0.3rem; margin-right: 0.5rem;">
+            <input type="checkbox" id="useExistingPdf" />
+            Utiliser les PDF existants (plus rapide, exact)
+        </label>
+        <button type="button" class="export-btn" id="btnDownloadZip" onclick="telechargerTousLesBulletinsZip()" style="background: #0284c7; color: #fff; border-color: #0284c7; font-weight: 600;" title="Télécharger tous les bulletins de paie du centre en archive ZIP">
+            📦 Télécharger Bulletins (ZIP)
+        </button>
         @if(!auth()->user()->isReadOnly())
         <form action="{{ route('pay-periods.envoyer-email', $payPeriod->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Confirmer l\'envoi par email des bulletins de paie de tout le personnel actif de {{ $selectedCentre->nom }} ?')">
             @csrf
@@ -680,6 +687,46 @@
 </style>
 @endpush
 
+{{-- Modale de Téléchargement ZIP des Bulletins --}}
+<dialog id="modalZipProgress" class="premium-modal" style="max-width: 520px; border-radius: 20px; border: 1px solid #e5e7eb; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+    <div style="padding: 1.75rem 2rem; text-align: center;">
+        <div style="width: 56px; height: 56px; border-radius: 16px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.25rem;">
+            📦
+        </div>
+        
+        <h3 id="zipModalTitle" style="font-size: 1.25rem; font-weight: 700; color: #111827; margin-bottom: 0.5rem;">
+            Téléchargement des Bulletins en ZIP
+        </h3>
+        
+        <p id="zipModalSubtitle" style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1.5rem;">
+            Centre : <strong>{{ $selectedCentre->nom }}</strong> — Période : <strong>{{ $payPeriod->label }}</strong>
+        </p>
+
+        <!-- Barre de progression -->
+        <div style="width: 100%; height: 12px; background: #f3f4f6; border-radius: 99px; overflow: hidden; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+            <div id="zipProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #0284c7, #0ea5e9); border-radius: 99px; transition: width 0.3s ease;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #6b7280; margin-bottom: 1.5rem;">
+            <span id="zipProgressText">Initialisation...</span>
+            <span id="zipProgressPercent" style="font-weight: 700; color: #0284c7;">0%</span>
+        </div>
+
+        <div id="zipCurrentAgent" style="font-size: 0.85rem; color: #374151; font-weight: 500; min-height: 22px; margin-bottom: 1.5rem; word-break: break-word;"></div>
+
+        <div style="display: flex; justify-content: center; gap: 0.75rem;">
+            <button type="button" id="btnCancelZip" class="action-btn-back" onclick="document.getElementById('modalZipProgress').close()">
+                Fermer
+            </button>
+        </div>
+    </div>
+</dialog>
+
+<!-- Scripts externes pour génération PDF & ZIP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
 <script>
     function openVariablesModal(slip) {
         document.getElementById('varAgentName').innerText = slip.personnel.nom + ' ' + slip.personnel.prenoms;
@@ -727,6 +774,167 @@
         document.getElementById('varNumeroCompte').value = slip.numero_compte || '';
         
         document.getElementById('modalVariables').showModal();
+    }
+
+    /**
+     * Télécharge tous les bulletins de paie du centre courant au format PDF dans une archive ZIP
+     */
+    async function telechargerTousLesBulletinsZip() {
+        const btn = document.getElementById('btnDownloadZip');
+        const modal = document.getElementById('modalZipProgress');
+        const progressBar = document.getElementById('zipProgressBar');
+        const progressText = document.getElementById('zipProgressText');
+        const progressPercent = document.getElementById('zipProgressPercent');
+        const currentAgent = document.getElementById('zipCurrentAgent');
+        const cancelBtn = document.getElementById('btnCancelZip');
+
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Préparation...';
+
+        try {
+            // 1. Récupérer la liste des bulletins du centre
+            const response = await fetch("{{ route('pay-periods.bulletins-list', [$payPeriod->id, $selectedCentre->id]) }}", {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error("Erreur lors de la récupération de la liste des bulletins.");
+            }
+
+            const data = await response.json();
+            const list = data.bulletins || [];
+
+            if (list.length === 0) {
+                alert("Aucun bulletin de paie actif trouvé pour ce centre.");
+                btn.disabled = false;
+                btn.innerHTML = '📦 Télécharger Bulletins (ZIP)';
+                return;
+            }
+
+            // 2. Ouvrir la modale de progression
+            modal.showModal();
+            progressBar.style.width = '0%';
+            progressPercent.innerText = '0%';
+            progressText.innerText = `0 / ${list.length} bulletin(s)`;
+            currentAgent.innerText = "Démarrage de la génération...";
+            cancelBtn.style.display = 'none';
+
+            const zip = new JSZip();
+
+            // Créer une iframe pour le rendu graphique complet
+            let iframe = document.getElementById('zipRenderIframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'zipRenderIframe';
+                iframe.style.position = 'fixed';
+                iframe.style.top = '0';
+                iframe.style.left = '0';
+                iframe.style.width = '794px';
+                iframe.style.height = '1123px';
+                iframe.style.zIndex = '-9999';
+                iframe.style.opacity = '1';
+                iframe.style.pointerEvents = 'none';
+                iframe.style.border = 'none';
+                iframe.style.background = '#ffffff';
+                document.body.appendChild(iframe);
+            }
+
+            // 3. Traiter chaque bulletin séquentiellement
+            for (let i = 0; i < list.length; i++) {
+                const item = list[i];
+                const count = i + 1;
+                const percent = Math.round((count / list.length) * 90); // 0 à 90% pendant le rendu
+
+                progressBar.style.width = `${percent}%`;
+                progressPercent.innerText = `${percent}%`;
+                progressText.innerText = `${count} / ${list.length} bulletin(s)`;
+
+                // Determine whether to use existing PDFs or render HTML
+                const useExisting = document.getElementById('useExistingPdf')?.checked;
+                let pdfBlob;
+                if (useExisting) {
+                    // Directly download the pre‑generated PDF
+                    const pdfRes = await fetch(item.url, { headers: { 'Accept': 'application/pdf' } });
+                    if (!pdfRes.ok) throw new Error(`Erreur lors du téléchargement du PDF pour ${item.filename}`);
+                    pdfBlob = await pdfRes.blob();
+                } else {
+                    // Retrieve the full HTML of the bulletin (with base64 images)
+                    const htmlRes = await fetch(item.url);
+                    const htmlText = await htmlRes.text();
+
+                    // Write HTML into the iframe
+                    iframe.contentDocument.open();
+                    iframe.contentDocument.write('<base href="' + window.location.origin + '/">' + htmlText);
+                    iframe.contentDocument.close();
+
+                    // Wait for fonts and images to load
+                    await new Promise(r => setTimeout(r, 200));
+                    try {
+                        if (iframe.contentDocument.fonts) {
+                            await iframe.contentDocument.fonts.ready;
+                        }
+                    } catch (e) {}
+
+                    const iDoc = iframe.contentDocument;
+                    const targetElement = iDoc.querySelector('.bulletin-container') || iDoc.body;
+
+                    // High‑fidelity options for A4 portrait
+                    const opt = {
+                        margin:       [3, 3, 3, 3],
+                        filename:     item.filename,
+                        image:        { type: 'jpeg', quality: 0.98 },
+                        html2canvas:  {
+                            scale: 2,
+                            useCORS: true,
+                            scrollY: 0,
+                            scrollX: 0,
+                            windowWidth: 794,
+                            logging: false
+                        },
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
+
+                    pdfBlob = await html2pdf().set(opt).from(targetElement).output('blob');
+                }
+                // Add the PDF blob to the ZIP archive
+                zip.file(item.filename, pdfBlob);
+            }
+
+            // Nettoyer l'iframe
+            if (iframe && iframe.parentNode) {
+                iframe.parentNode.removeChild(iframe);
+            }
+
+            // 4. Génération de l'archive ZIP finale
+            progressBar.style.width = '95%';
+            progressPercent.innerText = '95%';
+            progressText.innerText = 'Compression de l\'archive ZIP...';
+            currentAgent.innerText = "Création du fichier ZIP final en cours...";
+
+            const zipBlob = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            });
+
+            // 5. Sauvegarder / Télécharger le fichier ZIP
+            saveAs(zipBlob, data.zip_filename);
+
+            progressBar.style.width = '100%';
+            progressPercent.innerText = '100%';
+            progressText.innerText = 'Téléchargement terminé !';
+            currentAgent.innerHTML = `<span style="color: #059669; font-weight: 700;">✅ ${list.length} bulletins générés avec succès dans l'archive ${data.zip_filename}</span>`;
+            cancelBtn.style.display = 'inline-block';
+            cancelBtn.innerText = 'Fermer';
+
+        } catch (error) {
+            console.error("Erreur génération ZIP bulletins:", error);
+            alert("Une erreur est survenue lors de la génération du fichier ZIP : " + error.message);
+            modal.close();
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '📦 Télécharger Bulletins (ZIP)';
+        }
     }
 </script>
 @endsection

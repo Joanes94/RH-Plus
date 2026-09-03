@@ -36,10 +36,12 @@ return [
     */
 
     'mailers' => [
-
         'smtp' => [
             'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME'),
+            'scheme' => match (strtolower(trim((string) env('MAIL_SCHEME', env('MAIL_ENCRYPTION', 'smtp'))))) {
+                'ssl', 'smtps' => 'smtps',
+                default => 'smtp',
+            },
             'url' => env('MAIL_URL'),
             'host' => env('MAIL_HOST', '127.0.0.1'),
             'port' => env('MAIL_PORT', 2525),
@@ -47,6 +49,44 @@ return [
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ],
+
+        'password_reset' => [
+            'transport' => 'smtp',
+            'scheme' => match (strtolower(trim((string) env('PASSWORD_RESET_MAIL_SCHEME', env('PASSWORD_RESET_MAIL_ENCRYPTION', env('MAIL_SCHEME', env('MAIL_ENCRYPTION', 'smtp'))))))) {
+                'ssl', 'smtps' => 'smtps',
+                default => 'smtp',
+            },
+            'url' => env('PASSWORD_RESET_MAIL_URL', env('MAIL_URL')),
+            'host' => env('PASSWORD_RESET_MAIL_HOST', env('MAIL_HOST', '127.0.0.1')),
+            'port' => env('PASSWORD_RESET_MAIL_PORT', env('MAIL_PORT', 2525)),
+            'username' => env('PASSWORD_RESET_MAIL_USERNAME', env('MAIL_USERNAME')),
+            'password' => env('PASSWORD_RESET_MAIL_PASSWORD', env('MAIL_PASSWORD')),
+            'from' => [
+                'address' => env('PASSWORD_RESET_MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS', 'crh@tekton.com')),
+                'name' => env('PASSWORD_RESET_MAIL_FROM_NAME', 'CRH'),
+            ],
+            'timeout' => null,
+            'local_domain' => env('PASSWORD_RESET_MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ],
+
+        'payroll' => [
+            'transport' => 'smtp',
+            'scheme' => match (strtolower(trim((string) env('PAYROLL_MAIL_SCHEME', env('PAYROLL_MAIL_ENCRYPTION', env('MAIL_SCHEME', env('MAIL_ENCRYPTION', 'smtp'))))))) {
+                'ssl', 'smtps' => 'smtps',
+                default => 'smtp',
+            },
+            'url' => env('PAYROLL_MAIL_URL', env('MAIL_URL')),
+            'host' => env('PAYROLL_MAIL_HOST', env('MAIL_HOST', '127.0.0.1')),
+            'port' => env('PAYROLL_MAIL_PORT', env('MAIL_PORT', 2525)),
+            'username' => env('PAYROLL_MAIL_USERNAME', env('MAIL_USERNAME')),
+            'password' => env('PAYROLL_MAIL_PASSWORD', env('MAIL_PASSWORD')),
+            'from' => [
+                'address' => env('PAYROLL_MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS', 'ddis@tekton.com')),
+                'name' => env('PAYROLL_MAIL_FROM_NAME', 'DDIS'),
+            ],
+            'timeout' => null,
+            'local_domain' => env('PAYROLL_MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
         'ses' => [

@@ -24,11 +24,14 @@ use App\Http\Controllers\PaySlipController;
 use App\Http\Controllers\PayAdjustmentController;
 use Illuminate\Support\Facades\Route;
 
-// ─── Routes publiques ────────────────────────────────────────────────────────
+// ─── Route d'accueil publique ────────────────────────────────────────────────
+Route::view('/', 'welcome')->name('home');
+
+// ─── Routes invités (Non connectés) ──────────────────────────────────────────
 Route::middleware('guest')->group(function () {
-    Route::get('/',                          [AuthController::class, 'showLogin'])->name('home');
     Route::get('/login',                     [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login',                    [AuthController::class, 'login'])->name('login.post');
+
 
     // Réinitialisation de mot de passe
     Route::get('/forgot-password',           [PasswordResetController::class, 'showForgotForm'])->name('password.forgot');
@@ -257,11 +260,12 @@ Route::middleware('auth')->group(function () {
 
 
         // Exports globaux de la période
-        Route::get('/periodes/{payPeriod}/centres/{centre}/livre',      [PayPeriodController::class, 'livreDePaie'])->name('pay-periods.livre');
-        Route::get('/periodes/{payPeriod}/centres/{centre}/registre',   [PayPeriodController::class, 'registreDePaie'])->name('pay-periods.registre');
-        Route::get('/periodes/{payPeriod}/centres/{centre}/virements',  [PayPeriodController::class, 'virements'])->name('pay-periods.virements');
-        Route::get('/periodes/{payPeriod}/centres/{centre}/cnss',       [PayPeriodController::class, 'declarationCnss'])->name('pay-periods.cnss');
-        Route::get('/periodes/{payPeriod}/centres/{centre}/its',        [PayPeriodController::class, 'declarationIts'])->name('pay-periods.its');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/livre',          [PayPeriodController::class, 'livreDePaie'])->name('pay-periods.livre');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/registre',       [PayPeriodController::class, 'registreDePaie'])->name('pay-periods.registre');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/virements',      [PayPeriodController::class, 'virements'])->name('pay-periods.virements');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/cnss',           [PayPeriodController::class, 'declarationCnss'])->name('pay-periods.cnss');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/its',            [PayPeriodController::class, 'declarationIts'])->name('pay-periods.its');
+        Route::get('/periodes/{payPeriod}/centres/{centre}/bulletins-list', [PayPeriodController::class, 'bulletinsList'])->name('pay-periods.bulletins-list');
 
         // Bulletins individuels
         Route::get('/bulletins/{paySlip}',                [PaySlipController::class, 'show'])->name('pay-slips.show');
