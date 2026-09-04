@@ -10,7 +10,8 @@ use App\Services\PayrollService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-
+use ZipArchive;
+use App\Http\Controllers\PaySlipController;
 class PayPeriodController extends Controller
 {
     protected $payrollService;
@@ -327,7 +328,7 @@ class PayPeriodController extends Controller
             $safeNom = preg_replace('/[^A-Za-z0-9_\-]/', '_', $personnel->nom ?? 'NOM');
             $safePrenom = preg_replace('/[^A-Za-z0-9_\-]/', '_', $personnel->prenoms ?? 'PRENOM');
             $matricule = $personnel->matricule ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $personnel->matricule) : $slip->id;
-            
+
             $filename = "Bulletin_Paie_{$safeNom}_{$safePrenom}_{$matricule}_{$payPeriod->code}.pdf";
 
             return [
@@ -349,6 +350,109 @@ class PayPeriodController extends Controller
             'total'        => $items->count(),
             'bulletins'    => $items,
         ]);
+    }
+
+    /**
+     * Génère un fichier ZIP contenant tous les bulletins PDF d'un centre pour une période.
+     */
+    public function bulletinsZip(PayPeriod $payPeriod, Centre $centre)
+    {
+        $user = Auth::user();
+        if (!$user->isGlobal() && $user->centre_id !== $centre->id) {
+            return response()->json(['error' => 'Accès non autorisé aux données de ce centre.'], 403);
+        }
+
+        $slips = $this->getPayableSlips($payPeriod->id, $centre->id);
+        if ($slips->isEmpty()) {
+            return response()->json(['error' => 'Aucun bulletin trouvé pour ce centre.'], 404);
+        }
+
+        // Garde-fous : la génération de nombreux PDF (gros centres) peut être longue / gourmande en mémoire.
+        @set_time_limit(300);
+        if (function_exists('ini_get') && (int) ini_get('memory_limit') > 0 && (int) ini_get('memory_limit') < 512) {
+            @ini_set('memory_limit', '512M');
+        }
+
+        $safeCentre = preg_replace('/[^A-Za-z0-9_\-]/', '_', $centre->reference_suffix ?: $centre->code ?: $centre->nom);
+        $zipFilename = "Bulletins_Paie_{$safeCentre}_{$payPeriod->code}.zip";
+        $tempPath = storage_path('app/temp/' . $zipFilename);
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            return response()->json(['error' => 'Impossible de créer le fichier ZIP.'], 500);
+        }
+
+        try {
+            // Images communes au centre : calculées UNE SEULE FOIS (et non à chaque bulletin).
+            $logoBase64 = $enteteBase64 = null;
+            if ($centre->logo_path) {
+                $logoBase64 = $this->imageToBase64(public_path('storage/' . $centre->logo_path));
+            }
+            if ($centre->entete_image_path) {
+                $enteteBase64 = $this->imageToBase64(public_path('storage/' . $centre->entete_image_path));
+            }
+            $dioceseLogoBase64 = $this->imageToBase64(public_path('images/diocese-logo.png'))
+                ?: $this->imageToBase64(public_path('images/logo.png'));
+            $evequePhotoBase64 = $this->imageToBase64(public_path('images/letterhead/photo_eveque.jpeg'));
+            $stJeanPhotoBase64 = $this->imageToBase64(public_path('images/letterhead/photo_st_jean.png'))
+                ?: $this->imageToBase64(public_path('storage/letterhead/logo_st_jean_maria_gleta.png'));
+
+            $viewName = ($centre->code === 'ST_JEAN') ? 'pay_slips.bulletin_st_jean' : 'pay_slips.bulletin';
+
+            foreach ($slips as $slip) {
+                $slip->load(['personnel.centre', 'payPeriod']);
+                $personnel = $slip->personnel;
+
+                $safeNom = preg_replace('/[^A-Za-z0-9_\-]/', '_', $personnel->nom ?? 'NOM');
+                $safePrenom = preg_replace('/[^A-Za-z0-9_\-]/', '_', $personnel->prenoms ?? 'PRENOM');
+                $matricule = $personnel->matricule ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $personnel->matricule) : $slip->id;
+                $filename = "Bulletin_Paie_{$safeNom}_{$safePrenom}_{$matricule}_{$payPeriod->code}.pdf";
+
+                // Seule la photo de l'employé change d'un bulletin à l'autre.
+                $personnelPhotoBase64 = null;
+                if ($personnel && $personnel->photo_path) {
+                    $personnelPhotoBase64 = $this->imageToBase64(public_path('storage/' . $personnel->photo_path));
+                }
+
+                $paySlip = $slip;
+                $html = view($viewName, compact('paySlip', 'centre', 'logoBase64', 'enteteBase64', 'dioceseLogoBase64', 'evequePhotoBase64', 'stJeanPhotoBase64', 'personnelPhotoBase64'))
+                    ->render();
+                $pdf = \PDF::loadHTML($html);
+                $zip->addFromString($filename, $pdf->output());
+
+                // Libère la mémoire utilisée par Dompdf avant de passer au bulletin suivant.
+                unset($pdf, $html);
+            }
+
+            $zip->close();
+        } catch (\Throwable $e) {
+            $zip->close();
+            if (file_exists($tempPath)) {
+                @unlink($tempPath);
+            }
+            \Illuminate\Support\Facades\Log::error('Erreur génération ZIP bulletins pour le centre ' . $centre->id . ' / période ' . $payPeriod->id . ' : ' . $e->getMessage());
+            return response()->json(['error' => "Erreur lors de la génération de l'archive ZIP : " . $e->getMessage()], 500);
+        }
+
+        return response()->download($tempPath, $zipFilename)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Convertit une image locale en chaîne base64.
+     * (Nécessaire pour bulletinsZip : méthode dupliquée depuis PaySlipController
+     * car celle-ci est privée et n'est pas héritée entre les deux contrôleurs.)
+     */
+    private function imageToBase64(string $path): ?string
+    {
+        if (!file_exists($path)) {
+            return null;
+        }
+        $type = pathinfo($path, PATHINFO_EXTENSION);
+        $data = file_get_contents($path);
+        return 'data:image/' . $type . ';base64,' . base64_encode($data);
     }
 
     /**

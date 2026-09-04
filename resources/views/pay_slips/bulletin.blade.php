@@ -204,13 +204,6 @@
 </head>
 <body>
 
-    {{-- Bouton d'impression --}}
-    <div class="no-print" style="margin-bottom: 8px; text-align: right;">
-        <button onclick="window.print()" style="padding: 6px 16px; background-color: #1a5c45; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11.5px;">
-            🖨️ Imprimer le bulletin
-        </button>
-    </div>
-
     @php
         $centre = $centre ?? ($paySlip->centre ?? $paySlip->personnel->centre ?? null);
         $personnel = $paySlip->personnel;
@@ -519,4 +512,3 @@
 
 </body>
 </html>
-

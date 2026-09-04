@@ -54,10 +54,6 @@
         <a href="{{ route('pay-periods.virements', [$payPeriod->id, $selectedCentre->id]) }}" target="_blank" class="export-btn" title="R4 - État de paiement Banque (Filtre par banque)">
             🏦 R4 - État de paiement
         </a>
-        <label style="display: inline-flex; align-items: center; gap: 0.3rem; margin-right: 0.5rem;">
-            <input type="checkbox" id="useExistingPdf" />
-            Utiliser les PDF existants (plus rapide, exact)
-        </label>
         <button type="button" class="export-btn" id="btnDownloadZip" onclick="telechargerTousLesBulletinsZip()" style="background: #0284c7; color: #fff; border-color: #0284c7; font-weight: 600;" title="Télécharger tous les bulletins de paie du centre en archive ZIP">
             📦 Télécharger Bulletins (ZIP)
         </button>
@@ -722,10 +718,7 @@
     </div>
 </dialog>
 
-<!-- Scripts externes pour génération PDF & ZIP -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
     function openVariablesModal(slip) {
@@ -777,7 +770,12 @@
     }
 
     /**
-     * Télécharge tous les bulletins de paie du centre courant au format PDF dans une archive ZIP
+     * Télécharge tous les bulletins de paie du centre courant au format PDF dans une archive ZIP.
+     * On "recycle" ici chaque PDF déjà généré individuellement (route pay-slips.pdf, identique
+     * au bouton "Télécharger" à l'unité) et on les assemble en ZIP côté navigateur avec JSZip.
+     * Cette approche évite de générer des dizaines de PDF dans un seul processus PHP côté serveur
+     * (ce qui saturait la mémoire pour les gros centres) : chaque PDF est produit dans sa propre
+     * requête HTTP légère, indépendante des autres.
      */
     async function telechargerTousLesBulletinsZip() {
         const btn = document.getElementById('btnDownloadZip');
@@ -792,16 +790,16 @@
         btn.innerHTML = '⏳ Préparation...';
 
         try {
-            // 1. Récupérer la liste des bulletins du centre
-            const response = await fetch("{{ route('pay-periods.bulletins-list', [$payPeriod->id, $selectedCentre->id]) }}", {
+            // 1. Récupérer la liste des bulletins du centre (léger, JSON uniquement)
+            const listResponse = await fetch("{{ route('pay-periods.bulletins-list', [$payPeriod->id, $selectedCentre->id]) }}", {
                 headers: { 'Accept': 'application/json' }
             });
 
-            if (!response.ok) {
+            if (!listResponse.ok) {
                 throw new Error("Erreur lors de la récupération de la liste des bulletins.");
             }
 
-            const data = await response.json();
+            const data = await listResponse.json();
             const list = data.bulletins || [];
 
             if (list.length === 0) {
@@ -816,93 +814,28 @@
             progressBar.style.width = '0%';
             progressPercent.innerText = '0%';
             progressText.innerText = `0 / ${list.length} bulletin(s)`;
-            currentAgent.innerText = "Démarrage de la génération...";
+            currentAgent.innerText = "Récupération des bulletins déjà générés...";
             cancelBtn.style.display = 'none';
 
             const zip = new JSZip();
 
-            // Créer une iframe pour le rendu graphique complet
-            let iframe = document.getElementById('zipRenderIframe');
-            if (!iframe) {
-                iframe = document.createElement('iframe');
-                iframe.id = 'zipRenderIframe';
-                iframe.style.position = 'fixed';
-                iframe.style.top = '0';
-                iframe.style.left = '0';
-                iframe.style.width = '794px';
-                iframe.style.height = '1123px';
-                iframe.style.zIndex = '-9999';
-                iframe.style.opacity = '1';
-                iframe.style.pointerEvents = 'none';
-                iframe.style.border = 'none';
-                iframe.style.background = '#ffffff';
-                document.body.appendChild(iframe);
-            }
-
-            // 3. Traiter chaque bulletin séquentiellement
+            // 3. Récupérer chaque PDF individuel (déjà généré côté serveur, un par un) et l'ajouter au ZIP
             for (let i = 0; i < list.length; i++) {
                 const item = list[i];
                 const count = i + 1;
-                const percent = Math.round((count / list.length) * 90); // 0 à 90% pendant le rendu
+                const percent = Math.round((count / list.length) * 90); // 0 à 90% pendant la récupération
 
                 progressBar.style.width = `${percent}%`;
                 progressPercent.innerText = `${percent}%`;
                 progressText.innerText = `${count} / ${list.length} bulletin(s)`;
+                currentAgent.innerText = item.nom_complet || '';
 
-                // Determine whether to use existing PDFs or render HTML
-                const useExisting = document.getElementById('useExistingPdf')?.checked;
-                let pdfBlob;
-                if (useExisting) {
-                    // Directly download the pre‑generated PDF
-                    const pdfRes = await fetch(item.url, { headers: { 'Accept': 'application/pdf' } });
-                    if (!pdfRes.ok) throw new Error(`Erreur lors du téléchargement du PDF pour ${item.filename}`);
-                    pdfBlob = await pdfRes.blob();
-                } else {
-                    // Retrieve the full HTML of the bulletin (with base64 images)
-                    const htmlRes = await fetch(item.url);
-                    const htmlText = await htmlRes.text();
-
-                    // Write HTML into the iframe
-                    iframe.contentDocument.open();
-                    iframe.contentDocument.write('<base href="' + window.location.origin + '/">' + htmlText);
-                    iframe.contentDocument.close();
-
-                    // Wait for fonts and images to load
-                    await new Promise(r => setTimeout(r, 200));
-                    try {
-                        if (iframe.contentDocument.fonts) {
-                            await iframe.contentDocument.fonts.ready;
-                        }
-                    } catch (e) {}
-
-                    const iDoc = iframe.contentDocument;
-                    const targetElement = iDoc.querySelector('.bulletin-container') || iDoc.body;
-
-                    // High‑fidelity options for A4 portrait
-                    const opt = {
-                        margin:       [3, 3, 3, 3],
-                        filename:     item.filename,
-                        image:        { type: 'jpeg', quality: 0.98 },
-                        html2canvas:  {
-                            scale: 2,
-                            useCORS: true,
-                            scrollY: 0,
-                            scrollX: 0,
-                            windowWidth: 794,
-                            logging: false
-                        },
-                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                    };
-
-                    pdfBlob = await html2pdf().set(opt).from(targetElement).output('blob');
+                const pdfRes = await fetch(item.url, { headers: { 'Accept': 'application/pdf' } });
+                if (!pdfRes.ok) {
+                    throw new Error(`Erreur lors du téléchargement du bulletin de ${item.nom_complet || item.filename}.`);
                 }
-                // Add the PDF blob to the ZIP archive
+                const pdfBlob = await pdfRes.blob();
                 zip.file(item.filename, pdfBlob);
-            }
-
-            // Nettoyer l'iframe
-            if (iframe && iframe.parentNode) {
-                iframe.parentNode.removeChild(iframe);
             }
 
             // 4. Génération de l'archive ZIP finale
@@ -917,20 +850,30 @@
                 compressionOptions: { level: 6 }
             });
 
-            // 5. Sauvegarder / Télécharger le fichier ZIP
-            saveAs(zipBlob, data.zip_filename);
+            // 5. Téléchargement du fichier ZIP
+            const url = window.URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = data.zip_filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
 
             progressBar.style.width = '100%';
             progressPercent.innerText = '100%';
             progressText.innerText = 'Téléchargement terminé !';
-            currentAgent.innerHTML = `<span style="color: #059669; font-weight: 700;">✅ ${list.length} bulletins générés avec succès dans l'archive ${data.zip_filename}</span>`;
+            currentAgent.innerHTML = `<span style="color: #059669; font-weight: 700;">✅ ${list.length} bulletins assemblés avec succès dans l'archive ${data.zip_filename}</span>`;
             cancelBtn.style.display = 'inline-block';
             cancelBtn.innerText = 'Fermer';
 
         } catch (error) {
             console.error("Erreur génération ZIP bulletins:", error);
-            alert("Une erreur est survenue lors de la génération du fichier ZIP : " + error.message);
-            modal.close();
+            currentAgent.innerHTML = `<span style="color: #dc2626; font-weight: 700;">❌ ${error.message}</span>`;
+            progressText.innerText = 'Erreur';
+            cancelBtn.style.display = 'inline-block';
+            cancelBtn.innerText = 'Fermer';
+            if (!modal.open) modal.showModal();
         } finally {
             btn.disabled = false;
             btn.innerHTML = '📦 Télécharger Bulletins (ZIP)';

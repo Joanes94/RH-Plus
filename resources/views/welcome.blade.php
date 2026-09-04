@@ -533,9 +533,32 @@
         .institutions-content {
             position: relative;
             z-index: 2;
-            padding: 4.5rem 3rem;
+            padding: 3.5rem 3rem 4.5rem;
             text-align: center;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 253, 244, 0.95) 100%);
+        }
+
+        .institutions-illustration-wrap {
+            max-width: 820px;
+            margin: 0 auto 2.2rem;
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: 0 12px 35px rgba(26, 92, 69, 0.16);
+            border: 1px solid rgba(26, 92, 69, 0.18);
+            background: #ffffff;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .institutions-illustration-wrap:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 45px rgba(26, 92, 69, 0.22);
+        }
+
+        .institutions-illustration-img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            display: block;
         }
 
         .centers-pills {
@@ -570,90 +593,7 @@
             box-shadow: 0 8px 20px rgba(26, 92, 69, 0.12);
         }
 
-        /* ── Section Partenariat & Synergie (Photo Homme d'Affaires) ── */
-        .partnership-section {
-            max-width: 1280px;
-            margin: 0 auto 5rem;
-            padding: 0 2rem;
-            display: grid;
-            grid-template-columns: 1fr 1.15fr;
-            align-items: center;
-            gap: 3.5rem;
-        }
 
-        .partnership-visual-card {
-            position: relative;
-            background: #ffffff;
-            border-radius: 28px;
-            padding: 10px;
-            box-shadow: var(--shadow-md);
-            border: 1px solid rgba(26, 92, 69, 0.15);
-            transition: transform 0.3s ease;
-        }
-
-        .partnership-visual-card:hover {
-            transform: translateY(-4px);
-        }
-
-        .partnership-img {
-            width: 100%;
-            height: 380px;
-            object-fit: cover;
-            border-radius: 20px;
-            display: block;
-        }
-
-        .partnership-features {
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-            margin-top: 1.8rem;
-        }
-
-        .partnership-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            background: #ffffff;
-            padding: 1.1rem 1.4rem;
-            border-radius: 16px;
-            border: 1px solid var(--border-light);
-            box-shadow: var(--shadow-sm);
-            transition: all 0.25s ease;
-        }
-
-        .partnership-item:hover {
-            border-color: var(--primary-border);
-            transform: translateX(4px);
-            background: var(--primary-light);
-        }
-
-        .partnership-item-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            background: var(--primary-light);
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-
-        .partnership-item h4 {
-            font-size: 1.02rem;
-            font-weight: 700;
-            color: var(--text-title);
-            margin-bottom: 0.25rem;
-        }
-
-        .partnership-item p {
-            font-size: 0.88rem;
-            color: var(--text-muted);
-            line-height: 1.5;
-            margin: 0;
-        }
 
         /* ── CTA Final Lumineux avec Arrière-plan Stéthoscope ────────── */
         .cta-box {
@@ -779,8 +719,6 @@
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
             .stat-item { border-right: none; }
             .floating-badge { display: none; }
-            .partnership-section { grid-template-columns: 1fr; gap: 2.5rem; text-align: center; }
-            .partnership-features { text-align: left; }
         }
 
         @media (max-width: 640px) {
@@ -956,46 +894,7 @@
         </div>
     </section>
 
-    <!-- Section Partenariat & Synergie RH (Photo Homme d'Affaires) -->
-    <section class="partnership-section">
-        <div class="partnership-visual-card">
-            <img src="{{ asset('images/landing/business_handshake.jpg') }}" alt="Partenariat & Gouvernance RH" class="partnership-img">
-        </div>
 
-        <div>
-            <span class="section-tag">Gouvernance & Synergie</span>
-            <h2 class="section-title" style="margin-bottom: 0.8rem;">Une gouvernance concertée pour valoriser chaque collaborateur</h2>
-            <p class="section-desc">
-                TEKTON SIRH renforce le lien de confiance entre la <strong>Direction Diocésaine de la Santé (DDIS)</strong>, les équipes de direction hospitalières et l'ensemble du personnel soignant et administratif.
-            </p>
-
-            <div class="partnership-features">
-                <div class="partnership-item">
-                    <div class="partnership-item-icon">🤝</div>
-                    <div>
-                        <h4>Engagement & Reconnaissance des Talents</h4>
-                        <p>Valorisation des compétences, avancements à l'ancienneté équitables et fidélisation des professionnels de santé.</p>
-                    </div>
-                </div>
-
-                <div class="partnership-item">
-                    <div class="partnership-item-icon">📑</div>
-                    <div>
-                        <h4>Sécurité Juridique & Rigueur Contractuelle</h4>
-                        <p>Contrats CDD, CDI et prestations strictement alignés sur le Code du travail béninois et la Convention Collective.</p>
-                    </div>
-                </div>
-
-                <div class="partnership-item">
-                    <div class="partnership-item-icon">⚖️</div>
-                    <div>
-                        <h4>Dialogue Social & Climat de Travail Serein</h4>
-                        <p>Transparence dans les traitements, clarté des bulletins de paie et écoute continue des besoins du terrain.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Section Immersion Médicale & Centres Rattachés -->
     <section id="institutions" class="institutions-banner">
@@ -1003,7 +902,11 @@
             <img src="{{ asset('images/landing/hero_medical.jpg') }}" alt="Équipe Médicale" class="institutions-bg-img">
             
             <div class="institutions-content">
+                <div class="institutions-illustration-wrap">
+                    <img src="{{ asset('images/landing/centre_sante_catholique.jpg') }}" alt="Hôpital et Centre de Santé Catholique Diocésain" class="institutions-illustration-img">
+                </div>
                 <span class="section-tag">Réseau Sanitaire Diocésain</span>
+
                 <h2 class="section-title">Les Formations Sanitaires Rattachées</h2>
                 <p class="section-desc">
                     TEKTON SIRH unifie les hôpitaux et centres de santé sous la tutelle de la <strong>Direction Diocésaine de la Santé (DDIS)</strong>.

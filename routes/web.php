@@ -266,7 +266,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/periodes/{payPeriod}/centres/{centre}/cnss',           [PayPeriodController::class, 'declarationCnss'])->name('pay-periods.cnss');
         Route::get('/periodes/{payPeriod}/centres/{centre}/its',            [PayPeriodController::class, 'declarationIts'])->name('pay-periods.its');
         Route::get('/periodes/{payPeriod}/centres/{centre}/bulletins-list', [PayPeriodController::class, 'bulletinsList'])->name('pay-periods.bulletins-list');
-
+        Route::get('/periodes/{payPeriod}/centres/{centre}/bulletins-zip', [PayPeriodController::class, 'bulletinsZip'])->name('pay-periods.bulletins-zip');
         // Bulletins individuels
         Route::get('/bulletins/{paySlip}',                [PaySlipController::class, 'show'])->name('pay-slips.show');
         Route::put('/bulletins/{paySlip}',                [PaySlipController::class, 'update'])->name('pay-slips.update');

@@ -127,7 +127,11 @@ class PaySlipController extends Controller
 
         // Generate PDF with Dompdf
         $pdf = \PDF::loadHTML($html);
-        return $pdf->stream($paySlip->id . '.pdf');
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "inline; filename=\"{$paySlip->id}.pdf\"",
+        ]);
+
     }
 
     /**
