@@ -262,6 +262,21 @@ class PayPeriodController extends Controller
         $errors = [];
         $docService = new \App\Services\DocumentService();
 
+        // Images communes au centre : calculées une seule fois (identique à bulletinsZip)
+        $logoBase64 = $enteteBase64 = null;
+        if ($centre->logo_path) {
+            $logoBase64 = $this->imageToBase64(public_path('storage/' . $centre->logo_path));
+        }
+        if ($centre->entete_image_path) {
+            $enteteBase64 = $this->imageToBase64(public_path('storage/' . $centre->entete_image_path));
+        }
+        $dioceseLogoBase64 = $this->imageToBase64(public_path('images/diocese-logo.png'))
+            ?: $this->imageToBase64(public_path('images/logo.png'));
+        $evequePhotoBase64 = $this->imageToBase64(public_path('images/letterhead/photo_eveque.jpeg'));
+        $stJeanPhotoBase64 = $this->imageToBase64(public_path('images/letterhead/photo_st_jean.png'))
+            ?: $this->imageToBase64(public_path('storage/letterhead/logo_st_jean_maria_gleta.png'));
+        $viewName = ($centre->code === 'ST_JEAN') ? 'pay_slips.bulletin_st_jean' : 'pay_slips.bulletin';
+
         foreach ($slips as $slip) {
             $personnel = $slip->personnel;
             if (!$personnel || empty($personnel->email)) {
@@ -274,20 +289,38 @@ class PayPeriodController extends Controller
                 $subject = "Votre bulletin de paie - " . $payPeriod->label . " (" . $centre->nom . ")";
                 $drhInfo = $docService->resolveDrhCentre($personnel);
 
-                \Illuminate\Support\Facades\Mail::mailer('payroll')->send('pay_slips.bulletin_email', [
-                    'paySlip'   => $slip,
-                    'centre'    => $centre,
+                // Génère le bulletin en PDF — exactement le même rendu que le téléchargement individuel / le ZIP.
+                $personnelPhotoBase64 = null;
+                if ($personnel->photo_path) {
+                    $personnelPhotoBase64 = $this->imageToBase64(public_path('storage/' . $personnel->photo_path));
+                }
+                $paySlip = $slip;
+                $html = view($viewName, compact('paySlip', 'centre', 'logoBase64', 'enteteBase64', 'dioceseLogoBase64', 'evequePhotoBase64', 'stJeanPhotoBase64', 'personnelPhotoBase64'))
+                    ->render();
+                $pdf = \PDF::loadHTML($html);
+                $pdfContent = $pdf->output();
+
+                $safeNom = preg_replace('/[^A-Za-z0-9_\-]/', '_', $personnel->nom ?? 'NOM');
+                $safePrenom = preg_replace('/[^A-Za-z0-9_\-]/', '_', $personnel->prenoms ?? 'PRENOM');
+                $matricule = $personnel->matricule ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $personnel->matricule) : $slip->id;
+                $pdfFilename = "Bulletin_Paie_{$safeNom}_{$safePrenom}_{$matricule}_{$payPeriod->code}.pdf";
+
+                \Illuminate\Support\Facades\Mail::mailer('payroll')->send('emails.bulletin_notification', [
                     'personnel' => $personnel,
+                    'centre'    => $centre,
+                    'payPeriod' => $payPeriod,
                     'drhInfo'   => $drhInfo,
-                ], function ($message) use ($recipientEmail, $subject) {
+                ], function ($message) use ($recipientEmail, $subject, $pdfContent, $pdfFilename) {
                     $message->from(
                             config('mail.mailers.payroll.from.address', 'ddis@tekton.com'),
                             config('mail.mailers.payroll.from.name', 'DDIS')
                         )
                         ->to($recipientEmail)
-                        ->subject($subject);
+                        ->subject($subject)
+                        ->attachData($pdfContent, $pdfFilename, ['mime' => 'application/pdf']);
                 });
 
+                unset($pdf, $html, $pdfContent);
                 $sentCount++;
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Erreur d'envoi bulletin email à {$personnel->email}: " . $e->getMessage());

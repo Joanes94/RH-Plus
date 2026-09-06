@@ -163,7 +163,7 @@ class AvancementController extends Controller
     public function validerCRH(Avancement $avancement)
     {
         $user = auth()->user();
-        if (!$user->isCRH() && !$user->isGlobal()) {
+        if (!$user->isCRH()) {
             abort(403, "Seul le CRH peut effectuer la pré-validation des bonifications.");
         }
 
@@ -206,13 +206,11 @@ class AvancementController extends Controller
             return back()->with('success', "La bonification pour {$avancement->personnel->nom_complet} a été validée et signée officiellement par la DDIS.");
         }
 
-        // Pour les avancements d'échelon : Validation par le DRH ou Directeur du Centre uniquement
-        // Vérifier que l'utilisateur est DRH/Directeur du centre du personnel concerné
+        // Pour les avancements d'échelon : Validation par le DRH ou Directeur du Centre concerné, uniquement.
         $personnelCentreId = $avancement->personnel?->centre_id;
 
-        $isDrhDuCentre = (
-            $user->isDRH() || $user->isDirecteurCentre()
-        ) && ($user->isGlobal() || $user->centre_id === $personnelCentreId);
+        $isDrhDuCentre = ($user->isDRH() || $user->isDirecteurCentre())
+            && $user->centre_id === $personnelCentreId;
 
         if (!$isDrhDuCentre) {
             abort(403, "Seul le DRH ou le Directeur du Centre peut valider un avancement d'échelon.");
@@ -232,8 +230,32 @@ class AvancementController extends Controller
         }
 
         if ($avancement->type === 'bonification') {
+            if ($avancement->statut === 'soumis') {
+                // Rejet au niveau du CRH, avant transmission à la DDIS.
+                if (!$user->isCRH()) {
+                    abort(403, "Seul le CRH peut rejeter une bonification à ce stade.");
+                }
+            } elseif ($avancement->statut === 'valide_crh') {
+                // Rejet au niveau de la DDIS, une fois pré-validée par le CRH.
+                if (!$user->isDDIS()) {
+                    abort(403, "Seule la DDIS peut rejeter une bonification déjà pré-validée par le CRH.");
+                }
+            } else {
+                return back()->with('error', "Cette bonification ne peut plus être rejetée à ce stade.");
+            }
+
             $service->rejeterBonification($avancement, $user);
         } else {
+            // Pour les avancements d'échelon : rejet réservé au DRH ou Directeur du Centre concerné.
+            // Aucun accès global ici : même un utilisateur "global" doit être DRH/Directeur du centre en question.
+            $personnelCentreId = $avancement->personnel?->centre_id;
+
+            $isDrhDuCentre = ($user->isDRH() || $user->isDirecteurCentre())
+                && $user->centre_id === $personnelCentreId;
+
+            if (!$isDrhDuCentre) {
+                abort(403, "Seul le DRH ou le Directeur du Centre peut rejeter un avancement d'échelon.");
+            }
             $service->rejeterEchelon($avancement, $user);
         }
 
