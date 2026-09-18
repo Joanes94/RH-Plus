@@ -88,8 +88,8 @@ class Demande extends Model
             'recu_solde_tout_compte' => ['dates', 'motif'],
             'attestation_travail',
             'attestation_presence',
-            'attestation_validite',
-            'attestation_prestation' => [],
+            'attestation_validite' => [],
+            'attestation_prestation' => ['dates'],
             default                => ['dates'],
         };
     }

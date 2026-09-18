@@ -70,11 +70,16 @@
                 <select name="personnel_id" id="personnelSelect" required>
                     <option value="">— Choisir —</option>
                     @foreach($personnels as $p)
+                       @php
+                           $cActif = $p->contrats->first(fn($c) => $c->statut === 'actif') ?? $p->contrats->first();
+                       @endphp
                        <option value="{{ $p->id }}"
                           data-contrat="{{ $p->type_contrat_actuel }}"
                           data-sexe="{{ $p->sexe }}"
                           data-corp="{{ $p->corporation }}"
                           data-service="{{ $p->service }}"
+                          data-date-debut="{{ $cActif?->date_debut?->format('Y-m-d') }}"
+                          data-date-fin="{{ $cActif?->date_fin?->format('Y-m-d') }}"
                           {{ old('personnel_id') == $p->id ? 'selected' : '' }}>
                           {{ $p->nom_complet }}
                           ({{ $p->type_contrat_actuel ?: 'Sans contrat' }} — {{ $p->service ?: $p->corporation ?: '—' }})
@@ -372,6 +377,22 @@ function updateDuree() {
 if (dateDebut) {
     dateDebut.addEventListener('change', updateDuree);
     dateFin.addEventListener('change', updateDuree);
+}
+
+const personnelSelect = document.getElementById('personnelSelect');
+if (personnelSelect) {
+    personnelSelect.addEventListener('change', function() {
+        const opt = this.options[this.selectedIndex];
+        if (opt) {
+            if (opt.dataset.dateDebut && !dateDebut.value) {
+                dateDebut.value = opt.dataset.dateDebut;
+            }
+            if (opt.dataset.dateFin && !dateFin.value) {
+                dateFin.value = opt.dataset.dateFin;
+            }
+            updateDuree();
+        }
+    });
 }
 </script>
 @endpush

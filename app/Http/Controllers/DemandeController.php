@@ -51,7 +51,7 @@ class DemandeController extends Controller
     public function create(Request $request)
     {
         $user = auth()->user();
-        $personnelsQuery = Personnel::where('statut', 'actif')->orderBy('nom');
+        $personnelsQuery = Personnel::where('statut', 'actif')->with('contrats')->orderBy('nom');
 
         // Filtrer par centre si l'utilisateur n'est pas global
         if (!$user->isGlobal() && $user->centre_id) {

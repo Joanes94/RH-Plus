@@ -14,8 +14,8 @@
     <title>Contrat de Prestation — {{ $personnel->nom_complet }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { font-size: 13px; -webkit-font-smoothing: antialiased; }
-        body { font-family: 'Times New Roman', Times, serif; background: #f5f4f0; color: #000; }
+        html { font-size: 14px; -webkit-font-smoothing: antialiased; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 14px; background: #f5f4f0; color: #000; }
 
         .doc-page {
             width: 210mm; min-height: 297mm; margin: 20px auto;
@@ -24,29 +24,19 @@
             box-shadow: 0 4px 24px rgba(0,0,0,0.12);
         }
 
-        .letterhead { display: flex; align-items: center; gap: 14px; padding-bottom: 8px; border-bottom: 2.5px solid #000; margin-bottom: 16px; }
-        .lh-img-left  { width: 62px; height: 62px; object-fit: cover; flex-shrink: 0; }
-        .lh-img-right { width: 66px; height: 66px; object-fit: contain; flex-shrink: 0; }
-        .lh-center { flex: 1; text-align: center; line-height: 1.45; }
-        .lh-line1 { font-size: .78rem; font-weight: 700; letter-spacing: .03em; }
-        .lh-line2 { font-size: .72rem; margin-top: 1px; }
-        .lh-line3 { font-size: .84rem; font-weight: 700; text-transform: uppercase; margin: 2px 0; }
-        .lh-line4 { font-size: .76rem; font-weight: 700; }
-        .lh-line5 { font-size: .64rem; color: #555; margin-top: 2px; }
+        .doc-title { text-align: center; margin: 12px 0 16px; font-family: 'Times New Roman', Times, serif; }
+        .doc-title .t1 { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
+        .doc-title .t2 { font-size: 13px; font-weight: 700; margin: 4px 0 14px; }
 
-        .doc-title { text-align: center; margin: 4px 0 6px; }
-        .doc-title .t1 { font-size: 1.15rem; font-weight: 700; text-transform: uppercase; }
-        .doc-title .t2 { font-size: .85rem; letter-spacing: .3em; margin-top: 2px; }
+        .doc-body { font-size: 14px; font-family: 'Times New Roman', Times, serif; line-height: 1.65; text-align: justify; }
+        .doc-body p { font-size: 14px; font-family: 'Times New Roman', Times, serif; margin-bottom: 10px; }
+        .article-title { font-weight: 700; font-size: 14px; font-family: 'Times New Roman', Times, serif; text-decoration: underline; margin: 14px 0 4px; }
+        .partie-label { font-weight: 700; font-size: 14px; }
 
-        .doc-body { font-size: .88rem; line-height: 1.55; text-align: justify; }
-        .doc-body p { margin-bottom: 10px; }
-        .article-title { font-weight: 700; text-decoration: underline; margin: 14px 0 4px; }
-        .partie-label { font-weight: 700; }
-
-        .signature-row { display: flex; justify-content: space-between; margin-top: 34px; gap: 20px; }
-        .signature-col { width: 46%; text-align: center; }
-        .signature-col .titre { font-weight: 700; margin-bottom: 30px; }
-        .signature-col .nom { font-weight: 700; margin-top: 6px; }
+        .signature-row { display: flex; justify-content: space-between; margin-top: 34px; gap: 20px; font-family: 'Times New Roman', Times, serif; font-size: 14px; }
+        .signature-col { width: 46%; text-align: center; font-size: 14px; }
+        .signature-col .titre { font-weight: 700; margin-bottom: 30px; font-size: 14px; }
+        .signature-col .nom { font-weight: 700; margin-top: 6px; font-size: 14px; }
 
         .no-print { margin: 20px auto; max-width: 210mm; display: flex; gap: 10px; justify-content: center; }
         .btn-print { padding: 10px 24px; background: #1a5c45; color: white; border: none; border-radius: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', Arial, sans-serif; }
@@ -61,7 +51,7 @@
 </head>
 <body>
 @php
-    $centre = $personnel->centre ?? null;
+    $centre = $centre ?? $personnel->centre ?? null;
     $pied_page_texte = $centre->pied_page_texte ?? null;
 @endphp
 
@@ -72,27 +62,17 @@
 
 <div class="doc-page">
 
-    <div class="letterhead">
-        <img src="{{ $eveque_b64 ?? $logo_b64 ?? '' }}" alt="Évêque" class="lh-img-left">
-        <div class="lh-center">
-            <div class="lh-line1">ARCHIDIOCESE DE COTONOU</div>
-            <div class="lh-line2">DIRECTION DIOCESAINE DE LA SANTE</div>
-            <div class="lh-line3">{{ strtoupper($contrat->centre ?: 'CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC') }}</div>
-            <div class="lh-line4">C.S.V.H (ex : Hôpital Saint LUC)</div>
-            <div class="lh-line5">{!! nl2br(e($entete_texte ?? '')) !!}</div>
-        </div>
-        <img src="{{ $logo_b64 ?? '' }}" alt="Logo" class="lh-img-right">
-    </div>
+    @include('partials._letterhead', ['centre' => $centre])
 
     <div class="doc-title">
-        <div class="t1">Contrat de prestation de services</div>
-        <div class="t2">=====°°°°°=====</div>
+        <div class="t1">CONTRAT DE PRESTATION DE SERVICES</div>
+        <div class="t2">======°oooo°======</div>
     </div>
 
     <div class="doc-body">
         <p style="text-align:center;font-weight:700">ENTRE LES SOUSSIGNÉS</p>
 
-        <p>{{ strtoupper($employeur_nom) }}, {{ $employeur_adresse }}, représenté par son Excellence Monseigneur {{ $representant_nom }}, {{ $representant_titre }}, agissant au nom et pour le compte du {{ $contrat->centre ?: '…………………………' }} demeurant, domicilié et qualités audit lieu ;</p>
+        <p>{{ strtoupper($employeur_nom) }}, {{ $employeur_adresse }}, représenté par son Excellence Monseigneur {{ $representant_nom }}, {{ $representant_titre }}, agissant au nom et pour le compte du {{ $contrat->centre ?: ($centre?->nom ?: '…………………………') }} demeurant, domicilié et qualités audit lieu ;</p>
         <p>Ayant la qualité de Client,</p>
         <p style="text-align:center;font-weight:700">D'UNE PART ET,</p>
 

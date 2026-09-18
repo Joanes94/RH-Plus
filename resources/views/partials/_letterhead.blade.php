@@ -202,18 +202,18 @@
 
     @else
         {{-- ST_LUC (Par défaut) : Photo Évêque à gauche, Logo Archidiocèse à droite --}}
-        <div class="lh-flex">
-            @if($photoEveque)<img src="{{ $photoEveque }}" alt="" class="lh-img">@endif
-            <div class="lh-center-text">
-                <div class="lh-title-bold" style="font-size:0.95rem;">ARCHIDIOCESE DE COTONOU</div>
-                <div style="font-weight:700;font-size:0.9rem;">DIRECTION DIOCESAINE DE LA SANTE</div>
-                <div class="lh-title-bold" style="font-size:1.05rem;margin:2px 0;">CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT LUC</div>
-                <div style="font-size:0.85rem;font-weight:700;">C.S.V.H (ex : Hôpital Saint LUC)</div>
-                <div style="font-size:0.78rem;margin-top:2px;">
-                    Qtier Missèkplé Ste Rita- 01 BP 3603 Tél : 66 43 44 78 - 90 07 49 67 / Email : hopitalsaintluc@gmail.com / Cotonou - BENIN
+        <div class="lh-flex" style="gap: 8px;">
+            @if($photoEveque)<img src="{{ $photoEveque }}" alt="Monseigneur Roger HOUNGBEDJI" class="lh-img" style="max-height:72px; width:auto;">@endif
+            <div class="lh-center-text" style="min-width:0;">
+                <div style="font-size:0.92rem; font-weight:700; letter-spacing:0.02em;">ARCHIDIOCESE DE COTONOU</div>
+                <div style="font-size:0.88rem; font-weight:700; margin-top:1px;">DIRECTION DIOCESAINE DE LA SANTE</div>
+                <div style="font-size:0.94rem; font-weight:700; text-transform:uppercase; margin:2px 0; white-space:nowrap; letter-spacing:-0.01em;">CENTRE DE SANTE A VOCATION HUMANITAIRE SAINT&nbsp;LUC</div>
+                <div style="font-size:0.86rem; font-weight:700; white-space:nowrap;">C.S.V.H (ex : Hôpital Saint&nbsp;LUC)</div>
+                <div style="font-size:0.72rem; margin-top:2px; line-height:1.35;">
+                    Qtier Missèkplé Ste Rita- 01 BP 3603 Tél : 66 43 44 78 – 90 07 49 67 / Email : <a href="mailto:hopitalsaintluc@gmail.com" style="color:#0b57d0;text-decoration:underline;">hopitalsaintluc@gmail.com</a> / <span style="color:#0b57d0;text-decoration:underline;">Cotonou – BENIN</span>
                 </div>
             </div>
-            @if($logoArchidiocese)<img src="{{ $logoArchidiocese }}" alt="" class="lh-img">@endif
+            @if($logoArchidiocese)<img src="{{ $logoArchidiocese }}" alt="Archidiocèse" class="lh-img" style="max-height:72px; width:auto;">@endif
         </div>
     @endif
 

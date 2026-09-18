@@ -14,21 +14,32 @@
         default      => 'professionnel',
     };
 
-    // Durée en lettres
+    // Durée en lettres sans parenthèses numériques (ex: "trois mois", "deux semaines", "quinze jours")
+    $chiffresEnLettres = [
+        1 => 'un', 2 => 'deux', 3 => 'trois', 4 => 'quatre', 5 => 'cinq',
+        6 => 'six', 7 => 'sept', 8 => 'huit', 9 => 'neuf', 10 => 'dix',
+        11 => 'onze', 12 => 'douze', 13 => 'treize', 14 => 'quatorze', 15 => 'quinze',
+        16 => 'seize', 17 => 'dix-sept', 18 => 'dix-huit', 19 => 'dix-neuf', 20 => 'vingt',
+        21 => 'vingt-et-un', 22 => 'vingt-deux', 23 => 'vingt-trois', 24 => 'vingt-quatre',
+        25 => 'vingt-cinq', 26 => 'vingt-six', 27 => 'vingt-sept', 28 => 'vingt-huit',
+        29 => 'vingt-neuf', 30 => 'trente', 31 => 'trente-et-un',
+    ];
+
     $duree = '';
     if ($stagiaire->date_debut_stage && $stagiaire->date_fin_stage) {
         $jours = (int)$stagiaire->date_debut_stage->diffInDays($stagiaire->date_fin_stage) + 1;
-        if ($jours >= 30) {
-            $mois = round($jours / 30);
-            $let  = match((int)$mois) { 1=>'un',2=>'deux',3=>'trois',4=>'quatre',5=>'cinq',6=>'six',default=>(string)$mois };
-            $duree = $let . ' (' . str_pad($mois,2,'0',STR_PAD_LEFT) . ') mois';
+        if ($jours >= 28) {
+            $mois = (int) round($jours / 30);
+            $mois = max(1, $mois);
+            $let  = $chiffresEnLettres[$mois] ?? (string) $mois;
+            $duree = $let . ' mois';
         } elseif ($jours >= 7 && $jours % 7 === 0) {
-            $sem = $jours / 7;
-            $let = match((int)$sem) { 1=>'une',2=>'deux',3=>'trois',4=>'quatre',default=>(string)$sem };
-            $duree = $let . ' (' . str_pad($sem,2,'0',STR_PAD_LEFT) . ') semaine' . ($sem > 1 ? 's' : '');
+            $sem = (int) ($jours / 7);
+            $let = $sem === 1 ? 'une' : ($chiffresEnLettres[$sem] ?? (string) $sem);
+            $duree = $let . ' semaine' . ($sem > 1 ? 's' : '');
         } else {
-            $let   = match((int)$jours) { 1=>'un',2=>'deux',3=>'trois',4=>'quatre',5=>'cinq',6=>'six',7=>'sept',8=>'huit',9=>'neuf',10=>'dix',default=>(string)$jours };
-            $duree = $let . ' (' . str_pad($jours,2,'0',STR_PAD_LEFT) . ') jours';
+            $let   = $chiffresEnLettres[$jours] ?? (string) $jours;
+            $duree = $let . ' jour' . ($jours > 1 ? 's' : '');
         }
     }
 @endphp

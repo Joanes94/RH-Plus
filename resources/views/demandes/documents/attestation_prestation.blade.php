@@ -130,6 +130,16 @@
             $serviceCorrige
         );
     }
+
+    // ── DATES DE PRESTATION (depuis la demande ou le contrat du prestataire) ──
+    $contratPrestation = $personnel->contrats()
+        ->where('type_contrat', 'Prestataire')
+        ->orderByDesc('date_debut')
+        ->first()
+        ?? $personnel->contrat_actif;
+
+    $dateDebut = $demande->date_debut ?? $contratPrestation?->date_debut;
+    $dateFin   = $demande->date_fin   ?? $contratPrestation?->date_fin;
 @endphp
 
 @section('doc-ref')
@@ -158,9 +168,11 @@ ATTESTATION DE PRESTATION DE SERVICES
     @if($personnel->service)
         au service {{ $articleAvantService($serviceCorrige) }}<strong>{{ $serviceCorrige }}</strong>
     @endif
-    @if($demande->date_debut && $demande->date_fin)
-        du <strong>{{ $demande->date_debut->isoFormat('DD MMMM YYYY') }}</strong> au
-        <strong>{{ $demande->date_fin->isoFormat('DD MMMM YYYY') }}</strong> inclus.
+    @if($dateDebut && $dateFin)
+        du <strong>{{ ucfirst(\Carbon\Carbon::parse($dateDebut)->locale('fr')->isoFormat('D MMMM YYYY')) }}</strong> au
+        <strong>{{ ucfirst(\Carbon\Carbon::parse($dateFin)->locale('fr')->isoFormat('D MMMM YYYY')) }}</strong> inclus.
+    @elseif($dateDebut)
+        à compter du <strong>{{ ucfirst(\Carbon\Carbon::parse($dateDebut)->locale('fr')->isoFormat('D MMMM YYYY')) }}</strong> à ce jour.
     @endif
 </p>
 

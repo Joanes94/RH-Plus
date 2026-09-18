@@ -45,14 +45,20 @@ Autorisation de stage
 
 @if($demande->date_debut && $demande->date_fin)
 @php
-    $jours = $demande->date_debut->diffInDays($demande->date_fin) + 1;
-    $mois  = max(1, round($jours / 30));
+    $chiffresEnLettres = [
+        1 => 'un', 2 => 'deux', 3 => 'trois', 4 => 'quatre', 5 => 'cinq',
+        6 => 'six', 7 => 'sept', 8 => 'huit', 9 => 'neuf', 10 => 'dix',
+        11 => 'onze', 12 => 'douze',
+    ];
+    $jours = (int)$demande->date_debut->diffInDays($demande->date_fin) + 1;
+    $mois  = max(1, (int) round($jours / 30));
+    $let   = $chiffresEnLettres[$mois] ?? (string) $mois;
 @endphp
 <p>
     Cette autorisation couvre la période du
     <strong>{{ $demande->date_debut->isoFormat('DD MMMM YYYY') }}</strong> au
     <strong>{{ $demande->date_fin->isoFormat('DD MMMM YYYY') }}</strong>,
-    soit {{ $mois }} ({{ $mois < 10 ? '0'.$mois : $mois }}) mois.
+    soit {{ $let }} mois.
 </p>
 @endif
 

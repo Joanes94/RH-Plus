@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Contrat;
+use App\Models\Centre;
 use App\Models\ConfigRh;
 use App\Models\GrilleSalariale;
 use App\Models\Personnel;
@@ -160,6 +161,7 @@ class ContratController extends Controller
             $imported  = 0;
             $errors    = [];
             $doublons  = []; // personnel_id => ['personnel' => Personnel, 'nb_actifs' => int]
+            $categoriesValides = GrilleSalariale::categories()->pluck('categorie')->all();
 
             foreach ($rows as $i => $row) {
                 $line = $i + 2;
@@ -203,7 +205,7 @@ class ContratController extends Controller
                 // grille bloquerait silencieusement tout futur avancement pour
                 // cet agent, sans jamais afficher d'erreur ailleurs dans l'appli.
                 $categorieSaisie = trim((string) ($row['categorie'] ?? ''));
-                if ($categorieSaisie !== '' && !in_array($categorieSaisie, GrilleSalariale::categories(), true)) {
+                if ($categorieSaisie !== '' && !in_array($categorieSaisie, $categoriesValides, true)) {
                     $errors[] = "Ligne $line ({$personnel->nom_complet}) : catégorie \"$categorieSaisie\" inconnue de la grille salariale, ligne ignorée.";
                     continue;
                 }
@@ -432,8 +434,22 @@ class ContratController extends Controller
         $logoPath = public_path('images/letterhead/logo_archidiocese.jpeg');
         $evePath  = public_path('images/letterhead/photo_eveque.jpeg');
 
-        // Branding dynamique du centre du personnel
-        $centre = $personnel->centre;
+        // Branding dynamique du centre (contrat -> personnel -> nom/code -> ST_LUC par défaut)
+        $centre = null;
+        if (!empty($contrat->centre_id)) {
+            $centre = Centre::find($contrat->centre_id);
+        }
+        if (!$centre && !empty($personnel->centre_id)) {
+            $centre = $personnel->centre;
+        }
+        if (!$centre && !empty($contrat->centre)) {
+            $centre = Centre::where('nom', $contrat->centre)
+                ->orWhere('code', $contrat->centre)
+                ->first();
+        }
+        if (!$centre) {
+            $centre = Centre::where('code', 'ST_LUC')->first();
+        }
         $centreLogo = null;
         if ($centre && $centre->logo_path) {
             $lPath = \Illuminate\Support\Facades\Storage::disk('public')->path($centre->logo_path);

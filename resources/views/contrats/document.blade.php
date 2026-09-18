@@ -16,6 +16,8 @@
 
     $fmtDate = fn ($d) => $d ? ucfirst(Carbon::parse($d)->locale('fr')->isoFormat('D MMMM YYYY')) : '………………………';
     $fmtMontant = fn ($m) => $m ? number_format((float) $m, 0, ',', ' ') : '…………';
+    $fonction = trim((string) $contrat->fonction);
+    $articleFonction = $fonction && preg_match('/^[aeiouyàâäéèêëîïôöùûüÿ]/iu', $fonction) ? "d'" : 'de ';
 @endphp
 <!DOCTYPE html>
 <html lang="fr">
@@ -97,7 +99,7 @@
     </div>
 
     <div class="doc-body">
-        <p>{{ strtoupper($employeur_nom) }}, {{ $employeur_adresse }}, représenté par son Excellence Monseigneur {{ $representant_nom }}, Archevêque, op., agissant au nom et pour le compte de {{ $contrat->centre ?: '…………………………' }} demeurant, domicilié et qualités audit lieu ;</p>
+        <p>{{ strtoupper($employeur_nom) }}, {{ $employeur_adresse }}, représenté par son Excellence Monseigneur {{ $representant_nom }}, Archevêque, op., agissant au nom et pour le compte de {{ $contrat->centre ?: ($centre?->nom ?: '…………………………') }} demeurant, domicilié et qualités audit lieu ;</p>
         <p>Ayant la qualité d'Employeur,</p>
         <p style="text-align:center;font-weight:700;margin:12px 0;">D'UNE PART ET,</p>
 
@@ -122,7 +124,7 @@
         @endif
 
         <div class="article-title">Article 2 : FONCTIONS ET DURÉE HEBDOMADAIRE DE TRAVAIL</div>
-        <p>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }} a été engagé{{ $personnel->sexe === 'F' ? 'e' : '' }} pour exercer sous le contrôle de ses supérieurs hiérarchiques les fonctions {{ $contrat->fonction ? 'de ' . $contrat->fonction : '…………………………' }} sur le {{ $contrat->centre ?: '…………………………' }}. {{ $pronomSujet }} peut être muté{{ $personnel->sexe === 'F' ? 'e' : '' }} sur toute paroisse ou institution de l'Archidiocèse de Cotonou en cas de besoin.</p>
+        <p>{{ $civilite }} {{ strtoupper($personnel->nom) }} {{ $personnel->prenoms }} a été engagé{{ $personnel->sexe === 'F' ? 'e' : '' }} pour exercer sous le contrôle de ses supérieurs hiérarchiques les fonctions {{ $fonction ? $articleFonction . $fonction : '…………………………' }} au {{ $contrat->centre ?: '…………………………' }}. {{ $pronomSujet }} peut être muté{{ $personnel->sexe === 'F' ? 'e' : '' }} dans toute institution de l'Archidiocèse de Cotonou en cas de besoin.</p>
         <p>La durée hebdomadaire de travail est de 40 heures conformément au Décret n°98-368 du 04 septembre 1998, fixant les heures d'équivalence dans les entreprises régies par le Code du travail.</p>
         <p>{{ $pronomSujet }} s'engage à s'acquitter avec zèle et fidélité des travaux ou missions qui lui seront confiés et à se rendre en tous lieux où l'employeur aura besoin de ses services, toujours dans le cadre de ses activités.</p>
         <p>Le présent contrat est valable pour la RÉPUBLIQUE DU BÉNIN.</p>
