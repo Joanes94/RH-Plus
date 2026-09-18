@@ -155,14 +155,9 @@
         </span>
     </div>
     <div class="summary-right">
-        @php
-            // Calcul des statistiques de genre sur les résultats filtrés
-            $hommes = $personnels->filter(fn($p) => $p->sexe === 'M')->count();
-            $femmes = $personnels->filter(fn($p) => $p->sexe === 'F')->count();
-        @endphp
         <span class="summary-gender">
-            <span class="gender-male">♂️ {{ $hommes }} homme{{ $hommes > 1 ? 's' : '' }}</span>
-            <span class="gender-female">♀️ {{ $femmes }} femme{{ $femmes > 1 ? 's' : '' }}</span>
+            <span class="gender-male">♂️ {{ $genreFiltre['hommes'] }} homme{{ $genreFiltre['hommes'] > 1 ? 's' : '' }}</span>
+            <span class="gender-female">♀️ {{ $genreFiltre['femmes'] }} femme{{ $genreFiltre['femmes'] > 1 ? 's' : '' }}</span>
         </span>
     </div>
 </div>

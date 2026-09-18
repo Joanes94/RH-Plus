@@ -169,6 +169,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{contrat}/edit',             [ContratController::class, 'edit'])->name('edit');
         Route::put('/{contrat}',                  [ContratController::class, 'update'])->name('update');
         Route::delete('/{contrat}',               [ContratController::class, 'destroy'])->name('destroy');
+        Route::post('/{contrat}/annuler',         [ContratController::class, 'annuler'])->name('annuler');
         Route::get('/{contrat}/document',         [ContratController::class, 'document'])->name('document');
     });
 

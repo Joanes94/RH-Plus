@@ -27,7 +27,7 @@ class Contrat extends Model
         'date_debut', 'duree_mois', 'date_fin',
         'date_debauchage', 'motif_debauchage',
         'lieu_signature', 'date_signature', 'numero_visa', 'date_visa',
-        'statut', 'created_by', 'centre_id',
+        'statut', 'motif_annulation', 'annule_le', 'annule_par_id', 'created_by', 'centre_id',
     ];
 
     protected $casts = [
@@ -37,6 +37,7 @@ class Contrat extends Model
         'date_debauchage'  => 'date',
         'date_signature'   => 'date',
         'date_visa'        => 'date',
+        'annule_le'        => 'datetime',
         'salaire_base'     => 'decimal:2',
         'honoraire_garde'      => 'decimal:2',
         'honoraire_permanence' => 'decimal:2',
@@ -129,8 +130,15 @@ class Contrat extends Model
             'actif'   => $this->est_en_cours ? 'En cours' : 'Échu',
             'termine' => 'Terminé',
             'rompu'   => 'Rompu',
+            'annule'  => 'Annulé',
             default   => $this->statut,
         };
+    }
+
+    /** Ajouté à un utilisateur, ce foreignId a besoin de sa relation Eloquent. */
+    public function annulePar()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'annule_par_id');
     }
 
     // ── Boot : calcul automatique de la date de fin ─────────────────────────

@@ -157,8 +157,9 @@ class ContratController extends Controller
                 }
             }
 
-            $imported = 0;
-            $errors   = [];
+            $imported  = 0;
+            $errors    = [];
+            $doublons  = []; // personnel_id => ['personnel' => Personnel, 'nb_actifs' => int]
 
             foreach ($rows as $i => $row) {
                 $line = $i + 2;
@@ -188,6 +189,8 @@ class ContratController extends Controller
                 $validator = Validator::make($row, [
                     'type_contrat' => 'required|string|max:100',
                     'date_debut'   => 'required|date',
+                    'echelon'      => 'nullable|integer|min:1|max:' . GrilleSalariale::ECHELON_MAX,
+                    'categorie'    => 'nullable|string|max:10',
                 ]);
 
                 if ($validator->fails()) {
@@ -195,20 +198,74 @@ class ContratController extends Controller
                     continue;
                 }
 
-                Contrat::create(array_merge(
-                    $this->filterContratColumns($this->sanitizeContratRow($row)),
-                    [
-                        'personnel_id' => $personnel->id,
-                        'created_by'   => Auth::id(),
-                    ]
-                ));
-                $imported++;
+                // categorie/echelon sont utilisés directement par le moteur
+                // d'avancement (grille salariale) : une catégorie inconnue de la
+                // grille bloquerait silencieusement tout futur avancement pour
+                // cet agent, sans jamais afficher d'erreur ailleurs dans l'appli.
+                $categorieSaisie = trim((string) ($row['categorie'] ?? ''));
+                if ($categorieSaisie !== '' && !in_array($categorieSaisie, GrilleSalariale::categories(), true)) {
+                    $errors[] = "Ligne $line ({$personnel->nom_complet}) : catégorie \"$categorieSaisie\" inconnue de la grille salariale, ligne ignorée.";
+                    continue;
+                }
+
+                // Une erreur inattendue sur une ligne (contrainte SQL, valeur
+                // imprévue, etc.) ne doit plus faire échouer tout le fichier :
+                // on journalise et on continue avec les lignes suivantes.
+                try {
+                    $sanitized = $this->sanitizeContratRow($row);
+                    if (empty($sanitized['statut'])) {
+                        $sanitized['statut'] = 'actif';
+                    }
+
+                    Contrat::create(array_merge(
+                        $this->filterContratColumns($sanitized),
+                        [
+                            'personnel_id' => $personnel->id,
+                            'created_by'   => Auth::id(),
+                        ]
+                    ));
+                    $imported++;
+
+                    // Doublon volontairement toléré (décision métier) : on ne bloque
+                    // pas l'import, mais on le signale pour que le CRH tranche
+                    // manuellement lequel des deux contrats actifs garder.
+                    if (($sanitized['statut'] ?? 'actif') === 'actif') {
+                        $nbActifs = $personnel->contrats()->where('statut', 'actif')->count();
+                        if ($nbActifs > 1) {
+                            $doublons[$personnel->id] = [
+                                'personnel'  => $personnel,
+                                'nb_actifs'  => $nbActifs,
+                            ];
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $errors[] = "Ligne $line ({$personnel->nom_complet}) : " . $e->getMessage();
+                    continue;
+                }
+            }
+
+            // Notifier le(s) centre(s) concerné(s) des doublons détectés, pour que
+            // le CRH puisse annuler le contrat obsolète depuis la fiche de l'agent.
+            foreach ($doublons as $info) {
+                $p = $info['personnel'];
+                \App\Models\Notification::create([
+                    'centre_id'         => $p->centre_id,
+                    'personnel_id'      => $p->id,
+                    'type'              => 'contrat_doublon',
+                    'titre'             => 'Doublon de contrat actif — ' . $p->nom_complet,
+                    'message'           => "L'import a créé un contrat actif supplémentaire pour {$p->nom_complet}, qui a maintenant {$info['nb_actifs']} contrats actifs simultanés. Merci de vérifier sa fiche et d'annuler le contrat obsolète.",
+                    'date_notification' => now(),
+                ]);
             }
 
             $msg = "$imported contrat(s) importé(s).";
             if ($errors) {
                 session()->flash('import_errors', $errors);
                 $msg .= ' ' . count($errors) . ' ligne(s) ignorée(s) — voir le détail ci-dessous.';
+            }
+            if ($doublons) {
+                $noms = collect($doublons)->map(fn ($info) => $info['personnel']->nom_complet)->implode(', ');
+                $msg .= ' ⚠️ Doublon de contrat actif détecté pour : ' . $noms . ' — une notification a été envoyée à leur(s) centre(s) pour arbitrage.';
             }
 
             return redirect()->route('personnel.index')->with('success', $msg);
@@ -339,6 +396,31 @@ class ContratController extends Controller
 
         return redirect()->route('personnel.show', $personnel)
             ->with('success', 'Contrat supprimé.');
+    }
+
+    /**
+     * Annuler un contrat SANS le supprimer : contrairement à destroy() (suppression
+     * définitive, sans trace), ce contrat reste consultable dans l'historique de
+     * l'agent, avec le motif, la date et l'auteur de l'annulation. Son statut
+     * passe à 'annule', ce qui l'exclut automatiquement de contrat_actif() et donc
+     * de tous les calculs (paie, avancement...). Utilisé notamment pour résoudre
+     * un doublon de contrat actif créé par l'import Excel.
+     */
+    public function annuler(Request $request, Personnel $personnel, Contrat $contrat)
+    {
+        $request->validate([
+            'motif_annulation' => 'nullable|string|max:255',
+        ]);
+
+        $contrat->update([
+            'statut'           => 'annule',
+            'motif_annulation' => $request->motif_annulation ?: 'Annulé sans motif précisé.',
+            'annule_le'        => now(),
+            'annule_par_id'    => Auth::id(),
+        ]);
+
+        return redirect()->route('personnel.show', $personnel)
+            ->with('success', 'Contrat annulé (conservé dans l\'historique de ' . $personnel->nom_complet . ').');
     }
 
     // ── Document imprimable (CDD / CDI / Prestation) ─────────────────────────

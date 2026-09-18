@@ -214,14 +214,21 @@ class AvancementService
             return null;
         }
 
-        // Date de référence : dernier avancement validé OU date d'embauche ISD / Centre
+        // Date de référence : le cycle des 24 mois est ancré UNIQUEMENT sur la
+        // date d'entrée dans l'ISD (règle métier), jamais sur la date d'embauche
+        // au centre ni sur date_effet_echelon du contrat — deux dates qui n'ont
+        // aucun rapport avec l'ancienneté ISD et qui produisaient des échéances
+        // fantaisistes quand date_embauche_isd n'était pas renseignée.
+        // 1) dernier avancement d'échelon VALIDÉ (le cycle repart de là)
+        // 2) à défaut, date d'entrée dans l'ISD (tout premier échelon)
         $dateReference = $this->dateDernierAvancementEchelon($personnel)
-            ?? $personnel->date_embauche_isd
-            ?? $personnel->date_embauche_centre
-            ?? $contrat->date_effet_echelon;
+            ?? $personnel->date_embauche_isd;
 
         if (!$dateReference) {
-            return null; // pas de point de départ fiable
+            // Pas de date d'entrée ISD renseignée : on ne peut pas calculer
+            // d'échéance fiable. Mieux vaut ne rien proposer que de deviner à
+            // partir d'une autre date (voir bug ci-dessus).
+            return null;
         }
 
         $dateEffet = $dateReference->copy()->addMonthsNoOverflow(self::MOIS_ENTRE_ECHELONS)->startOfDay();
@@ -388,9 +395,10 @@ class AvancementService
             }
 
             if ((int) $contrat->echelon < GrilleSalariale::ECHELON_MAX) {
+                // Même règle que traiterEchelon() : ancrage strict sur la date
+                // d'entrée ISD, jamais sur date_embauche_centre / date_effet_echelon.
                 $dateReference = $this->dateDernierAvancementEchelon($personnel)
-                    ?? $contrat->date_effet_echelon
-                    ?? $personnel->date_embauche_centre;
+                    ?? $personnel->date_embauche_isd;
 
                 if ($dateReference) {
                     $dateEchelon = $dateReference->copy()->addMonthsNoOverflow(self::MOIS_ENTRE_ECHELONS);

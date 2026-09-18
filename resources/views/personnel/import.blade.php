@@ -40,11 +40,15 @@
             </div>
             <div class="rule-item">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                <span>Pour CSV : séparateur <code>;</code> (point-virgule)</span>
+                <span>Renseignez <code>centre_affectation</code> avec le code exact du centre (ex. <code>ST_LUC</code>, <code>ST_JEAN</code>, <code>SEYON</code>, <code>MARIA_GLETA</code>, <code>GLO</code>, <code>SO_TCHANHOUE</code>, <code>CAFSC</code>, <code>DDIS</code>)</span>
             </div>
         </div>
 
-        <a href="{{ route('personnel.template') }}" class="btn-ghost btn-sm">
+        <a href="{{ route('personnel.template-xlsx') }}" class="btn-ghost btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Télécharger le modèle Excel (.xlsx) — recommandé
+        </a>
+        <a href="{{ route('personnel.template') }}" class="btn-ghost btn-sm" style="margin-left: 8px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Télécharger le modèle CSV
         </a>

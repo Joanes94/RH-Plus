@@ -7,6 +7,7 @@ use App\Models\Personnel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -53,10 +54,26 @@ class PersonnelController extends Controller
             $query->where('centre_id', $user->centre_id);
         }
 
+        // Répartition hommes/femmes sur l'ENSEMBLE des résultats filtrés (avant
+        // pagination). Calculée ici, sur $query complet, et non sur $personnels
+        // après ->paginate(20) : compter sur la page affichée aurait plafonné
+        // le total à 20 (d'où le "12 hommes / 8 femmes" incohérent avec le
+        // "200 agent(s) trouvé(s)" juste à côté).
+        $genreFiltre = [
+            'hommes' => (clone $query)->where('sexe', 'M')->count(),
+            'femmes' => (clone $query)->where('sexe', 'F')->count(),
+        ];
+
         $personnels = $query->orderBy('nom')->paginate(20)->withQueryString();
 
-        // Stats sur le personnel filtré par centre
+        // Stats sur le personnel filtré par centre — on reste sur le personnel
+        // "en poste" par défaut (comme la liste principale ci-dessus), pour que
+        // les compteurs (total, actifs, hommes/femmes...) ne soient jamais
+        // faussés par les anciens travailleurs / retraités une fois qu'il y en aura.
         $base = Personnel::personnelPrincipal();
+        if (!$request->filled('statut')) {
+            $base->enPoste();
+        }
         if (!$user->isGlobal() && $user->centre_id) {
             $base->where('centre_id', $user->centre_id);
         } elseif ($request->filled('centre_id') && $user->isGlobal()) {
@@ -77,6 +94,7 @@ class PersonnelController extends Controller
             'services'     => Personnel::services(),
             'corporations' => Personnel::corporations(),
             'filters'      => $request->only('search', 'service', 'corporation', 'statut', 'contrat'),
+            'genreFiltre'  => $genreFiltre,
             'stats' => [
                 'total'    => (clone $base)->count(),
                 'actifs'   => (clone $base)->where('statut', 'actif')->count(),
@@ -212,7 +230,7 @@ class PersonnelController extends Controller
             ->with('success', $personnel->nom_complet . ' a été restauré(e) et est de nouveau actif(ve).');
     }
 
-    /** Liste des anciens travailleurs (affectés ailleurs, contrat terminé, débauchés, retraités). */
+    /** Liste des anciens travailleurs (affectés ailleurs, contrat terminé, débauchés ou retraités). */
     public function anciens(Request $request)
     {
         $query = Personnel::anciensTravailleurs()->with('contrats');
@@ -296,51 +314,133 @@ class PersonnelController extends Controller
                 }
             }
 
+            // Préchargement de tous les centres (code + nom en minuscules) pour résoudre
+            // la colonne "centre_affectation" du fichier sans requête par ligne.
+            $centresParCode = Centre::all()->reduce(function ($acc, $centre) {
+                $acc[strtoupper(str_replace([' ', '-'], '_', $centre->code))] = $centre->id;
+                $acc[mb_strtolower($centre->nom)] = $centre->id;
+                return $acc;
+            }, []);
+
             $imported = 0;
             $errors   = [];
             $parCentre = []; // centre_id → count
 
-            foreach ($rows as $i => $row) {
-                $line = $i + 2;
-                if (empty(trim($row['nom'] ?? '')) && empty(trim($row['prenoms'] ?? ''))) continue;
+            // Emails déjà présents en base : la colonne `personnels.email` est UNIQUE
+            // (nullable, mais unique). Beaucoup de fichiers Excel réels répètent un
+            // même email "placeholder" (ex: agent@gmail.com) sur toutes les lignes ;
+            // sans ce contrôle, la 2ᵉ occurrence provoque une erreur SQL qui, avant,
+            // annulait tout l'import (voir plus bas).
+            $emailsExistants = Personnel::whereNotNull('email')
+                ->pluck('email')
+                ->map(fn ($e) => mb_strtolower(trim($e)))
+                ->flip()
+                ->toArray();
+            $emailsVusDansLeFichier = [];
 
-                $validator = Validator::make($row, [
-                    'nom'     => 'required|string',
-                    'prenoms' => 'required|string',
-                    'sexe'    => 'required|in:M,F',
-                ]);
+            // Une seule transaction pour tout le fichier : évite un aller-retour réseau
+            // (commit) par ligne vers la base distante, ce qui était la cause principale
+            // de la lenteur sur de gros fichiers.
+            DB::transaction(function () use ($rows, &$imported, &$errors, &$parCentre, $centresParCode, &$emailsExistants, &$emailsVusDansLeFichier) {
+                foreach ($rows as $i => $row) {
+                    $line = $i + 2;
+                    if (empty(trim($row['nom'] ?? '')) && empty(trim($row['prenoms'] ?? ''))) continue;
 
-                if ($validator->fails()) {
-                    $errors[] = "Ligne $line : " . implode(', ', $validator->errors()->all());
-                    continue;
+                    $validator = Validator::make($row, [
+                        'nom'                        => 'required|string|max:255',
+                        'prenoms'                    => 'required|string|max:255',
+                        'sexe'                       => 'required|in:M,F',
+                        'email'                        => 'nullable|email|max:255',
+                        'lieu_naissance'              => 'nullable|string|max:150',
+                        'telephone'                   => 'nullable|string|max:20',
+                        'diplome'                      => 'nullable|string|max:200',
+                        'corporation'                  => 'nullable|string|max:150',
+                        'service'                      => 'nullable|string|max:150',
+                        'type_contrat'                 => 'nullable|string|max:100',
+                        'categorie_echelon'            => 'nullable|string|max:100',
+                        'numero_cnss'                  => 'nullable|string|max:50',
+                        'contact_urgence_nom'          => 'nullable|string|max:150',
+                        'contact_urgence_telephone'    => 'nullable|string|max:20',
+                    ]);
+
+                    if ($validator->fails()) {
+                        $errors[] = "Ligne $line : " . implode(', ', $validator->errors()->all());
+                        continue;
+                    }
+
+                    // Résolution du centre d'affectation : accepte le code (ST_LUC) ou le nom exact du centre
+                    $saisieCentre = trim($row['centre_affectation'] ?? '');
+                    $centreId = null;
+                    if ($saisieCentre !== '') {
+                        $cle = strtoupper(str_replace([' ', '-'], '_', $saisieCentre));
+                        $centreId = $centresParCode[$cle] ?? $centresParCode[mb_strtolower($saisieCentre)] ?? null;
+                        if (!$centreId) {
+                            $errors[] = "Ligne $line : centre d'affectation \"$saisieCentre\" introuvable (utilisez le code exact, ex. ST_LUC, ST_JEAN...).";
+                            continue;
+                        }
+                    }
+
+                    $sanitized = $this->sanitizeImportRow($row);
+                    $sanitized['centre_id'] = $centreId;
+
+                    // Email en doublon (déjà en base, ou déjà vu plus haut dans le même
+                    // fichier) : on n'annule pas la ligne, on importe simplement sans
+                    // email plutôt que de faire planter tout le fichier.
+                    if (!empty($sanitized['email'])) {
+                        $emailNormalise = mb_strtolower(trim($sanitized['email']));
+                        if (isset($emailsExistants[$emailNormalise]) || isset($emailsVusDansLeFichier[$emailNormalise])) {
+                            $errors[] = "Ligne $line : email \"{$sanitized['email']}\" déjà utilisé, personnel importé sans email.";
+                            $sanitized['email'] = null;
+                        } else {
+                            $emailsVusDansLeFichier[$emailNormalise] = true;
+                        }
+                    }
+
+                    // Chaque ligne est protégée individuellement : une erreur inattendue
+                    // (contrainte SQL, valeur d'enum non reconnue, etc.) sur UNE ligne ne
+                    // doit plus faire échouer — et annuler — l'import de tout le fichier.
+                    try {
+                        Personnel::create(array_merge($sanitized, ['created_by' => Auth::id()]));
+                        $imported++;
+                    } catch (\Throwable $e) {
+                        $errors[] = "Ligne $line : " . $e->getMessage();
+                        continue;
+                    }
+
+                    // Comptabiliser par centre
+                    $cId = $sanitized['centre_id'] ?? null;
+                    if ($cId) {
+                        $parCentre[$cId] = ($parCentre[$cId] ?? 0) + 1;
+                    }
                 }
 
-                $sanitized = $this->sanitizeImportRow($row);
-                Personnel::create(array_merge($sanitized, ['created_by' => Auth::id()]));
-                $imported++;
-
-                // Comptabiliser par centre
-                $cId = $sanitized['centre_id'] ?? null;
-                if ($cId) {
-                    $parCentre[$cId] = ($parCentre[$cId] ?? 0) + 1;
+                // Notifications de résumé d'import par centre (dans la même transaction)
+                foreach ($parCentre as $centreId => $count) {
+                    \App\Models\Notification::create([
+                        'centre_id'         => $centreId,
+                        'type'              => 'affectation',
+                        'titre'             => 'Import de personnel',
+                        'message'           => "$count personnel(s) ont été importé(s) dans votre centre par le CRH.",
+                        'date_notification' => now(),
+                    ]);
                 }
-            }
-
-            // Notifications de résumé d'import par centre
-            foreach ($parCentre as $centreId => $count) {
-                \App\Models\Notification::create([
-                    'centre_id'         => $centreId,
-                    'type'              => 'affectation',
-                    'titre'             => 'Import de personnel',
-                    'message'           => "$count personnel(s) ont été importé(s) dans votre centre par le CRH.",
-                    'date_notification' => now(),
-                ]);
-            }
+            });
 
             $msg = "$imported personnel(s) importé(s).";
-            if ($errors) $msg .= ' ' . count($errors) . ' ligne(s) ignorée(s).';
+            if ($errors) {
+                $msg .= ' ' . count($errors) . ' ligne(s) ignorée(s) ou corrigée(s).';
+                // Aperçu des premières erreurs pour comprendre tout de suite ce qui a
+                // été sauté, sans avoir à fouiller les logs.
+                $apercu = array_slice($errors, 0, 5);
+                $msg .= ' — ' . implode(' | ', $apercu);
+                if (count($errors) > 5) {
+                    $msg .= ' | … (+' . (count($errors) - 5) . ' autre(s))';
+                }
+            }
 
-            return redirect()->route('personnel.index')->with('success', $msg);
+            return redirect()->route('personnel.index')
+                ->with('success', $msg)
+                ->with('import_errors', $errors);
 
         } catch (\Exception $e) {
             return back()->with('error', 'Erreur : ' . $e->getMessage());
@@ -355,20 +455,95 @@ class PersonnelController extends Controller
             'autorisation_clientele_privee', 'corporation', 'service',
             'type_contrat', 'categorie_echelon', 'date_embauche_centre',
             'date_embauche_isd', 'numero_cnss', 'date_fin_contrat',
-            'contact_urgence_nom', 'contact_urgence_telephone',
+            'contact_urgence_nom', 'contact_urgence_telephone', 'centre_affectation',
         ];
+
+        // BOM UTF-8 : sans lui, Excel (surtout en français) ouvre souvent le CSV en
+        // supposant l'encodage ANSI/Windows-1252, ce qui casse tous les accents
+        // (ex: "È" devient "Ãˆ"). Avec le BOM, Excel détecte correctement l'UTF-8.
+        $bom = "\xEF\xBB\xBF";
 
         $csv = implode(';', $headers) . "\n";
         $csv .= implode(';', [
             'GBÈDJI', 'Rodrigue', 'rodrigue@exemple.bj', '1990-05-15', 'Cotonou', 'M',
             '+229 97000000', 'Célibataire', 'BTS Informatique',
             '0', 'INFIRMIER', 'MEDECINE', 'CDI', 'C2-E1', '2020-01-15',
-            '2019-06-01', 'CN123456', '', 'Akossiwa Gbèdji', '+229 96000000',
+            '2019-06-01', 'CN123456', '', 'Akossiwa Gbèdji', '+229 96000000', 'ST_LUC',
         ]) . "\n";
 
-        return response($csv, 200, [
+        return response($bom . $csv, 200, [
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="modele_import_personnel.csv"',
+        ]);
+    }
+
+    /**
+     * Modèle d'import au format .xlsx (recommandé) : contrairement au CSV, on peut
+     * y verrouiller le format des colonnes téléphone en "Texte", ce qui empêche
+     * Excel de les réinterpréter comme des dates/nombres et de les afficher en "###".
+     */
+    public function downloadTemplateXlsx()
+    {
+        if (!class_exists('\PhpOffice\PhpSpreadsheet\IOFactory')) {
+            return back()->with('error', 'PhpSpreadsheet non installé. Utilisez le modèle CSV.');
+        }
+
+        $headers = [
+            'nom', 'prenoms', 'email', 'date_naissance', 'lieu_naissance', 'sexe',
+            'telephone', 'situation_matrimoniale', 'diplome',
+            'autorisation_clientele_privee', 'corporation', 'service',
+            'type_contrat', 'categorie_echelon', 'date_embauche_centre',
+            'date_embauche_isd', 'numero_cnss', 'date_fin_contrat',
+            'contact_urgence_nom', 'contact_urgence_telephone', 'centre_affectation',
+        ];
+
+        $exemple = [
+            'GBÈDJI', 'Rodrigue', 'rodrigue@exemple.bj', '1990-05-15', 'Cotonou', 'M',
+            '+229 97000000', 'Célibataire', 'BTS Informatique',
+            '0', 'INFIRMIER', 'MEDECINE', 'CDI', 'C2-E1', '2020-01-15',
+            '2019-06-01', 'CN123456', '', 'Akossiwa Gbèdji', '+229 96000000', 'ST_LUC',
+        ];
+
+        // Colonnes dont le contenu ressemble à des nombres/dates mais qui doivent
+        // rester du texte brut : évite le piège Excel du "###".
+        $colonnesTexte = ['telephone', 'numero_cnss', 'contact_urgence_telephone'];
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Import Personnel');
+
+        foreach ($headers as $col => $label) {
+            $cellCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col + 1);
+
+            // Format "Texte" appliqué à toute la colonne (pas juste la cellule d'exemple)
+            // pour que ça reste du texte même si l'utilisateur ajoute des centaines de lignes.
+            if (in_array($label, $colonnesTexte, true)) {
+                $sheet->getStyle($cellCol . '1:' . $cellCol . '1000')
+                    ->getNumberFormat()
+                    ->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_TEXT);
+            }
+
+            $sheet->setCellValueExplicit(
+                $cellCol . '1',
+                $label,
+                \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING
+            );
+            $sheet->setCellValueExplicit(
+                $cellCol . '2',
+                $exemple[$col] ?? '',
+                \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING
+            );
+            $sheet->getColumnDimension($cellCol)->setWidth(20);
+        }
+
+        $sheet->getStyle('A1:U1')->getFont()->setBold(true);
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, 'modele_import_personnel.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 
@@ -485,7 +660,15 @@ class PersonnelController extends Controller
         $rows    = [];
         $handle  = fopen($path, 'r');
         $headers = null;
+        $firstLine = true;
         while (($line = fgetcsv($handle, 0, ';')) !== false) {
+            // Retire un éventuel BOM UTF-8 au tout début du fichier (présent dans
+            // notre propre modèle, ou ajouté par Excel à l'enregistrement).
+            if ($firstLine && isset($line[0])) {
+                $line[0] = preg_replace('/^\xEF\xBB\xBF/', '', $line[0]);
+            }
+            $firstLine = false;
+
             if (!$headers) { $headers = array_map('trim', $line); continue; }
             if (count($line) < 2) continue;
             $rows[] = array_combine($headers, array_pad($line, count($headers), ''));
@@ -498,6 +681,11 @@ class PersonnelController extends Controller
     {
         $ioFactoryClass = 'PhpOffice\\PhpSpreadsheet\\IOFactory';
         $spreadsheet = $ioFactoryClass::load($path);
+        // formatData = true : nécessaire pour que les cellules de date arrivent en
+        // date lisible (ex: "2020-01-15") plutôt qu'en numéro de série Excel brut
+        // (ex: 43845). La protection contre les cellules "###" mal saisies se fait
+        // via le modèle .xlsx pré-formaté en Texte + la validation de longueur
+        // sur les champs téléphone (voir plus haut).
         $sheet       = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
         $headers     = array_map('trim', array_shift($sheet));
         $rows        = [];
@@ -525,6 +713,41 @@ class PersonnelController extends Controller
         ) ? 1 : 0;
         $row['sexe'] = strtoupper(trim($row['sexe'] ?? 'M'));
         if (!in_array($row['sexe'], ['M', 'F'])) $row['sexe'] = 'M';
+
+        // `situation_matrimoniale` est un ENUM strict en base (Célibataire, Marié(e),
+        // Divorcé(e), Veuf/Veuve). Une valeur saisie légèrement différente ("Marié"
+        // au lieu de "Marié(e)", "Divorcée", etc.) fait planter l'insertion SQL. On
+        // normalise les variantes courantes, sinon on laisse le champ vide plutôt
+        // que de faire échouer la ligne.
+        $situationSaisie = trim((string) ($row['situation_matrimoniale'] ?? ''));
+        if ($situationSaisie === '') {
+            $row['situation_matrimoniale'] = null;
+        } elseif (in_array($situationSaisie, Personnel::situationsMatrimoniales(), true)) {
+            $row['situation_matrimoniale'] = $situationSaisie;
+        } else {
+            $cle = strtolower(str_replace(['é', 'è', '(e)', '/', ' '], ['e', 'e', '', '', ''], $situationSaisie));
+            $normalisations = [
+                'celibataire' => 'Célibataire',
+                'marie'       => 'Marié(e)',
+                'mariee'      => 'Marié(e)',
+                'divorce'     => 'Divorcé(e)',
+                'divorcee'    => 'Divorcé(e)',
+                'veuf'        => 'Veuf/Veuve',
+                'veuve'       => 'Veuf/Veuve',
+                'veufveuve'   => 'Veuf/Veuve',
+            ];
+            $row['situation_matrimoniale'] = $normalisations[$cle] ?? null;
+        }
+
+        // Excel/PhpSpreadsheet peut renvoyer les colonnes "numériques en apparence"
+        // (téléphone, CNSS, email) comme des nombres plutôt que du texte : on force
+        // le type chaîne pour éviter une erreur de type ou une troncature silencieuse.
+        foreach (['telephone', 'numero_cnss', 'contact_urgence_telephone', 'email'] as $champ) {
+            $row[$champ] = isset($row[$champ]) && $row[$champ] !== ''
+                ? trim((string) $row[$champ])
+                : null;
+        }
+
         return array_intersect_key($row, array_flip((new Personnel)->getFillable()));
     }
 

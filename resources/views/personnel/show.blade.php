@@ -259,7 +259,14 @@
                     @endif
                     @if(!auth()->user()->isReadOnly())
                     <a href="{{ route('contrats.edit', [$personnel, $contrat]) }}" class="btn-ghost btn-sm">Modifier</a>
-                    <form method="POST" action="{{ route('contrats.destroy', [$personnel, $contrat]) }}" onsubmit="return confirm('Supprimer ce contrat ?')">
+                    @if($contrat->statut === 'actif')
+                    <form method="POST" action="{{ route('contrats.annuler', [$personnel, $contrat]) }}" onsubmit="const m=prompt('Motif de l\'annulation (ex: doublon d\'import) :'); if(m===null) return false; document.getElementById('motif_annulation_{{ $contrat->id }}').value = m;">
+                        @csrf
+                        <input type="hidden" id="motif_annulation_{{ $contrat->id }}" name="motif_annulation">
+                        <button type="submit" class="btn-ghost btn-sm" style="color:var(--col-warn, #b8860b)">Annuler</button>
+                    </form>
+                    @endif
+                    <form method="POST" action="{{ route('contrats.destroy', [$personnel, $contrat]) }}" onsubmit="return confirm('Supprimer définitivement ce contrat ? Cette action est irréversible et ne laisse aucune trace, contrairement à Annuler.')">
                         @csrf @method('DELETE')
                         <button type="submit" class="btn-ghost btn-sm" style="color:var(--col-danger, #c0392b)">Supprimer</button>
                     </form>
@@ -276,6 +283,12 @@
                 @endif
                 @if($contrat->categorie && $contrat->echelon) · {{ $contrat->categorie }}-{{ $contrat->echelon }} @elseif($contrat->categorie_echelon) · {{ $contrat->categorie_echelon }} @endif
             </div>
+            @if($contrat->statut === 'annule')
+            <div style="font-size:.8rem;color:var(--col-warn, #b8860b);margin-top:4px">
+                Annulé{{ $contrat->annule_le ? ' le ' . $contrat->annule_le->format('d/m/Y') : '' }}{{ $contrat->annulePar ? ' par ' . $contrat->annulePar->nom_complet : '' }}
+                @if($contrat->motif_annulation) — {{ $contrat->motif_annulation }} @endif
+            </div>
+            @endif
         </dd>
     </div>
     @empty

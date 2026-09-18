@@ -1,8 +1,7 @@
 [
     {
-        "id": "1",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -12,9 +11,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "2",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -24,9 +22,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "3",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -36,9 +33,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "4",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -48,9 +44,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "5",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -60,9 +55,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "6",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -72,9 +66,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "7",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -84,9 +77,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "8",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -96,9 +88,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "9",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -108,9 +99,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "10",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -120,9 +110,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "11",
-        "categorie": "E1",
-        "libelle": "1\u00e8re cat\u00e9gorie",
+        "categorie": "C1",
+        "libelle": "1ère catégorie",
         "ordre": "1",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -132,9 +121,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "12",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -144,9 +132,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "13",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -156,9 +143,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "14",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -168,9 +154,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "15",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -180,9 +165,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "16",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -192,9 +176,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "17",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -204,9 +187,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "18",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -216,9 +198,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "19",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -228,9 +209,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "20",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -240,9 +220,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "21",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -252,9 +231,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "22",
-        "categorie": "E2",
-        "libelle": "2\u00e8me cat\u00e9gorie",
+        "categorie": "C2",
+        "libelle": "2ème catégorie",
         "ordre": "2",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -264,9 +242,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "23",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -276,9 +253,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "24",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -288,9 +264,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "25",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -300,9 +275,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "26",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -312,9 +286,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "27",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -324,9 +297,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "28",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -336,9 +308,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "29",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -348,9 +319,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "30",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -360,9 +330,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "31",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -372,9 +341,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "32",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -384,9 +352,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "33",
-        "categorie": "E3",
-        "libelle": "3\u00e8me cat\u00e9gorie",
+        "categorie": "C3",
+        "libelle": "3ème catégorie",
         "ordre": "3",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -396,9 +363,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "34",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -408,9 +374,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "35",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -420,9 +385,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "36",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -432,9 +396,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "37",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -444,9 +407,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "38",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -456,9 +418,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "39",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -468,9 +429,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "40",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -480,9 +440,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "41",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -492,9 +451,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "42",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -504,9 +462,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "43",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -516,9 +473,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "44",
-        "categorie": "E4",
-        "libelle": "4\u00e8me cat\u00e9gorie",
+        "categorie": "C4",
+        "libelle": "4ème catégorie",
         "ordre": "4",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -528,9 +484,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "45",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -540,9 +495,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "46",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -552,9 +506,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "47",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -564,9 +517,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "48",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -576,9 +528,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "49",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -588,9 +539,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "50",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -600,9 +550,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "51",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -612,9 +561,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "52",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -624,9 +572,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "53",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -636,9 +583,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "54",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -648,9 +594,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "55",
-        "categorie": "E5",
-        "libelle": "5\u00e8me cat\u00e9gorie",
+        "categorie": "C5",
+        "libelle": "5ème catégorie",
         "ordre": "5",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -660,9 +605,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "56",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -672,9 +616,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "57",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -684,9 +627,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "58",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -696,9 +638,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "59",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -708,9 +649,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "60",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -720,9 +660,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "61",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -732,9 +671,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "62",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -744,9 +682,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "63",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -756,9 +693,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "64",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -768,9 +704,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "65",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -780,9 +715,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "66",
-        "categorie": "E6",
-        "libelle": "6\u00e8me cat\u00e9gorie",
+        "categorie": "C6",
+        "libelle": "6ème catégorie",
         "ordre": "6",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -792,9 +726,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "67",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -804,9 +737,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "68",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -816,9 +748,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "69",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -828,9 +759,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "70",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -840,9 +770,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "71",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -852,9 +781,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "72",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -864,9 +792,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "73",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -876,9 +803,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "74",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -888,9 +814,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "75",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -900,9 +825,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "76",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -912,9 +836,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "77",
-        "categorie": "M1",
-        "libelle": "7\u00e8me cat\u00e9gorie",
+        "categorie": "C7",
+        "libelle": "7ème catégorie",
         "ordre": "7",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -924,9 +847,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "78",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -936,9 +858,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "79",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -948,9 +869,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "80",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -960,9 +880,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "81",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -972,9 +891,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "82",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -984,9 +902,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "83",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -996,9 +913,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "84",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -1008,9 +924,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "85",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -1020,9 +935,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "86",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -1032,9 +946,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "87",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -1044,9 +957,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "88",
-        "categorie": "M2",
-        "libelle": "8\u00e8me cat\u00e9gorie",
+        "categorie": "C8",
+        "libelle": "8ème catégorie",
         "ordre": "8",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -1056,9 +968,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "89",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -1068,9 +979,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "90",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -1080,9 +990,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "91",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -1092,9 +1001,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "92",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -1104,9 +1012,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "93",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -1116,9 +1023,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "94",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -1128,9 +1034,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "95",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -1140,9 +1045,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "96",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -1152,9 +1056,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "97",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -1164,9 +1067,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "98",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -1176,9 +1078,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "99",
-        "categorie": "M3",
-        "libelle": "9\u00e8me cat\u00e9gorie",
+        "categorie": "C9",
+        "libelle": "9ème catégorie",
         "ordre": "9",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -1188,9 +1089,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "100",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -1200,9 +1100,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "101",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -1212,9 +1111,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "102",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -1224,9 +1122,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "103",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -1236,9 +1133,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "104",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -1248,9 +1144,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "105",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -1260,9 +1155,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "106",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -1272,9 +1166,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "107",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -1284,9 +1177,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "108",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -1296,9 +1188,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "109",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -1308,9 +1199,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "110",
-        "categorie": "C1",
-        "libelle": "10\u00e8me cat\u00e9gorie",
+        "categorie": "C10",
+        "libelle": "10ème catégorie",
         "ordre": "10",
         "echelon": "11",
         "anciennete_mois": "240",
@@ -1320,9 +1210,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "111",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "1",
         "anciennete_mois": "0",
@@ -1332,9 +1221,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "112",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "2",
         "anciennete_mois": "24",
@@ -1344,9 +1232,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "113",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "3",
         "anciennete_mois": "48",
@@ -1356,9 +1243,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "114",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "4",
         "anciennete_mois": "72",
@@ -1368,9 +1254,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "115",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "5",
         "anciennete_mois": "96",
@@ -1380,9 +1265,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "116",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "6",
         "anciennete_mois": "120",
@@ -1392,9 +1276,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "117",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "7",
         "anciennete_mois": "144",
@@ -1404,9 +1287,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "118",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "8",
         "anciennete_mois": "168",
@@ -1416,9 +1298,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "119",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "9",
         "anciennete_mois": "192",
@@ -1428,9 +1309,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "120",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "10",
         "anciennete_mois": "216",
@@ -1440,9 +1320,8 @@
         "updated_at": "2026-07-11 18:10:03"
     },
     {
-        "id": "121",
-        "categorie": "C2",
-        "libelle": "11\u00e8me cat\u00e9gorie",
+        "categorie": "C11",
+        "libelle": "11ème catégorie",
         "ordre": "11",
         "echelon": "11",
         "anciennete_mois": "240",
