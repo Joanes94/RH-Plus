@@ -395,7 +395,10 @@ class RapportController extends Controller
 
         // Application des filtres
         if ($request->filled('service'))      $query->where('service', $request->service);
-        if ($request->filled('corporation'))  $query->where('corporation', $request->corporation);
+        if ($request->filled('corporation')) {
+            $aliases = \App\Models\Personnel::aliasesCorporation($request->corporation);
+            $query->whereIn('corporation', $aliases);
+        }
         if ($request->filled('sexe'))         $query->where('sexe', $request->sexe);
         if ($request->filled('statut')) {
             if ($request->statut === 'en_conge') {

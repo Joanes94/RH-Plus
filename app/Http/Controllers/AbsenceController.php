@@ -55,7 +55,7 @@ class AbsenceController extends Controller
     public function create()
     {
         $user = auth()->user();
-        $personnelsQuery = Personnel::where('statut', 'actif')->orderBy('nom');
+        $personnelsQuery = Personnel::where('statut', 'actif')->orderBy('nom')->orderBy('prenoms');
 
         // Filtrer par centre si l'utilisateur n'est pas global
         if (!$user->isGlobal() && $user->centre_id) {
@@ -69,40 +69,78 @@ class AbsenceController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'personnel_id'  => 'required|exists:personnels,id',
-            'type_absence'  => 'required|in:' . implode(',', array_keys(Absence::typesDisponibles())),
-            'date_debut'    => 'required|date',
-            'date_fin'      => 'required|date|after_or_equal:date_debut',
-            'motif'         => 'nullable|string|max:255',
-            'observations'  => 'nullable|string',
-            'action'        => 'required|in:brouillon,soumettre',
-        ]);
+        $modeSelection = $request->input('mode_selection', 'plage');
+        $rules = [
+            'personnel_id'   => 'required|exists:personnels,id',
+            'type_absence'   => 'required|in:' . implode(',', array_keys(Absence::typesDisponibles())),
+            'mode_selection' => 'required|in:plage,specifique',
+            'motif'          => 'nullable|string|max:255',
+            'observations'   => 'nullable|string',
+            'action'         => 'required|in:brouillon,soumettre',
+        ];
 
-        $types       = Absence::typesDisponibles();
-        $meta        = $types[$data['type_absence']];
-        $deductible  = $meta['deductible'];
-        $dateDebut   = Carbon::parse($data['date_debut']);
-        $dateFin     = Carbon::parse($data['date_fin']);
-
-        if (!$deductible && $meta['jours']) {
-            $nbJours = $meta['jours'];
-            $dateFin = $this->cal->calculerDernierJourConge($dateDebut, $nbJours);
+        if ($modeSelection === 'specifique') {
+            $rules['jours_specifiques'] = 'required';
         } else {
-            $nbJours = $this->cal->compterJoursOuvrables($dateDebut, $dateFin);
+            $rules['date_debut'] = 'required|date';
+            $rules['date_fin']   = 'required|date|after_or_equal:date_debut';
+        }
+
+        $data = $request->validate($rules);
+
+        $types      = Absence::typesDisponibles();
+        $meta       = $types[$data['type_absence']];
+        $deductible = $meta['deductible'];
+
+        $joursSpecifiques = null;
+        if ($modeSelection === 'specifique') {
+            $rawDates = is_array($request->jours_specifiques)
+                ? $request->jours_specifiques
+                : (json_decode($request->jours_specifiques, true) ?: explode(',', $request->jours_specifiques));
+
+            $dates = collect($rawDates)
+                ->filter()
+                ->map(fn($d) => Carbon::parse(trim($d))->format('Y-m-d'))
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+
+            if (empty($dates)) {
+                return back()->withInput()->withErrors(['jours_specifiques' => 'Veuillez sélectionner au moins une date d\'absence.']);
+            }
+
+            $dateDebut = Carbon::parse($dates[0]);
+            $dateFin   = Carbon::parse(end($dates));
+            $nbJours   = count($dates);
+            $joursSpecifiques = $dates;
+        } else {
+            $dateDebut = Carbon::parse($data['date_debut']);
+            $dateFin   = Carbon::parse($data['date_fin']);
+
+            if (!$deductible && $meta['jours']) {
+                $nbJours = (int) $meta['jours'];
+                // Décompte de tous les jours (weekends et fériés inclus)
+                $dateFin = $dateDebut->copy()->addDays($nbJours - 1);
+            } else {
+                // Décompte calendaire réel (tous les jours inclus)
+                $nbJours = Absence::compterJoursCalendaires($dateDebut, $dateFin);
+            }
         }
 
         $absence = Absence::create([
-            'personnel_id'  => $data['personnel_id'],
-            'type_absence'  => $data['type_absence'],
-            'deductible'    => $deductible,
-            'date_debut'    => $dateDebut,
-            'date_fin'      => $dateFin,
-            'nb_jours'      => $nbJours,
-            'motif'         => $data['motif'] ?? null,
-            'observations'  => $data['observations'] ?? null,
-            'statut'        => $data['action'] === 'soumettre' ? 'soumis' : 'brouillon',
-            'cree_par'      => Auth::id(),
+            'personnel_id'      => $data['personnel_id'],
+            'type_absence'      => $data['type_absence'],
+            'mode_selection'    => $modeSelection,
+            'deductible'        => $deductible,
+            'date_debut'        => $dateDebut,
+            'date_fin'          => $dateFin,
+            'nb_jours'          => $nbJours,
+            'jours_specifiques' => $joursSpecifiques,
+            'motif'             => $data['motif'] ?? null,
+            'observations'      => $data['observations'] ?? null,
+            'statut'            => $data['action'] === 'soumettre' ? 'soumis' : 'brouillon',
+            'cree_par'          => Auth::id(),
         ]);
 
         $msg = $data['action'] === 'soumettre'
@@ -123,7 +161,12 @@ class AbsenceController extends Controller
     public function edit(Absence $absence)
     {
         abort_if(!$absence->isEditable(), 403);
-        $personnels = Personnel::where('statut', 'actif')->orderBy('nom')->get();
+        $user = auth()->user();
+        $personnelsQuery = Personnel::where('statut', 'actif')->orderBy('nom')->orderBy('prenoms');
+        if (!$user->isGlobal() && $user->centre_id) {
+            $personnelsQuery->where('centre_id', $user->centre_id);
+        }
+        $personnels = $personnelsQuery->get();
         $types      = Absence::typesDisponibles();
         return view('absences.edit', compact('absence', 'personnels', 'types'));
     }
@@ -132,37 +175,73 @@ class AbsenceController extends Controller
     {
         abort_if(!$absence->isEditable(), 403);
 
-        $data = $request->validate([
-            'type_absence'  => 'required|in:' . implode(',', array_keys(Absence::typesDisponibles())),
-            'date_debut'    => 'required|date',
-            'date_fin'      => 'required|date|after_or_equal:date_debut',
-            'motif'         => 'nullable|string|max:255',
-            'observations'  => 'nullable|string',
-            'action'        => 'required|in:brouillon,soumettre',
-        ]);
+        $modeSelection = $request->input('mode_selection', $absence->mode_selection ?: 'plage');
+        $rules = [
+            'type_absence'   => 'required|in:' . implode(',', array_keys(Absence::typesDisponibles())),
+            'mode_selection' => 'required|in:plage,specifique',
+            'motif'          => 'nullable|string|max:255',
+            'observations'   => 'nullable|string',
+            'action'         => 'required|in:brouillon,soumettre',
+        ];
+
+        if ($modeSelection === 'specifique') {
+            $rules['jours_specifiques'] = 'required';
+        } else {
+            $rules['date_debut'] = 'required|date';
+            $rules['date_fin']   = 'required|date|after_or_equal:date_debut';
+        }
+
+        $data = $request->validate($rules);
 
         $types      = Absence::typesDisponibles();
         $meta       = $types[$data['type_absence']];
         $deductible = $meta['deductible'];
-        $dateDebut  = Carbon::parse($data['date_debut']);
-        $dateFin    = Carbon::parse($data['date_fin']);
 
-        if (!$deductible && $meta['jours']) {
-            $nbJours = $meta['jours'];
-            $dateFin = $this->cal->calculerDernierJourConge($dateDebut, $nbJours);
+        $joursSpecifiques = null;
+        if ($modeSelection === 'specifique') {
+            $rawDates = is_array($request->jours_specifiques)
+                ? $request->jours_specifiques
+                : (json_decode($request->jours_specifiques, true) ?: explode(',', $request->jours_specifiques));
+
+            $dates = collect($rawDates)
+                ->filter()
+                ->map(fn($d) => Carbon::parse(trim($d))->format('Y-m-d'))
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+
+            if (empty($dates)) {
+                return back()->withInput()->withErrors(['jours_specifiques' => 'Veuillez sélectionner au moins une date d\'absence.']);
+            }
+
+            $dateDebut = Carbon::parse($dates[0]);
+            $dateFin   = Carbon::parse(end($dates));
+            $nbJours   = count($dates);
+            $joursSpecifiques = $dates;
         } else {
-            $nbJours = $this->cal->compterJoursOuvrables($dateDebut, $dateFin);
+            $dateDebut = Carbon::parse($data['date_debut']);
+            $dateFin   = Carbon::parse($data['date_fin']);
+
+            if (!$deductible && $meta['jours']) {
+                $nbJours = (int) $meta['jours'];
+                $dateFin = $dateDebut->copy()->addDays($nbJours - 1);
+            } else {
+                $nbJours = Absence::compterJoursCalendaires($dateDebut, $dateFin);
+            }
         }
 
         $absence->update([
-            'type_absence'  => $data['type_absence'],
-            'deductible'    => $deductible,
-            'date_debut'    => $dateDebut,
-            'date_fin'      => $dateFin,
-            'nb_jours'      => $nbJours,
-            'motif'         => $data['motif'] ?? null,
-            'observations'  => $data['observations'] ?? null,
-            'statut'        => $data['action'] === 'soumettre' ? 'soumis' : 'brouillon',
+            'type_absence'      => $data['type_absence'],
+            'mode_selection'    => $modeSelection,
+            'deductible'        => $deductible,
+            'date_debut'        => $dateDebut,
+            'date_fin'          => $dateFin,
+            'nb_jours'          => $nbJours,
+            'jours_specifiques' => $joursSpecifiques,
+            'motif'             => $data['motif'] ?? null,
+            'observations'      => $data['observations'] ?? null,
+            'statut'            => $data['action'] === 'soumettre' ? 'soumis' : 'brouillon',
         ]);
 
         return redirect()->route('absences.show', $absence)->with('success', 'Demande mise à jour.');
@@ -227,6 +306,46 @@ class AbsenceController extends Controller
     // ── Calcul dynamique (AJAX) ────────────────────────────────────────────────
     public function calculDetails(Request $request)
     {
+        $types = Absence::typesDisponibles();
+        $meta  = $types[$request->type_absence] ?? null;
+
+        if (!$meta) {
+            return response()->json(['error' => 'Type d\'absence invalide'], 422);
+        }
+
+        $mode = $request->input('mode_selection', 'plage');
+        $deductible = $meta['deductible'];
+
+        if ($mode === 'specifique') {
+            $rawDates = $request->input('jours_specifiques');
+            if (is_string($rawDates)) {
+                $rawDates = json_decode($rawDates, true) ?: array_filter(array_map('trim', explode(',', $rawDates)));
+            }
+
+            $dates = collect($rawDates)
+                ->filter()
+                ->map(fn($d) => Carbon::parse(trim($d))->format('Y-m-d'))
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+
+            $nbJours   = count($dates);
+            $dateDebut = !empty($dates) ? Carbon::parse($dates[0]) : null;
+            $dateFin   = !empty($dates) ? Carbon::parse(end($dates)) : null;
+            $dateReprise = $dateFin ? $dateFin->copy()->addDay() : null;
+
+            return response()->json([
+                'nb_jours'        => $nbJours,
+                'date_debut'      => $dateDebut ? $dateDebut->format('Y-m-d') : null,
+                'date_fin'        => $dateFin ? $dateFin->format('Y-m-d') : null,
+                'date_fin_fr'     => $dateFin ? $dateFin->isoFormat('dddd D MMMM YYYY') : null,
+                'date_reprise'    => $dateReprise ? $dateReprise->format('Y-m-d') : null,
+                'date_reprise_fr' => $dateReprise ? $dateReprise->isoFormat('dddd D MMMM YYYY') : null,
+            ]);
+        }
+
+        // Mode Plage
         $request->validate([
             'date_debut'   => 'required|date',
             'date_fin'     => 'nullable|date',
@@ -234,53 +353,30 @@ class AbsenceController extends Controller
         ]);
 
         $dateDebut = Carbon::parse($request->date_debut);
-        $types     = Absence::typesDisponibles();
-        $meta      = $types[$request->type_absence] ?? null;
-        
-        if (!$meta) {
-            return response()->json(['error' => 'Type d\'absence invalide'], 422);
-        }
-
-        $deductible = $meta['deductible'];
 
         if (!$deductible && $meta['jours']) {
-            $nbJours = $meta['jours'];
-            $dateFin = $this->cal->calculerDernierJourConge($dateDebut, $nbJours);
+            $nbJours = (int) $meta['jours'];
+            $dateFin = $dateDebut->copy()->addDays($nbJours - 1);
         } else {
             $dateFin = $request->filled('date_fin') ? Carbon::parse($request->date_fin) : null;
             if ($dateFin) {
                 if ($dateFin->lt($dateDebut)) {
                     return response()->json(['error' => 'La date de fin doit être après la date de début'], 422);
                 }
-                $nbJours = $this->cal->compterJoursOuvrables($dateDebut, $dateFin);
+                $nbJours = Absence::compterJoursCalendaires($dateDebut, $dateFin);
             } else {
                 $nbJours = 0;
             }
         }
 
-        // Calcul de la date de reprise (prochain jour ouvrable après dateFin)
-        $dateReprise = null;
-        $dateRepriseFr = null;
-        if ($dateFin) {
-            $feries = array_merge(
-                \App\Models\JourFerie::pourAnnee($dateFin->year),
-                \App\Models\JourFerie::pourAnnee($dateFin->year + 1)
-            );
-
-            $reprise = $dateFin->copy()->addDay();
-            while ($reprise->isWeekend() || in_array($reprise->format('Y-m-d'), $feries)) {
-                $reprise->addDay();
-            }
-            $dateReprise = $reprise->format('Y-m-d');
-            $dateRepriseFr = $reprise->isoFormat('dddd D MMMM YYYY');
-        }
+        $dateReprise = $dateFin ? $dateFin->copy()->addDay() : null;
 
         return response()->json([
             'nb_jours'        => $nbJours,
             'date_fin'        => $dateFin ? $dateFin->format('Y-m-d') : null,
             'date_fin_fr'     => $dateFin ? $dateFin->isoFormat('dddd D MMMM YYYY') : null,
-            'date_reprise'    => $dateReprise,
-            'date_reprise_fr' => $dateRepriseFr,
+            'date_reprise'    => $dateReprise ? $dateReprise->format('Y-m-d') : null,
+            'date_reprise_fr' => $dateReprise ? $dateReprise->isoFormat('dddd D MMMM YYYY') : null,
         ]);
     }
 }

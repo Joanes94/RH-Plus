@@ -127,9 +127,17 @@
     </div>
     <div class="form-grid">
         <div class="form-group fg-3">
-            <label>Corporation / Titre-Fonction</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label style="margin-bottom:0;">Corporation / Titre-Fonction</label>
+                @if(auth()->user()->isAssistantRH() || auth()->user()->isDRH() || auth()->user()->isGlobal())
+                    <button type="button" onclick="ouvrirModalNouvelleCorporation()"
+                            style="background:none; border:none; color:var(--col-primary, #1a5c45); font-size:0.75rem; font-weight:600; cursor:pointer; text-decoration:underline; padding:0;">
+                        + Nouvelle
+                    </button>
+                @endif
+            </div>
             <div class="input-wrapper select-wrapper">
-                <select name="corporation">
+                <select name="corporation" id="select-corporation">
                     <option value="">— Sélectionner —</option>
                     @foreach($corporations as $c)
                         <option value="{{ $c }}" {{ old('corporation', $personnel->corporation ?? '') === $c ? 'selected' : '' }}>{{ $c }}</option>
@@ -326,4 +334,117 @@
         document.getElementById('enfants-list').appendChild(div);
         enfantIndex++;
     }
+
+    function ouvrirModalNouvelleCorporation() {
+        const modal = document.getElementById('modalInlineCorp');
+        if (!modal) return;
+        document.getElementById('inline_corp_nom').value = '';
+        document.getElementById('inline_corp_error').style.display = 'none';
+        modal.showModal();
+        setTimeout(() => document.getElementById('inline_corp_nom').focus(), 100);
+    }
+
+    async function soumettreNouvelleCorporation() {
+        const input = document.getElementById('inline_corp_nom');
+        const errDiv = document.getElementById('inline_corp_error');
+        const btn = document.getElementById('btn-save-inline-corp');
+        const val = input.value.trim();
+
+        if (!val) {
+            errDiv.textContent = 'Veuillez renseigner le nom de la corporation.';
+            errDiv.style.display = 'block';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Enregistrement...';
+        errDiv.style.display = 'none';
+
+        try {
+            const resp = await fetch('{{ route('corporations.store') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    nom: val,
+                    centre_id: '{{ isset($personnel) && $personnel->centre_id ? $personnel->centre_id : auth()->user()->centre_id }}'
+                })
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                throw new Error(data.error || data.message || 'Erreur lors de la création de la corporation.');
+            }
+
+            const corpNom = data.corporation ? data.corporation.nom : val.toUpperCase();
+            const select = document.getElementById('select-corporation');
+
+            // Vérifier si déjà présent dans le select
+            let found = false;
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === corpNom) {
+                    select.selectedIndex = i;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                const opt = document.createElement('option');
+                opt.value = corpNom;
+                opt.textContent = corpNom;
+                opt.selected = true;
+                select.appendChild(opt);
+            }
+
+            document.getElementById('modalInlineCorp').close();
+        } catch (err) {
+            errDiv.textContent = err.message;
+            errDiv.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Ajouter & Sélectionner';
+        }
+    }
 </script>
+
+{{-- Modal Inline pour Création Rapide de Corporation --}}
+<dialog id="modalInlineCorp" style="border:none; border-radius:12px; padding:0; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.04); max-width:440px; width:92%;">
+    <div style="background:#fff; border-radius:12px; overflow:hidden;">
+        <div style="background:#f8fafc; padding:1rem 1.25rem; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h3 style="margin:0; font-size:1rem; font-weight:700; color:#1e293b;">Nouvelle Corporation</h3>
+                <small style="color:#64748b; font-size:0.75rem;">
+                    @if(auth()->user()->centre)
+                        Pour votre centre : <strong>{{ auth()->user()->centre->nom }}</strong>
+                    @else
+                        Standard général
+                    @endif
+                </small>
+            </div>
+            <button type="button" onclick="document.getElementById('modalInlineCorp').close()" style="background:none; border:none; font-size:1.25rem; cursor:pointer; color:#94a3b8;">&times;</button>
+        </div>
+        <div style="padding:1.25rem;">
+            <div style="margin-bottom:1rem;">
+                <label style="display:block; font-size:0.825rem; font-weight:600; color:#334155; margin-bottom:0.35rem;">Nom du métier / fonction *</label>
+                <input type="text" id="inline_corp_nom" placeholder="Ex: AIDE-SOIGNANT DE NUIT, CAISSIER ADJOINT..." 
+                       style="width:100%; padding:0.6rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; font-size:0.875rem; text-transform:uppercase;">
+                <div id="inline_corp_error" style="color:#ef4444; font-size:0.75rem; margin-top:0.35rem; display:none;"></div>
+            </div>
+            @if(auth()->user()->centre)
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:0.65rem 0.75rem; font-size:0.75rem; color:#166534; margin-bottom:1rem;">
+                    Cette corporation sera rattachée <strong>exclusivement à votre centre</strong> ({{ auth()->user()->centre->nom }}) et n'apparaîtra nulle part ailleurs.
+                </div>
+            @endif
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                <button type="button" onclick="document.getElementById('modalInlineCorp').close()" class="btn-ghost" style="padding:0.5rem 0.85rem; font-size:0.825rem;">Annuler</button>
+                <button type="button" id="btn-save-inline-corp" onclick="soumettreNouvelleCorporation()" class="btn-primary" style="padding:0.5rem 1rem; font-size:0.825rem;">Ajouter & Sélectionner</button>
+            </div>
+        </div>
+    </div>
+</dialog>
+

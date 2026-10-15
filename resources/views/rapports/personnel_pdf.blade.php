@@ -323,7 +323,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($parCorp->take(15) as $corp => $d)
+                    @foreach($parCorp as $corp => $d)
                     <tr>
                         <td>{{ $corp ?: '—' }}</td>
                         <td class="tc">{{ $d['total'] }}</td>

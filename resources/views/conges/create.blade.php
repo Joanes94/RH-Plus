@@ -247,25 +247,67 @@ document.getElementById('dateDebut').addEventListener('change', function () {
 document.getElementById('nbJours').addEventListener('input',  calcReprise);
 
 // ── Solde agent ───────────────────────────────────────────────────────────
-document.getElementById('personnelSelect').addEventListener('change', function() {
-    const id    = this.value;
-    const annee = document.querySelector('input[name="annee"]')?.value || new Date().getFullYear();
-    const card  = document.getElementById('soldeCard');
+let currentSoldeData = null;
 
-    if (!id) { card.innerHTML = '<h4>Solde de congés</h4><p style="font-size:.82rem;color:var(--col-text-2)">Sélectionnez un agent.</p>'; return; }
+function renderSoldeCard() {
+    const card = document.getElementById('soldeCard');
+    if (!currentSoldeData || !card) return;
 
-    card.innerHTML = '<h4>Solde de congés</h4><p style="font-size:.82rem;color:var(--col-text-2)">Chargement...</p>';
+    const soldeInitial = parseInt(currentSoldeData.solde);
+    const acquis = currentSoldeData.acquis;
+    const pris = currentSoldeData.pris;
+    const isMaternite = document.querySelector('.type-radio-hidden:checked')?.value === 'maternite';
+    const nbJours = isMaternite ? 0 : parseInt(document.getElementById('nbJours')?.value || 0);
 
-    fetch(`/conges/calcul-date-fin?personnel_id=${id}&annee=${annee}&solde=1`)
+    let html = `<h4>Solde de congés</h4>`;
+    if (nbJours > 0) {
+        const reste = soldeInitial - nbJours;
+        const color = reste < 0 ? 'var(--col-danger, #e53e3e)' : 'var(--col-primary)';
+        html += `<div style="font-size:1.6rem;font-weight:700;color:${color};margin:8px 0">${reste}j <span style="font-size:.82rem;font-weight:normal;color:var(--col-text-2)">(reste après demande)</span></div>`;
+        html += `<div style="font-size:.78rem;color:var(--col-text-2)">Solde disponible : <strong>${soldeInitial}j</strong> (Acquis : ${acquis}j — Pris : ${pris}j)</div>`;
+        html += `<div style="font-size:.78rem;color:var(--col-text-2);margin-top:4px">Jours demandés : <strong>${nbJours}j</strong></div>`;
+    } else {
+        html += `<div style="font-size:1.6rem;font-weight:700;color:var(--col-primary);margin:8px 0">${soldeInitial}j</div>`;
+        html += `<div style="font-size:.78rem;color:var(--col-text-2)">Acquis : ${acquis}j — Pris : ${pris}j</div>`;
+    }
+    card.innerHTML = html;
+}
+
+function chargerSoldeAgent() {
+    const select = document.getElementById('personnelSelect');
+    const id     = select ? select.value : '';
+    const annee  = document.querySelector('input[name="annee"]')?.value || new Date().getFullYear();
+    const card   = document.getElementById('soldeCard');
+
+    if (!id) {
+        currentSoldeData = null;
+        if (card) card.innerHTML = '<h4>Solde de congés</h4><p style="font-size:.82rem;color:var(--col-text-2)">Sélectionnez un agent.</p>';
+        return;
+    }
+
+    if (card) card.innerHTML = '<h4>Solde de congés</h4><p style="font-size:.82rem;color:var(--col-text-2)">Chargement...</p>';
+
+    fetch(`{{ route('conges.calcul-date-fin') }}?personnel_id=${id}&annee=${annee}&solde=1`)
         .then(r => r.json())
         .then(d => {
             if (d.solde !== undefined) {
-                card.innerHTML = `<h4>Solde de congés</h4>
-                    <div style="font-size:1.6rem;font-weight:700;color:var(--col-primary);margin:8px 0">${d.solde}j</div>
-                    <div style="font-size:.78rem;color:var(--col-text-2)">Acquis : ${d.acquis}j — Pris : ${d.pris}j</div>`;
+                currentSoldeData = d;
+                renderSoldeCard();
+            } else {
+                if (card) card.innerHTML = '<h4>Solde de congés</h4><p style="font-size:.82rem;color:var(--col-danger, #e53e3e)">Erreur de calcul du solde.</p>';
             }
         })
-        .catch(() => {});
-});
+        .catch(() => {
+            if (card) card.innerHTML = '<h4>Solde de congés</h4><p style="font-size:.82rem;color:var(--col-text-2)">Impossible de récupérer le solde.</p>';
+        });
+}
+
+document.getElementById('personnelSelect')?.addEventListener('change', chargerSoldeAgent);
+document.querySelector('input[name="annee"]')?.addEventListener('change', chargerSoldeAgent);
+document.getElementById('nbJours')?.addEventListener('input', renderSoldeCard);
+
+if (document.getElementById('personnelSelect')?.value) {
+    chargerSoldeAgent();
+}
 </script>
 @endpush

@@ -14,17 +14,18 @@ class Absence extends Model
 
     protected $fillable = [
         'reference',
-        'personnel_id', 'type_absence', 'deductible',
-        'date_debut', 'date_fin', 'nb_jours',
+        'personnel_id', 'type_absence', 'mode_selection', 'deductible',
+        'date_debut', 'date_fin', 'nb_jours', 'jours_specifiques',
         'motif', 'observations', 'statut',
         'cree_par', 'approuve_par', 'approuve_le', 'motif_rejet', 'signature_path',
     ];
 
     protected $casts = [
-        'date_debut'  => 'date',
-        'date_fin'    => 'date',
-        'deductible'  => 'boolean',
-        'approuve_le' => 'datetime',
+        'date_debut'        => 'date',
+        'date_fin'          => 'date',
+        'deductible'        => 'boolean',
+        'approuve_le'       => 'datetime',
+        'jours_specifiques' => 'array',
     ];
 
     // ── Types avec leurs métadonnées ──────────────────────────────────────────
@@ -75,61 +76,53 @@ class Absence extends Model
         return in_array($this->statut, ['brouillon', 'rejete']);
     }
 
-    /**
-     * Calcule le nombre de jours ouvrables entre deux dates
-     * (du lundi au vendredi, excluant samedi et dimanche)
-     */
-    public function calculerJoursOuvrables($dateDebut, $dateFin): int
+    public function isModeSpecifique(): bool
     {
-        $jours = 0;
-        $current = clone $dateDebut;
-        while ($current <= $dateFin) {
-            // 0 = dimanche, 6 = samedi
-            if ($current->dayOfWeek !== 0 && $current->dayOfWeek !== 6) {
-                $jours++;
-            }
-            $current->addDay();
-        }
-        return $jours;
+        return $this->mode_selection === 'specifique' && !empty($this->jours_specifiques);
     }
 
     /**
-     * Calcule la date de reprise (premier jour ouvrable après les jours d'absence)
+     * Calcule le nombre de jours calendaires réels (incluant week-ends et jours fériés)
      */
-    public function calculerDateReprise($dateDebut, $nbJoursOuvrables): Carbon
+    public static function compterJoursCalendaires($dateDebut, $dateFin): int
     {
-        $current = clone $dateDebut;
-        $joursComptes = 0;
-        
-        // On ajoute d'abord les jours d'absence (ouvrables)
-        while ($joursComptes < $nbJoursOuvrables) {
-            if ($current->dayOfWeek !== 0 && $current->dayOfWeek !== 6) {
-                $joursComptes++;
-            }
-            $current->addDay();
-        }
-        
-        // On avance jusqu'au prochain jour ouvrable (lundi)
-        while ($current->dayOfWeek === 0 || $current->dayOfWeek === 6) {
-            $current->addDay();
-        }
-        
-        return $current;
-    }
-
-    /**
-     * Accesseur : nombre de jours ouvrables
-     */
-    public function getNbJoursOuvrablesAttribute(): int
-    {
-        if (!$this->date_debut || !$this->date_fin) {
+        $d1 = Carbon::parse($dateDebut)->startOfDay();
+        $d2 = Carbon::parse($dateFin)->startOfDay();
+        if ($d2->lt($d1)) {
             return 0;
         }
-        return $this->calculerJoursOuvrables($this->date_debut, $this->date_fin);
+        return (int) $d1->diffInDays($d2) + 1;
     }
 
     /**
-     * Accesseur : date de reprise (premier jour ouvrable après l'absence)
+     * Formate la liste des dates pour affichage et documents officiels
+     */
+    public function getJoursFormatteAttribute(): string
+    {
+        if ($this->isModeSpecifique()) {
+            $dates = collect($this->jours_specifiques)->sort()->map(function ($d) {
+                return Carbon::parse($d)->isoFormat('dddd D MMMM YYYY');
+            })->values();
+
+            if ($dates->count() === 1) {
+                return 'le ' . $dates->first();
+            }
+            $last = $dates->pop();
+            return 'les ' . $dates->implode(', ') . ' et ' . $last;
+        }
+
+        if ($this->date_debut && $this->date_fin) {
+            if ($this->date_debut->isSameDay($this->date_fin)) {
+                return 'le ' . $this->date_debut->isoFormat('dddd D MMMM YYYY');
+            }
+            return 'du ' . $this->date_debut->isoFormat('D MMMM YYYY') . ' au ' . $this->date_fin->isoFormat('D MMMM YYYY');
+        }
+
+        return '';
+    }
+
+    /**
+     * Accesseur : date de reprise du service
      */
     public function getDateRepriseAttribute(): ?Carbon
     {
@@ -137,17 +130,7 @@ class Absence extends Model
             return null;
         }
 
-        $feries = array_merge(
-            JourFerie::pourAnnee($this->date_fin->year),
-            JourFerie::pourAnnee($this->date_fin->year + 1)
-        );
-
-        $reprise = $this->date_fin->copy()->addDay();
-        while ($reprise->isWeekend() || in_array($reprise->format('Y-m-d'), $feries)) {
-            $reprise->addDay();
-        }
-
-        return $reprise;
+        return $this->date_fin->copy()->addDay();
     }
 
     public function personnel()   { return $this->belongsTo(Personnel::class); }

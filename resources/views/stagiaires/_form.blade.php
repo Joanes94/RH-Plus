@@ -167,18 +167,35 @@
         <h3>Période de stage</h3>
     </div>
     <div class="form-grid">
-        @if(isset($centres))
-        <div class="form-group fg-3">
-            <label>Centre hospitalier d'affectation</label>
-            <div class="input-wrapper select-wrapper">
-                <select name="centre_id">
-                    <option value="">— Sélectionner un centre —</option>
-                    @foreach($centres as $c)
-                        <option value="{{ $c->id }}" {{ old('centre_id', $stagiaire->centre_id ?? '') == $c->id ? 'selected' : '' }}>{{ $c->nom }} ({{ $c->code }})</option>
-                    @endforeach
-                </select>
+        @php
+            $currentUser = auth()->user();
+            $isGlobal = $currentUser && $currentUser->isGlobal();
+            $userCentre = $currentUser ? $currentUser->centre : null;
+        @endphp
+
+        @if($isGlobal)
+            @if(isset($centres))
+            <div class="form-group fg-3">
+                <label>Centre hospitalier d'affectation <span class="req">*</span></label>
+                <div class="input-wrapper select-wrapper">
+                    <select name="centre_id" required>
+                        <option value="">— Sélectionner un centre —</option>
+                        @foreach($centres as $c)
+                            <option value="{{ $c->id }}" {{ old('centre_id', $stagiaire->centre_id ?? '') == $c->id ? 'selected' : '' }}>{{ $c->nom }} ({{ $c->code }})</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
-        </div>
+            @endif
+        @else
+            <div class="form-group fg-3">
+                <label>Centre hospitalier d'affectation</label>
+                <div class="input-wrapper">
+                    <input type="text" value="{{ $userCentre ? $userCentre->nom . ' (' . $userCentre->code . ')' : 'Mon Centre' }}" readonly
+                           style="background:var(--col-bg);color:var(--col-text-2);cursor:not-allowed;font-weight:600;">
+                    <input type="hidden" name="centre_id" value="{{ $currentUser->centre_id }}">
+                </div>
+            </div>
         @endif
         <div class="form-group fg-3">
             <label>Service d'accueil</label>

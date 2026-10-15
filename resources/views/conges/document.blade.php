@@ -80,11 +80,18 @@
     if ($anciennete >= 30)      $maj = 6;
     elseif ($anciennete >= 25)  $maj = 4;
     elseif ($anciennete >= 20)  $maj = 2;
-    $acquis = min(24 + $maj, 30);
+
+    if ($document->nb_jours_acquis && $document->nb_jours_acquis > 0) {
+        $acquis = (int) $document->nb_jours_acquis;
+    } elseif ($personnel->conge_jours && (int)$personnel->conge_jours > 0) {
+        $acquis = (int) $personnel->conge_jours;
+    } else {
+        $acquis = min(24 + $maj, 30);
+    }
 
     $dejaFalques = $document->nb_jours_deja_pris ?? 0;
     $accordes    = $document->nb_jours_demandes;
-    $restants    = $document->nb_jours_restants ?? ($acquis - $dejaFalques - $accordes);
+    $restants    = $document->solde_restant_calcule ?? ($document->nb_jours_restants ?? ($acquis - $dejaFalques - $accordes));
 @endphp
 
     {{-- LETTERHEAD DYNAMIQUE OU IMAGE D'EN-TÊTE --}}

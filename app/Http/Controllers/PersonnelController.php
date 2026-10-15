@@ -36,7 +36,10 @@ class PersonnelController extends Controller
         }
 
         if ($request->filled('service'))     $query->where('service', $request->service);
-        if ($request->filled('corporation')) $query->where('corporation', $request->corporation);
+        if ($request->filled('corporation')) {
+            $aliases = Personnel::aliasesCorporation($request->corporation);
+            $query->whereIn('corporation', $aliases);
+        }
         if ($request->filled('statut'))      $query->where('statut', $request->statut);
         if ($request->filled('contrat')) {
             $c = $request->contrat;
@@ -89,10 +92,12 @@ class PersonnelController extends Controller
             $congesCountQuery->whereHas('personnel', fn ($q) => $q->where('centre_id', $request->centre_id));
         }
 
+        $centreIdFiltre = $user->isGlobal() ? ($request->filled('centre_id') ? (int) $request->centre_id : null) : $user->centre_id;
+
         return view('personnel.index', [
             'personnels'   => $personnels,
             'services'     => Personnel::services(),
-            'corporations' => Personnel::corporations(),
+            'corporations' => Personnel::corporations($centreIdFiltre),
             'filters'      => $request->only('search', 'service', 'corporation', 'statut', 'contrat'),
             'genreFiltre'  => $genreFiltre,
             'stats' => [
@@ -172,7 +177,7 @@ class PersonnelController extends Controller
 
         return view('personnel.edit', [
             'personnel'    => $personnel,
-            'corporations' => Personnel::corporations(),
+            'corporations' => Personnel::corporations($personnel->centre_id),
             'services'     => Personnel::services(),
             'contrats'     => Personnel::typesContrat(),
             'situations'   => Personnel::situationsMatrimoniales(),

@@ -87,6 +87,11 @@
                     Personnel
                 </a>
 
+                <a href="{{ route('corporations.index') }}" class="nav-item {{ request()->routeIs('corporations.*') ? 'active' : '' }}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Corporations
+                </a>
+
                 <a href="{{ route('stagiaires.index') }}" class="nav-item {{ request()->routeIs('stagiaires.index') || request()->routeIs('stagiaires.create') || request()->routeIs('stagiaires.show') || request()->routeIs('stagiaires.edit') ? 'active' : '' }}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                     Stagiaires

@@ -182,14 +182,22 @@ class CongeController extends Controller
             $dateFin = $this->cal->calculerDateFin($dateDebut, (int) $nbJours);
         }
 
+        $personnel  = $conge->personnel;
+        $annee      = (string) ($request->annee ?? $conge->annee);
+        $solde      = $this->cal->soldeConges($personnel, $annee);
+        $nbRestants = ($type === 'maternite') ? $solde['restants'] : ($solde['restants'] - (int)$nbJours);
+
         $conge->update([
-            'type_conge'        => $type,
-            'date_debut'        => $dateDebut,
-            'date_fin'          => $dateFin,
-            'nb_jours_demandes' => $nbJours,
-            'annee'             => $request->annee ?? $conge->annee,
-            'observations'      => $request->observations,
-            'statut'            => $request->action === 'soumettre' ? 'soumis' : $conge->statut,
+            'type_conge'         => $type,
+            'date_debut'         => $dateDebut,
+            'date_fin'           => $dateFin,
+            'nb_jours_demandes'  => $nbJours,
+            'nb_jours_acquis'    => $solde['acquis'],
+            'nb_jours_deja_pris' => $solde['total_pris'],
+            'nb_jours_restants'  => $nbRestants,
+            'annee'              => $annee,
+            'observations'       => $request->observations,
+            'statut'             => $request->action === 'soumettre' ? 'soumis' : $conge->statut,
         ]);
 
         return redirect()->route('conges.show', $conge)
@@ -276,6 +284,23 @@ class CongeController extends Controller
     // ── Calcul date de fin (AJAX) ──────────────────────────────────────────────
     public function calculerDateFin(Request $request)
     {
+        // ── Consultation rapide du solde d'un agent (AJAX) ───────────────────
+        if ($request->boolean('solde') && $request->filled('personnel_id')) {
+            $personnel = Personnel::find($request->personnel_id);
+            if (!$personnel) {
+                return response()->json(['error' => 'Agent introuvable.'], 404);
+            }
+            $annee = (string) ($request->annee ?: date('Y'));
+            $solde = $this->cal->soldeConges($personnel, $annee);
+
+            return response()->json([
+                'solde'    => $solde['restants'],
+                'acquis'   => $solde['acquis'],
+                'pris'     => $solde['total_pris'],
+                'abs_ded'  => $solde['absences_ded'],
+            ]);
+        }
+
         $request->validate([
             'date_debut'        => 'required|date',
             'type_conge'        => 'nullable|in:administratif,technique,maternite',

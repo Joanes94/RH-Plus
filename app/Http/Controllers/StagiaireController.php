@@ -104,9 +104,11 @@ class StagiaireController extends Controller
         $data = $this->valider($request);
         $data['created_by'] = Auth::id();
 
-        // Par défaut le centre de l'utilisateur connecté si non renseigné
-        if (empty($data['centre_id']) && auth()->user()->centre_id) {
-            $data['centre_id'] = auth()->user()->centre_id;
+        $user = auth()->user();
+        if (!$user->isGlobal()) {
+            $data['centre_id'] = $user->centre_id;
+        } elseif (empty($data['centre_id']) && $user->centre_id) {
+            $data['centre_id'] = $user->centre_id;
         }
 
         // Photo
@@ -134,6 +136,10 @@ class StagiaireController extends Controller
     // ── Détail ────────────────────────────────────────────────────────────────
     public function show(Stagiaire $stagiaire)
     {
+        if (!auth()->user()->isGlobal() && $stagiaire->centre_id && $stagiaire->centre_id !== auth()->user()->centre_id) {
+            abort(403, 'Accès non autorisé à ce stagiaire.');
+        }
+
         $stagiaire->load('centre');
         return view('stagiaires.show', compact('stagiaire'));
     }
@@ -141,6 +147,10 @@ class StagiaireController extends Controller
     // ── Modification ──────────────────────────────────────────────────────────
     public function edit(Stagiaire $stagiaire)
     {
+        if (!auth()->user()->isGlobal() && $stagiaire->centre_id && $stagiaire->centre_id !== auth()->user()->centre_id) {
+            abort(403, 'Accès non autorisé à ce stagiaire.');
+        }
+
         return view('stagiaires.edit', [
             'stagiaire'  => $stagiaire,
             'niveaux'    => Stagiaire::niveauxEtude(),
@@ -152,8 +162,17 @@ class StagiaireController extends Controller
 
     public function update(Request $request, Stagiaire $stagiaire)
     {
+        $user = auth()->user();
+        if (!$user->isGlobal() && $stagiaire->centre_id && $stagiaire->centre_id !== $user->centre_id) {
+            abort(403, 'Action non autorisée sur ce stagiaire.');
+        }
+
         $ancienStatut = $stagiaire->statut;
         $data = $this->valider($request, $stagiaire->id);
+
+        if (!$user->isGlobal()) {
+            $data['centre_id'] = $stagiaire->centre_id ?? $user->centre_id;
+        }
 
         // Photo
         if ($request->hasFile('photo')) {

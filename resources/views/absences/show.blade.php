@@ -97,10 +97,16 @@
 <div class="dash-card">
     <div class="card-header"><h3>Détails de la période</h3></div>
     <dl class="detail-list">
+        @if($absence->isModeSpecifique())
+        <div class="dl-row"><dt>Jours demandés</dt><dd><strong>{{ $absence->jours_formatte }}</strong></dd></div>
+        <div class="dl-row"><dt>Nombre de jours</dt><dd><strong>{{ $absence->nb_jours }} jour(s)</strong></dd></div>
+        <div class="dl-row"><dt>Date de reprise</dt><dd><strong>{{ $absence->date_reprise ? $absence->date_reprise->isoFormat('dddd D MMMM YYYY') : '—' }}</strong></dd></div>
+        @else
         <div class="dl-row"><dt>Date de début</dt><dd><strong>{{ $absence->date_debut->isoFormat('dddd D MMMM YYYY') }}</strong></dd></div>
         <div class="dl-row"><dt>Date de fin</dt><dd><strong>{{ $absence->date_fin->isoFormat('dddd D MMMM YYYY') }}</strong></dd></div>
-        <div class="dl-row"><dt>Date de reprise</dt><dd><strong>{{ $absence->date_reprise->isoFormat('dddd D MMMM YYYY') }}</strong></dd></div>
-        <div class="dl-row"><dt>Durée</dt><dd><strong>{{ $absence->nb_jours_ouvrables }} jour(s) ouvrable(s)</strong></dd></div>
+        <div class="dl-row"><dt>Date de reprise</dt><dd><strong>{{ $absence->date_reprise ? $absence->date_reprise->isoFormat('dddd D MMMM YYYY') : '—' }}</strong></dd></div>
+        <div class="dl-row"><dt>Durée</dt><dd><strong>{{ $absence->nb_jours }} jour(s)</strong></dd></div>
+        @endif
         <div class="dl-row"><dt>Rédigé par</dt><dd>{{ $absence->creePar ? $absence->creePar->nom_complet : '—' }}</dd></div>
         <div class="dl-row"><dt>Soumis le</dt><dd>{{ $absence->updated_at->format('d/m/Y') }}</dd></div>
     </dl>

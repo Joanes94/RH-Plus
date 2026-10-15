@@ -69,7 +69,7 @@
                 <div class="input-wrapper">
                     <input type="number" name="nb_jours_demandes" id="nbJoursInput"
                            value="{{ old('nb_jours_demandes', $conge->nb_jours_demandes) }}"
-                           min="1" max="30">
+                           min="1" max="365">
                 </div>
                 <span id="noteMaternite" style="display:none;font-size:.72rem;color:var(--col-text-3)">98 jours calendaires (14 semaines), calculés automatiquement.</span>
             </div>
@@ -106,6 +106,10 @@
 </div>
 
 <div class="conge-form-aside">
+    <div class="aside-card aside-info" id="soldeCard">
+        <h4>Solde de congés</h4>
+        <p style="font-size:.82rem;color:var(--col-text-2)">Chargement...</p>
+    </div>
     <div class="aside-card">
         <h4>Règles de calcul</h4>
         <div class="rule-list">
@@ -151,9 +155,55 @@ function calculerDateFin() {
     }).catch(() => {});
 }
 
-typeSelect.addEventListener('change', toggleNbJours);
+// ── Solde agent ───────────────────────────────────────────────────────────
+let currentSoldeData = null;
+
+function renderSoldeCard() {
+    const card = document.getElementById('soldeCard');
+    if (!currentSoldeData || !card) return;
+
+    const soldeInitial = parseInt(currentSoldeData.solde);
+    const acquis = currentSoldeData.acquis;
+    const pris = currentSoldeData.pris;
+    const isMaternite = typeSelect.value === 'maternite';
+    const nbJours = isMaternite ? 0 : parseInt(nbJoursInp?.value || 0);
+
+    let html = `<h4>Solde de congés</h4>`;
+    if (nbJours > 0) {
+        const reste = soldeInitial - nbJours;
+        const color = reste < 0 ? 'var(--col-danger, #e53e3e)' : 'var(--col-primary)';
+        html += `<div style="font-size:1.6rem;font-weight:700;color:${color};margin:8px 0">${reste}j <span style="font-size:.82rem;font-weight:normal;color:var(--col-text-2)">(reste après modification)</span></div>`;
+        html += `<div style="font-size:.78rem;color:var(--col-text-2)">Solde disponible : <strong>${soldeInitial}j</strong> (Acquis : ${acquis}j — Pris : ${pris}j)</div>`;
+        html += `<div style="font-size:.78rem;color:var(--col-text-2);margin-top:4px">Jours demandés : <strong>${nbJours}j</strong></div>`;
+    } else {
+        html += `<div style="font-size:1.6rem;font-weight:700;color:var(--col-primary);margin:8px 0">${soldeInitial}j</div>`;
+        html += `<div style="font-size:.78rem;color:var(--col-text-2)">Acquis : ${acquis}j — Pris : ${pris}j</div>`;
+    }
+    card.innerHTML = html;
+}
+
+function chargerSoldeAgent() {
+    const pid   = '{{ $conge->personnel_id }}';
+    const annee = anneeInp?.value || '{{ $conge->annee }}';
+    const card  = document.getElementById('soldeCard');
+
+    fetch(`{{ route('conges.calcul-date-fin') }}?personnel_id=${pid}&annee=${annee}&solde=1`)
+        .then(r => r.json())
+        .then(d => {
+            if (d.solde !== undefined) {
+                currentSoldeData = d;
+                renderSoldeCard();
+            }
+        })
+        .catch(() => {});
+}
+
+typeSelect.addEventListener('change', () => { toggleNbJours(); renderSoldeCard(); });
 dateDebutInp.addEventListener('change', calculerDateFin);
-nbJoursInp.addEventListener('input', calculerDateFin);
+nbJoursInp.addEventListener('input', () => { calculerDateFin(); renderSoldeCard(); });
+anneeInp.addEventListener('change', () => { calculerDateFin(); chargerSoldeAgent(); });
+
 toggleNbJours();
+chargerSoldeAgent();
 </script>
 @endpush

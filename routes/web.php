@@ -22,6 +22,7 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\PayPeriodController;
 use App\Http\Controllers\PaySlipController;
 use App\Http\Controllers\PayAdjustmentController;
+use App\Http\Controllers\CorporationController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Route d'accueil publique ────────────────────────────────────────────────
@@ -249,6 +250,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/config-ddis',                             [App\Http\Controllers\ConfigDdisController::class, 'index'])->name('config-ddis.index')->middleware('role:ddis,crh');
     Route::post('/config-ddis/save',                       [App\Http\Controllers\ConfigDdisController::class, 'saveConfig'])->name('config-ddis.save')->middleware('role:ddis,crh');
     Route::post('/config-ddis/signature-pad',              [App\Http\Controllers\ConfigDdisController::class, 'saveSignaturePad'])->name('config-ddis.signature-pad')->middleware('role:ddis,crh');
+
+    // ── Corporations (par centre pour DRH / Assistant RH, ou communes) ───────
+    Route::get('/corporations',                            [CorporationController::class, 'index'])->name('corporations.index');
+    Route::post('/corporations',                           [CorporationController::class, 'store'])->name('corporations.store');
+    Route::delete('/corporations/{corporation}',           [CorporationController::class, 'destroy'])->name('corporations.destroy');
 
     // ── Gestion de la paie ────────────────────────────────────────────────────
     Route::prefix('paie')->group(function () {

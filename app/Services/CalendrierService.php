@@ -146,7 +146,13 @@ class CalendrierService
             ? Carbon::parse($personnel->date_embauche_isd)
             : ($personnel->date_embauche_centre ? Carbon::parse($personnel->date_embauche_centre) : null);
 
-        $acquis = $this->joursAcquisParAnciennete($entreeISD);
+        // Si l'agent a un nombre de jours de congé attribué sur sa fiche (reliquat / droit initial),
+        // on l'utilise en priorité comme base acquise.
+        if ($personnel->conge_jours !== null && (int)$personnel->conge_jours > 0) {
+            $acquis = (int)$personnel->conge_jours;
+        } else {
+            $acquis = $this->joursAcquisParAnciennete($entreeISD);
+        }
 
         // ── Congés approuvés cette année (déjà en jours ouvrables) ────────────
         // La maternité est un droit à part : elle ne doit pas être déduite du

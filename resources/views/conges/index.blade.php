@@ -106,8 +106,9 @@
                 </td>
                 <td class="text-center fw-bold">{{ $c->nb_jours_demandes }}j</td>
                 <td class="text-center">
-                    <span class="solde-badge {{ $c->nb_jours_restants <= 0 ? 'solde-zero' : ($c->nb_jours_restants <= 5 ? 'solde-low' : 'solde-ok') }}">
-                        {{ $c->nb_jours_restants }}j
+                    @php $rest = $c->solde_restant_calcule; @endphp
+                    <span class="solde-badge {{ $rest <= 0 ? 'solde-zero' : ($rest <= 5 ? 'solde-low' : 'solde-ok') }}">
+                        {{ $rest }}j
                     </span>
                 </td>
                 <td class="mono-text">{{ $c->annee }}</td>

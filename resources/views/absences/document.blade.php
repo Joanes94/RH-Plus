@@ -115,24 +115,31 @@
         @endphp
 
         @php
-            // Construire la liste des jours au format "06, 07 et 10 Novembre 2025"
             $debut = $document->date_debut;
             $fin   = $document->date_fin;
-            $joursListe = '';
-            if ($debut && $fin) {
-                $jours = [];
-                $cur = $debut->copy();
-                while ($cur->lte($fin)) {
-                    $jours[] = $cur->format('d');
-                    $cur->addDay();
+
+            if ($document->isModeSpecifique()) {
+                $joursTexte = $document->jours_formatte;
+            } else {
+                $joursTexte = '';
+                if ($debut && $fin) {
+                    if ($debut->isSameDay($fin)) {
+                        $joursTexte = 'le ' . $debut->isoFormat('D MMMM YYYY');
+                    } else {
+                        $jours = [];
+                        $cur = $debut->copy();
+                        while ($cur->lte($fin)) {
+                            $jours[] = $cur->format('d');
+                            $cur->addDay();
+                        }
+                        if (count($jours) > 1) {
+                            $last = array_pop($jours);
+                            $joursTexte = 'les ' . implode(', ', $jours) . ' et ' . $last . ' ' . $debut->isoFormat('MMMM YYYY');
+                        } else {
+                            $joursTexte = 'le ' . $jours[0] . ' ' . $debut->isoFormat('MMMM YYYY');
+                        }
+                    }
                 }
-                if (count($jours) > 1) {
-                    $last = array_pop($jours);
-                    $joursListe = implode(', ', $jours) . ' et ' . $last;
-                } else {
-                    $joursListe = $jours[0];
-                }
-                $joursListe .= ' ' . $debut->isoFormat('MMMM YYYY');
             }
         @endphp
 
@@ -140,7 +147,7 @@
             Suite à votre demande
             @if($document->created_at) du {{ $document->created_at->isoFormat('DD MMMM YYYY') }} @endif,
             il vous est accordé une autorisation d'absence
-            @if($joursListe) les <strong>{{ $joursListe }}</strong> @endif
+            @if(!empty($joursTexte)) <strong>{{ $joursTexte }}</strong> @endif
             @if($document->motif), pour {{ $document->motif }} @endif.
         </p>
 
@@ -160,7 +167,7 @@
         </p>
         @endif
 
-        @if($fin)
+        @if($document->date_reprise)
            <p>
               Vous reprendrez service le <strong>{{ $document->date_reprise->isoFormat('dddd DD MMMM YYYY') }}</strong>.
            </p>
