@@ -190,8 +190,8 @@ php artisan avancements:traiter
 
 ## 👤 Auteur & Contact
 
-**AZON Yélian Joanès**  
+**AZON Yélian Joanès Domicov**  
 Étudiant en Génie Logiciel — IFRI  
-Développeur Full Stack Web & Mobile (Laravel • React • Node.js)
+Développeur Full Stack Web & Mobile 
 
 *Projet institutionnel dédié à la Direction Diocésaine des Institutions Sanitaires (DDIS) — Archidiocèse de Cotonou.*
